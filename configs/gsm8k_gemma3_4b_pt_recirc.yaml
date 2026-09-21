@@ -1,0 +1,60 @@
+# Phase 2 — Gemma3 4B PT + fixed Recirculation (HF backend, pinned).
+# Paper pair 18 -> 9, alpha 0.15, NONCONVEX (beta = 1.0 — the paper
+# reports 4B critically requires beta=1), destination-L2, no ramping
+# (paper: no early-token harm observed at 4B).
+model:
+  name: google/gemma-3-4b-pt
+  revision: cc012e0a6d0787b4adcc0fa2c4da74402494554d
+  tokenizer_revision: cc012e0a6d0787b4adcc0fa2c4da74402494554d
+  dtype: bfloat16
+  device: auto
+  trust_remote_code: false
+  use_chat_template: false
+  # Null = transformers default (SDPA on CUDA). Eager is MPS-only.
+  attn_implementation: null
+  intervention:
+    type: recirculation
+    source_layer: 18
+    destination_layer: 9
+    alpha: 0.15
+    beta: 1.0
+    mixture:
+      mode: nonconvex
+    normalization:
+      type: destination_l2
+    ramping:
+      enabled: false
+
+task:
+  name: gsm8k
+  version: "1.0"
+  split: test
+  limit: null
+  dataset_id: openai/gsm8k
+  dataset_config: main
+  dataset_revision: 740312add88f781978c0658806c59bc2815b9866
+
+prompt:
+  template_name: gsm8k_kojima_v1
+  template_version: "1.0"
+  extraction_template_name: gsm8k_answer_extract_v1
+  extraction_template_version: "1.0"
+
+generation:
+  max_new_tokens: 256
+  extraction_max_new_tokens: 32
+  temperature: 0.0
+  top_p: 1.0
+  do_sample: false
+  seed: 42
+
+runtime:
+  # Inner-batched serial loop; 4B bf16 fits batch 16 on A100-40GB.
+  batch_size: 16
+  output_dir: results
+  seed: 42
+
+experiment:
+  name: gsm8k_gemma3_4b_pt_recirc_18_9_a015_b1
+  evaluation_code_version: "0.2.0"
+  wandb_project: recirc-gsm8k

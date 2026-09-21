@@ -59,7 +59,8 @@ class MockModelAdapter(ModelAdapter):
         prompts: Sequence[str],
         config: GenerationConfig,
     ) -> list[str]:
-        self.calls.append({"num_prompts": len(prompts)})
+        self.calls.append({"num_prompts": len(prompts),
+                           "max_new_tokens": config.max_new_tokens})
         out: list[str] = []
         for _ in prompts:
             if self._cursor >= len(self._outputs):

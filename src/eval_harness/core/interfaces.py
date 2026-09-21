@@ -33,10 +33,18 @@ class GenerationConfig:
     top_p: float = 1.0
     do_sample: bool = False
     seed: int = 42
+    # Stage-2 (answer extraction) token budget for two-stage protocols.
+    # None = same as max_new_tokens. Extraction answers are a handful of
+    # tokens; capping them separately avoids generating hundreds of
+    # wasted tokens per example (the dominant cost in serial adapters).
+    extraction_max_new_tokens: int | None = None
 
     def __post_init__(self) -> None:
         if self.max_new_tokens <= 0:
             raise ValueError("max_new_tokens must be > 0")
+        if (self.extraction_max_new_tokens is not None
+                and self.extraction_max_new_tokens <= 0):
+            raise ValueError("extraction_max_new_tokens must be > 0 or None")
         if not (0.0 <= self.top_p <= 1.0):
             raise ValueError("top_p must be in [0, 1]")
         if self.temperature < 0.0:
@@ -53,7 +61,16 @@ class GenerationConfig:
             "top_p": self.top_p,
             "do_sample": self.do_sample,
             "seed": self.seed,
+            "extraction_max_new_tokens": self.extraction_max_new_tokens,
         }
+
+    def for_extraction(self) -> "GenerationConfig":
+        """Copy with the stage-2 token budget applied (no-op if unset)."""
+        import dataclasses
+        if self.extraction_max_new_tokens is None:
+            return self
+        return dataclasses.replace(
+            self, max_new_tokens=self.extraction_max_new_tokens)
 
 
 @dataclass

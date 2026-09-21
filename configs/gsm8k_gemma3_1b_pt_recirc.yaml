@@ -13,7 +13,10 @@ model:
   device: auto
   trust_remote_code: false
   use_chat_template: false
-  attn_implementation: eager
+  # Null = transformers default (SDPA/flash on CUDA, ~2-3x faster than
+  # eager). Eager is only pinned for Apple-Silicon MPS configs, where the
+  # SDPA fast path aborts. This config targets GPU workers.
+  attn_implementation: null
   intervention:
     type: recirculation
     source_layer: 11
@@ -43,14 +46,17 @@ prompt:
   extraction_template_version: "1.0"
 
 generation:
-  max_new_tokens: 512
+  max_new_tokens: 256
+  extraction_max_new_tokens: 32
   temperature: 0.0
   top_p: 1.0
   do_sample: false
   seed: 42
 
 runtime:
-  batch_size: 1
+  # Inner-batched serial loop parallelizes rows on GPU; 16 fits easily
+  # (1B bf16) and saturates the device far better than batch 1.
+  batch_size: 16
   output_dir: results
   seed: 42
 

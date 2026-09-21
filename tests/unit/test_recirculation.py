@@ -8,7 +8,10 @@ from eval_harness.core.config import (
     normalize_intervention,
 )
 from eval_harness.models.recirculation import (
+    _resolve_decoder_layers,
     mix_destination,
+    mix_destination_batched,
+    ramp_batch,
     ramp_factor,
     rescale_to_destination,
 )
@@ -64,6 +67,29 @@ def test_ramp_factor():
     assert ramp_factor(3, -1) == pytest.approx(1.0)
 
 
+def test_ramp_batch_matches_scalar():
+    pos = torch.tensor([0, 4, 9, 99])
+    got = ramp_batch(pos, 10)
+    want = torch.tensor([ramp_factor(int(p), 10) for p in pos])
+    assert torch.allclose(got, want)
+    assert torch.all(ramp_batch(pos, 0) == 1.0)
+
+
+def test_batched_mix_matches_single_row():
+    torch.manual_seed(0)
+    dst = torch.randn(3, 8)
+    src = torch.randn(3, 8)
+    alpha = torch.tensor([0.0, 0.5, 0.15])
+    got = mix_destination_batched(dst, src, alpha, 0.85)
+    for r in range(3):
+        want = mix_destination(dst[r], src[r], float(alpha[r]), 0.85)
+        assert torch.allclose(got[r], want), r
+    # Scalar alpha broadcasts.
+    got2 = mix_destination_batched(dst, src, 0.15, 1.0,
+                                   normalization="identity")
+    assert torch.allclose(got2, 0.15 * src + dst)
+
+
 def test_intervention_round_trip():
     cfg = InterventionConfig.from_dict({
         "type": "recirculation", "source_layer": 18,
@@ -85,3 +111,32 @@ def test_normalize_intervention_shapes():
     assert normalize_intervention(typed)["source_layer"] == 11
     with pytest.raises(TypeError):
         normalize_intervention("recirculation")
+
+
+class _NS:
+    def __init__(self, **kw):
+        self.__dict__.update(kw)
+
+
+def test_resolve_llama_like_layout():
+    model = _NS(model=_NS(layers=[1, 2, 3]))
+    assert _resolve_decoder_layers(model, "m") == [1, 2, 3]
+
+
+def test_resolve_gemma3_wrapper_layout():
+    # Gemma3ForCausalLM.model is a Gemma3Model multimodal wrapper; the
+    # text stack lives under .language_model (this exact shape crashed
+    # the first 4B run: 'Gemma3Model' has no attribute 'layers').
+    text = _NS(layers=[1] * 34, embed_tokens=_NS(weight=[[0]]))
+    model = _NS(model=_NS(language_model=text))
+    assert _resolve_decoder_layers(model, "m") == [1] * 34
+
+
+def test_resolve_gpt2_like_layout():
+    model = _NS(transformer=_NS(h=[1, 2]))
+    assert _resolve_decoder_layers(model, "m") == [1, 2]
+
+
+def test_resolve_unknown_layout_raises():
+    with pytest.raises(RuntimeError, match="known decoder-block layout"):
+        _resolve_decoder_layers(_NS(), "m")

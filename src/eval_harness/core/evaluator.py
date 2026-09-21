@@ -370,6 +370,8 @@ class Evaluator:
 
         def _generate_batched(prompt_list: list[str], stage: int,
                               label: str) -> list[str]:
+            gen_cfg = (config.generation.for_extraction() if stage == 1
+                       else config.generation)
             outputs: list[str] = [""] * len(prompt_list)
             n_batches = (len(prompt_list) + batch_size - 1) // batch_size
             for b, (start, batch_prompts) in enumerate(
@@ -377,7 +379,7 @@ class Evaluator:
             ):
                 log.info("%s batch %d/%d (size %d)", label,
                          b + 1, n_batches, len(batch_prompts))
-                chunk = model.generate(batch_prompts, config.generation)
+                chunk = model.generate(batch_prompts, gen_cfg)
                 if len(chunk) != len(batch_prompts):
                     raise RuntimeError(
                         f"Model adapter returned {len(chunk)} outputs for "

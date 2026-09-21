@@ -47,7 +47,8 @@ prompt:
   extraction_template_version: "1.0"
 
 generation:
-  max_new_tokens: 512
+  max_new_tokens: 256
+  extraction_max_new_tokens: 32
   temperature: 0.0
   top_p: 1.0
   do_sample: false

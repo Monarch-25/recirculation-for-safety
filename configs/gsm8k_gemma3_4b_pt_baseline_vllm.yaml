@@ -1,11 +1,11 @@
-# Phase 2 — Gemma3 1B PT baseline via vLLM (GPU/Modal, pinned).
-# Same protocol as gsm8k_gemma3_1b_pt_baseline.yaml; only the inference
-# backend differs. vLLM has Linux-only wheels; run on GPU workers.
+# Phase 2 — Gemma3 4B PT baseline via vLLM (GPU/Modal, pinned).
+# Scaling check (Run 5 pilot, n=50): same Kojima two-stage protocol as 1B.
+# Gated repo: requires HF access to google/gemma-3-4b-pt.
 model:
-  name: google/gemma-3-1b-pt
+  name: google/gemma-3-4b-pt
   backend: vllm
-  revision: fcf18a2a879aab110ca39f8bffbccd5d49d8eb29
-  tokenizer_revision: fcf18a2a879aab110ca39f8bffbccd5d49d8eb29
+  revision: cc012e0a6d0787b4adcc0fa2c4da74402494554d
+  tokenizer_revision: cc012e0a6d0787b4adcc0fa2c4da74402494554d
   dtype: auto
   device: auto
   trust_remote_code: false
@@ -13,8 +13,7 @@ model:
   tensor_parallel_size: 1
   gpu_memory_utilization: 0.9
   enforce_eager: false
-  # Caps context to cut vLLM graph-capture warmup (prompts + 512 new
-  # tokens fit comfortably); does not affect scores.
+  # Caps context to cut vLLM graph-capture warmup; does not affect scores.
   max_model_len: 4096
   intervention:
     type: none
@@ -48,6 +47,6 @@ runtime:
   seed: 42
 
 experiment:
-  name: gsm8k_gemma3_1b_pt_baseline_vllm
+  name: gsm8k_gemma3_4b_pt_baseline
   evaluation_code_version: "0.2.0"
   wandb_project: recirc-gsm8k

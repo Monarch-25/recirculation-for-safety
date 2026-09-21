@@ -94,30 +94,59 @@ def format_for_chat(
     return prompt
 
 
-def check_bos_present(tokenizer: Any, input_ids: Any, context: str = "") -> bool:
+def check_bos_present(tokenizer: Any, input_ids: Any, context: str = "",
+                      mask: Any = None) -> bool:
     """Guard against the paper-v2 BOS confound.
 
     Gemma expects a BOS token at the start of every input window; a
     missing BOS inflates baseline perplexity and distorts intervention
-    effects. Returns True when BOS handling looks correct (or the
-    tokenizer defines no BOS token), False + warning otherwise.
-    Adapters should call this after tokenization; it never raises.
+    effects. With a padding ``mask``, each row's first REAL token is
+    checked (left-padding pads are skipped). Returns True when BOS
+    handling looks correct (or the tokenizer defines no BOS token),
+    False + warning otherwise. Never raises.
     """
     try:
         bos_id = getattr(tokenizer, "bos_token_id", None)
         if bos_id is None:
             return True
-        first = input_ids[0][0] if hasattr(input_ids, "__getitem__") else None
+
+        def _row_ids(i: int):
+            row = input_ids[i]
+            row = row.tolist() if hasattr(row, "tolist") else list(row)
+            if mask is not None:
+                m = mask[i]
+                m = m.tolist() if hasattr(m, "tolist") else list(m)
+                row = [t for t, keep in zip(row, m) if keep]
+            return row
+
         try:
-            first_id = int(first.tolist()) if hasattr(first, "tolist") else int(first)
-        except (TypeError, ValueError):
-            return True  # uninspectable batch layout; don't cry wolf
-        if first_id != int(bos_id):
-            log.warning(
-                "first input token id=%s is not BOS id=%s %s; "
-                "Gemma-family results without BOS are unreliable",
-                first_id, bos_id, f"({context})" if context else "",
-            )
+            n_rows = len(input_ids)
+        except TypeError:
+            return True
+        bad = 0
+        for i in range(n_rows):
+            try:
+                row = _row_ids(i)
+            except (IndexError, TypeError, ValueError):
+                return True  # uninspectable layout; don't cry wolf
+            if not row:
+                continue
+            try:
+                first_id = int(row[0])
+            except (TypeError, ValueError):
+                return True
+            if first_id != int(bos_id):
+                bad += 1
+                if bad <= 4:
+                    log.warning(
+                        "row %d first real token id=%s is not BOS id=%s "
+                        "%s; Gemma-family results without BOS are unreliable",
+                        i, first_id, bos_id,
+                        f"({context})" if context else "",
+                    )
+        if bad:
+            log.warning("BOS missing on %d/%d rows %s", bad, n_rows,
+                        f"({context})" if context else "")
             return False
         return True
     except Exception as exc:

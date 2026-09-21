@@ -38,7 +38,8 @@ def _config(batch_size=2):
         "model": {"name": "mock/m", "intervention": {"type": "none"}},
         "task": {"name": "gsm8k", "split": "test"},
         "prompt": {"extraction_template_name": "gsm8k_answer_extract_v1"},
-        "generation": {"max_new_tokens": 32},
+        "generation": {"max_new_tokens": 32,
+                       "extraction_max_new_tokens": 7},
         "runtime": {"batch_size": batch_size, "output_dir": "results"},
         "experiment": {"name": "two-stage-test"},
     })
@@ -64,6 +65,16 @@ def test_two_stage_records_reasoning_and_final(tmp_path):
     assert ext["hash"]
     # Token totals span both stages (mock reports none -> nulls, honest).
     assert res.manifest["performance"]["token_stats_complete"] is False
+
+
+def test_stage_token_budgets_reach_adapter(tmp_path):
+    rows = _rows()[:2]
+    model = MockModelAdapter(["r1", "r2", "a1", "a2"])
+    Evaluator(output_root=tmp_path / "results").evaluate(
+        task=ExtractTask(rows), model=model,
+        config=_config(), run_id="caps", command="pytest")
+    caps = [c["max_new_tokens"] for c in model.calls]
+    assert caps == [32, 7]  # stage 1 reasoning, then stage 2 extraction
 
 
 def test_two_stage_batch_invariance(tmp_path):

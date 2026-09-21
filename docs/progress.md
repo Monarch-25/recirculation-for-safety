@@ -234,6 +234,19 @@ prompt/parse/score/dataset interpretation requires a version bump + a note there
 
 ### Next steps (ordered)
 
+- [x] **6. GPU runtime optimization (2026-09-22, local-verified, GPU-pending).**
+  GPU was ~30% utilized because the recirc loop was serial prefill +
+  batch-1 + 512-token caps on both stages + eager attention. Fixed:
+  (A) per-stage budgets (`extraction_max_new_tokens`, 256/32 in Gemma
+  configs — stage-2 answers need a handful of tokens, not 512);
+  (B) SDPA on the GPU recirc config (eager kept for MPS only);
+  (C) true inner-batched loop (left-pad, pad-gated hooks/state,
+  per-row ramping/validity/finish, fixed-order sampling) + recirc
+  batch_size 1→16. Proven locally: alpha=0 STILL bitwise-identical to
+  HF baseline with padding in play, batch invariance now exercises real
+  batching, determinism holds. Expected ~10x (40s/ex → ~4s/ex); GPU
+  timing unconfirmed — validate on the next smoke before trusting it.
+
 - [x] **0. Kojima two-stage prompting (2026-09-22).** Real Kojima
   protocol: stage 1 reasoning (`gsm8k_kojima_v1`), stage 2
   `"[X'] [Z] Therefore, the answer (arabic numerals) is"`
@@ -300,15 +313,28 @@ prompt/parse/score/dataset interpretation requires a version bump + a note there
   comparison + deltas logged to wandb (`comparisons/gpu_smoke_base_vs_recirc`).
   Caveat: backends differ (vLLM baseline vs HF recirc) — fine for smoke,
   full runs should share a backend where possible.
-- [x] **4c. 50-pair on GPU (2026-09-22).** Baseline
-  (`run_20260921_200944_e94ca7`, 2831 tok/s) vs recirc
-  (`run_20260921_200454_b4dbcd`): 50 common, 0.0 vs 0.0 acc
-  (1B-PT floor, non-claim), **39/50 changed outputs**, recirc 0 parse
-  failures vs baseline 2, shorter traces (1358 vs 1481 mean chars).
-  Logged to wandb (`comparisons/gpu_50_base_vs_recirc`).
-- [ ] **5. Run 4 (full 1B pair) + freeze `docs/phase2_gsm8k_protocol.md`
-  + lm-harness cross-check.** Only then Runs 5–6 (4B).
-- [ ] **5. Run 4 (full 1B pair) + freeze `docs/phase2_gsm8k_protocol.md`
-  + lm-harness cross-check.** Only then Runs 5–6 (4B).
+- [x] **4c. 50-pair on GPU, single-stage era (2026-09-22, superseded).**
+  Baseline vs recirc: 50 common, 0.0 vs 0.0 acc, **39/50 changed**.
+  (`comparisons/gpu_50_base_vs_recirc`.) Superseded by two-stage below.
+- [x] **7. First two-stage GPU pair at n=50 (2026-09-22).**
+  Optimized stack on CUDA (batched loop + SDPA + 256/32 budgets):
+  recirc 194s/50ex (**3.9s/ex, ~10x faster** than the 40s/ex serial
+  era), baseline vLLM 5.4s total. Result: 0.04 vs 0.04 acc (2 rescued
+  + 2 regressed — flips both ways, no net effect at 1B), 47/50 outputs
+  changed, short extraction outputs as designed. Logged to wandb
+  (`comparisons/gpu_50_twostage_base_vs_recirc`).
+- [x] **8. 4B scaling check at n=50 (2026-09-22).**
+  First attempt failed fast: Gemma3 text checkpoints load as
+  `Gemma3ForCausalLM` whose `.model` is the multimodal `Gemma3Model`
+  wrapper (no `.layers`) — fixed with a layout resolver
+  (`model.layers` → `model.language_model.layers` → `transformer.h`)
+  + robust hidden-size lookup, covered by offline layout tests.
+  Reran clean. Result: baseline 0.24 (12/50) vs recirc 0.26 (13/50),
+  delta +0.02 — **9 rescued, 8 regressed, 39/50 changed**. Net +1 is
+  noise at n=50, but the churn pattern + positive sign is the first
+  directionally-paper-consistent signal (1B showed 0.04/0.04).
+  Recirc cost 255s/50ex (~5s/ex), peak 9.7 GB. Logged to wandb
+  (`comparisons/gpu_4b_twostage_base_vs_recirc`). Full 1B/4B pairs
+  still required before any claim.
 - [ ] **6. Defer explicitly:** 4B/12B configs (trivial clones once 1B
   runs), sweeps (§41–48), stats (§49), pass@128 (§38–40), report (§56).

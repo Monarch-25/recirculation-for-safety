@@ -415,6 +415,9 @@ def load_config_from_dict(
         top_p=float(g.get("top_p", 1.0)),
         do_sample=bool(g.get("do_sample", False)),
         seed=int(g.get("seed", 42)),
+        extraction_max_new_tokens=(
+            None if g.get("extraction_max_new_tokens") is None
+            else int(g.get("extraction_max_new_tokens"))),
     )
     runtime = RuntimeConfig(
         batch_size=batch_size,

@@ -43,6 +43,7 @@ from eval_harness.core.config import (
 )
 from eval_harness.core.interfaces import BatchTiming, GenerationConfig
 from eval_harness.models.hf_causal_lm import HFCausalLMAdapter
+from eval_harness.prompting.chat import check_bos_present
 from eval_harness.runtime import reproducibility
 
 log = logging.getLogger(__name__)
@@ -94,9 +95,78 @@ def ramp_factor(position: int, ramp_tokens: int) -> float:
     return min(1.0, (position + 1) / ramp_tokens)
 
 
+def ramp_batch(positions: torch.Tensor, ramp_tokens: int) -> torch.Tensor:
+    """Per-row ramp factors from absolute real positions (0-based)."""
+    if ramp_tokens <= 0:
+        return torch.ones_like(positions, dtype=torch.float32)
+    return torch.clamp(
+        (positions.to(torch.float32) + 1.0) / float(ramp_tokens), max=1.0)
+
+
+def mix_destination_batched(
+    destination: torch.Tensor,
+    source: torch.Tensor,
+    alpha: torch.Tensor | float,
+    beta: float,
+    normalization: str = "destination_l2",
+    eps: float = EPS,
+) -> torch.Tensor:
+    """Row-wise ``alpha * f(source) + beta * destination`` ([B, H]).
+
+    Norms are per-row (unlike the single-vector helper); ``alpha`` may
+    be a per-row factor (ramping) or a scalar.
+    """
+    if normalization == "identity":
+        scaled = source
+    elif normalization == "destination_l2":
+        src_f = source.to(torch.float32)
+        dst_f = destination.to(torch.float32)
+        src_norm = torch.linalg.vector_norm(src_f, dim=-1, keepdim=True)
+        dst_norm = torch.linalg.vector_norm(dst_f, dim=-1, keepdim=True)
+        scaled = (source * (dst_norm / (src_norm + eps))).to(source.dtype)
+    else:
+        raise ValueError(f"Unknown normalization {normalization!r}")
+    if not torch.is_tensor(alpha):
+        alpha = torch.full((destination.shape[0], 1), float(alpha),
+                           dtype=destination.dtype, device=destination.device)
+    else:
+        alpha = alpha.to(dtype=destination.dtype,
+                         device=destination.device).reshape(-1, 1)
+    return alpha * scaled + beta * destination
+
+
 # ---------------------------------------------------------------------------
 # Adapter
 # ---------------------------------------------------------------------------
+
+def _resolve_decoder_layers(model: Any, model_id: str) -> Any:
+    """Locate the transformer block list across HF layout variants.
+
+    Layouts differ by family: Llama-likes expose ``model.layers``;
+    Gemma3's multimodal wrapper nests the text stack under
+    ``model.language_model.layers``; GPT-2-likes use
+    ``transformer.h``. Fail loudly listing what was tried.
+    """
+    candidates = (
+        ("model.layers", lambda m: m.model.layers),
+        ("model.language_model.layers",
+         lambda m: m.model.language_model.layers),
+        ("language_model.layers", lambda m: m.language_model.layers),
+        ("transformer.h", lambda m: m.transformer.h),
+    )
+    for label, get in candidates:
+        try:
+            layers = get(model)
+        except AttributeError:
+            continue
+        if layers is not None and len(layers) > 0:
+            log.info("decoder blocks for %s resolved via %s (%d blocks)",
+                     model_id, label, len(layers))
+            return layers
+    raise RuntimeError(
+        f"Recirculation requires a known decoder-block layout; "
+        f"tried {[c[0] for c in candidates]} on {model_id}")
+
 
 class RecirculationModelAdapter(HFCausalLMAdapter):
     """Frozen-weight Recirculation adapter (intervention='recirculation').
@@ -124,12 +194,7 @@ class RecirculationModelAdapter(HFCausalLMAdapter):
                 kwargs.get("trust_remote_code", False))
         super().__init__(model_id, **kwargs)
         self._recirc = InterventionConfig.from_dict(self._intervention)
-        try:
-            decoder_layers = self.model.model.layers
-        except AttributeError as exc:
-            raise RuntimeError(
-                f"Recirculation requires model.model.layers; "
-                f"{model_id} has an unsupported layout") from exc
+        decoder_layers = _resolve_decoder_layers(self.model, model_id)
         self._decoder_layers = decoder_layers
         self._num_layers = len(decoder_layers)
         if self._recirc.type == "recirculation":
@@ -181,6 +246,10 @@ class RecirculationModelAdapter(HFCausalLMAdapter):
                     f"{model_id} with {known_layers} blocks")
 
     # -- hooks ----------------------------------------------------------
+    # All hooks operate on batches [B, 1, H]; padded/finished rows are
+    # masked out via state["real"] so they neither mix nor pollute the
+    # stored source. With no pads this reduces exactly to the
+    # single-sequence path (verified by the batch-invariance tests).
     def _destination_pre_hook(self, module, args, kwargs):
         st = self._state
         if st is None or not st.get("active"):
@@ -191,14 +260,19 @@ class RecirculationModelAdapter(HFCausalLMAdapter):
         else:
             hidden = args[0]
             key = "args"
-        if self._recirc.type == "recirculation" and st["prev_source"] is not None:
+        if (self._recirc.type == "recirculation"
+                and bool(st["has_source"].any())):
             cfg = self._recirc
-            alpha = cfg.alpha * ramp_factor(st["position"], cfg.ramp_tokens)
-            mixed = mix_destination(
-                hidden, st["prev_source"].to(hidden.dtype),
-                alpha, cfg.effective_beta, cfg.normalization)
-            self._maybe_debug(st, hidden, mixed, alpha)
-            hidden = mixed
+            factors = ramp_batch(st["pos"], cfg.ramp_tokens)
+            mixed = mix_destination_batched(
+                hidden[:, -1, :],
+                st["prev_source"].to(hidden.dtype),
+                cfg.alpha * factors,
+                cfg.effective_beta, cfg.normalization)
+            gate = st["has_source"].to(hidden.dtype).reshape(-1, 1, 1)
+            new_hidden = gate * mixed.unsqueeze(1) + (1.0 - gate) * hidden
+            self._maybe_debug(st, hidden, new_hidden)
+            hidden = new_hidden
         if key == "kwargs":
             return args, {**kwargs, "hidden_states": hidden}
         return (hidden,) + tuple(args[1:]), kwargs
@@ -209,33 +283,45 @@ class RecirculationModelAdapter(HFCausalLMAdapter):
             return
         hidden = output[0] if isinstance(output, tuple) else output
         try:
-            st["prev_source"] = hidden[0, -1, :].detach().clone()
+            real = st["real"]
+            st["prev_source"][real] = hidden[real, -1, :].detach().to(
+                st["prev_source"].dtype)
+            st["has_source"][real] = True
         except (IndexError, RuntimeError) as exc:
             log.warning("source capture failed: %s", exc)
 
-    def _maybe_debug(self, st, dst, mixed, alpha):
+    def _maybe_debug(self, st, dst, mixed):
         if self._debug_steps <= 0 or len(self.last_debug) >= 1024:
             return
         if st.get("debug_count", 0) >= self._debug_steps:
             return
         with torch.no_grad():
-            src = st["prev_source"].to(torch.float32)
-            d = dst.detach().to(torch.float32).reshape(-1)
-            m = mixed.detach().to(torch.float32).reshape(-1)
-            s = src.reshape(-1)
-            dn, sn = d.norm().item(), s.norm().item()
-            cos = (F.cosine_similarity(s, d, dim=0).item()
-                   if dn > 0 and sn > 0 else 0.0)
-            self.last_debug.append({
-                "position": st["position"],
-                "alpha_effective": alpha,
-                "source_norm": sn,
-                "destination_norm": dn,
-                "scaled_source_norm": dn,
-                "mixed_norm": m.norm().item(),
-                "cosine": cos,
-            })
-            st["debug_count"] = st.get("debug_count", 0) + 1
+            real_idx = torch.nonzero(st["real"]).flatten().tolist()
+            for r in real_idx:
+                if st.get("debug_count", 0) >= self._debug_steps:
+                    break
+                if len(self.last_debug) >= 1024:
+                    break
+                s = st["prev_source"][r].to(torch.float32)
+                d = dst[r, -1, :].detach().to(torch.float32)
+                m = mixed[r, -1, :].detach().to(torch.float32)
+                dn, sn = d.norm().item(), s.norm().item()
+                cos = (F.cosine_similarity(s, d, dim=0).item()
+                       if dn > 0 and sn > 0 else 0.0)
+                self.last_debug.append({
+                    "batch_row": r,
+                    "position": int(st["pos"][r].item()),
+                    "alpha_effective": float(
+                        self._recirc.alpha * ramp_factor(
+                            int(st["pos"][r].item()),
+                            self._recirc.ramp_tokens)),
+                    "source_norm": sn,
+                    "destination_norm": dn,
+                    "scaled_source_norm": dn,
+                    "mixed_norm": m.norm().item(),
+                    "cosine": cos,
+                })
+                st["debug_count"] = st.get("debug_count", 0) + 1
 
     # -- metadata ---------------------------------------------------------
     def get_metadata(self) -> dict[str, Any]:
@@ -263,106 +349,158 @@ class RecirculationModelAdapter(HFCausalLMAdapter):
         reproducibility.seed_everything(config.seed)
         sampler = torch.Generator().manual_seed(config.seed)
         self.last_debug = []
-        texts: list[str] = []
-        in_list: list[int] = []
-        out_list: list[int] = []
-        prefill_sum, decode_sum = 0.0, 0.0
-        try:
-            for p in prompts:
-                text, n_in, n_out, t_pre, t_dec = self._generate_one(
-                    p, config, sampler)
-                texts.append(text)
-                in_list.append(n_in)
-                out_list.append(n_out)
-                prefill_sum += t_pre
-                decode_sum += t_dec
-        finally:
-            self._state = None
+        formatted = [self._format_prompt(p) for p in prompts]
+        enc = self.tokenizer(formatted, return_tensors="pt", padding=True)
+        check_bos_present(
+            self.tokenizer, enc["input_ids"],
+            context=f"model={self._model_id}",
+            mask=enc.get("attention_mask"))
+        texts, in_list, out_list, pre_s, dec_s = self._generate_batch(
+            enc, config, sampler)
         # Unlike the HF adapter's fused generate(), this loop genuinely
         # separates serial prefill from decode (P2 §31).
         self.last_batch_info = BatchTiming(
             input_tokens=in_list,
             output_tokens=out_list,
-            prefill_seconds=prefill_sum,
-            generation_seconds=decode_sum,
+            prefill_seconds=pre_s,
+            generation_seconds=dec_s,
         )
         return texts
 
-    def _generate_one(
-        self,
-        prompt: str,
-        config: GenerationConfig,
-        sampler: torch.Generator,
-    ) -> tuple[str, int, int, float, float]:
-        """Generate one continuation; also return (in, out, pre, dec)."""
-        formatted = self._format_prompt(prompt)
-        ids = self.tokenizer(formatted, return_tensors="pt")["input_ids"][0]
-        if ids.numel() == 0:
-            return "", 0, 0, 0.0, 0.0
-        from eval_harness.prompting.chat import check_bos_present
-        check_bos_present(
-            self.tokenizer, [ids.tolist()], context=f"model={self._model_id}")
-        self._state = {"active": True, "prev_source": None,
-                       "position": 0, "debug_count": 0}
+    def _generate_batch(self, enc: Any, config: GenerationConfig,
+                        sampler: torch.Generator,
+                        ) -> tuple[list[str], list[int], list[int],
+                                   float, float]:
+        """Batched serial loop. Returns (texts, in, out, pre_s, dec_s).
+
+        Left padding aligns rows; pads never mix, never update stored
+        source, and never enter attention (mask). Finished decode rows
+        feed pad and are ignored. Row order is preserved throughout.
+        """
+        input_ids = enc["input_ids"]
+        attn0 = enc.get("attention_mask")
+        if attn0 is None:
+            attn0 = torch.ones_like(input_ids)
+        B, L = input_ids.shape
+        lengths = attn0.sum(dim=1).tolist()
+        if min(lengths) == 0:
+            raise ValueError("recirculation needs ≥1 real token per prompt")
+        device = self._device
+        H = self._hidden_size()
+        model_dtype = next(self.model.parameters()).dtype
+        # Flags live on the model device (hooks run device-side); the
+        # driver loop converts to Python scalars/lists when branching.
+        self._state = {
+            "active": True,
+            "prev_source": torch.zeros(B, H, dtype=model_dtype,
+                                       device=device),
+            "has_source": torch.zeros(B, dtype=torch.bool, device=device),
+            "real": torch.ones(B, dtype=torch.bool, device=device),
+            "pos": torch.zeros(B, dtype=torch.long, device=device),
+            "debug_count": 0,
+        }
+        finished = torch.zeros(B, dtype=torch.bool, device=device)
+        new_ids: list[list[int]] = [[] for _ in range(B)]
         past = None
-        new_ids: list[int] = []
+        pad_id = self.tokenizer.pad_token_id
+        if pad_id is None:
+            pad_id = self.tokenizer.eos_token_id
         try:
-            # Serial prefill: every prompt token flows through the loop,
-            # so recirculation state builds exactly as in decode. The
-            # logits from the final prompt position predict token one.
-            logits = None
+            # Serial prefill over the padded block.
             t_pre = time.perf_counter()
-            for pos in range(ids.numel()):
-                logits = self._step(ids[pos:pos + 1], past, pos)
+            cum_mask = attn0[:, :0]
+            logits = None
+            for t in range(L):
+                real = attn0[:, t].to(torch.bool).to(device)
+                cum_mask = torch.cat([cum_mask, attn0[:, t:t + 1]], dim=1)
+                self._state["real"] = real
+                logits = self._forward(
+                    input_ids[:, t:t + 1].to(device),
+                    cum_mask.to(device), t, past)
                 past = self._state["past"]
+                self._state["pos"][real] += 1
             prefill_s = time.perf_counter() - t_pre
-            # Decode: sample from the previous position's logits, then
-            # advance exactly one position per generated token.
+            # Decode until every row hits EOS or the cap.
             t_dec = time.perf_counter()
+            cur = torch.full((B, 1), pad_id, dtype=torch.long)
             for i in range(config.max_new_tokens):
                 assert logits is not None
-                nxt = self._select(logits, config, sampler)
-                new_ids.append(nxt)
-                if nxt == (self.tokenizer.eos_token_id):
+                nxt = self._select_rows(logits, finished, config, sampler)
+                fin_now = finished.tolist()
+                for r in range(B):
+                    if not fin_now[r]:
+                        new_ids[r].append(nxt[r])
+                finished |= torch.tensor(
+                    [n == self.tokenizer.eos_token_id for n in nxt],
+                    device=device)
+                if bool(finished.all()):
                     break
-                logits = self._step(
-                    torch.tensor([nxt]), past, ids.numel() + i)
+                for r in range(B):
+                    cur[r, 0] = nxt[r] if not finished[r] else pad_id
+                real = ~finished
+                cum_mask = torch.cat(
+                    [cum_mask, torch.ones(B, 1)], dim=1)
+                self._state["real"] = real
+                logits = self._forward(
+                    cur.to(device), cum_mask.to(device), L + i, past)
                 past = self._state["past"]
+                self._state["pos"][real] += 1
             decode_s = time.perf_counter() - t_dec
         finally:
-            self._state["active"] = False
-        text = self.tokenizer.decode(new_ids, skip_special_tokens=True)
-        return text, ids.numel(), len(new_ids), prefill_s, decode_s
+            # Release the KV cache; hooks tolerate _state = None.
+            self._state = None
+        texts = [self.tokenizer.decode(ids, skip_special_tokens=True)
+                 for ids in new_ids]
+        return (texts, [int(v) for v in lengths],
+                [len(ids) for ids in new_ids], prefill_s, decode_s)
 
-    def _step(self, token: torch.Tensor, past: Any, position: int) -> torch.Tensor:
+    def _hidden_size(self) -> int:
+        cfg = getattr(self.model, "config", None)
+        for obj in (cfg, getattr(cfg, "text_config", None)):
+            hs = getattr(obj, "hidden_size", None)
+            if hs is not None:
+                return int(hs)
+        for obj in (getattr(getattr(self.model, "model", None),
+                            "embed_tokens", None),
+                    getattr(getattr(getattr(self.model, "model", None),
+                                    "language_model", None),
+                            "embed_tokens", None)):
+            if obj is not None:
+                return int(obj.weight.shape[1])
+        raise RuntimeError(
+            f"cannot determine hidden size for {self._model_id}")
+
+    def _forward(self, tokens: torch.Tensor, mask: torch.Tensor,
+                 position: int, past: Any) -> torch.Tensor:
         assert self._state is not None
-        self._state["position"] = position
-        seq_len = (past.get_seq_length() + 1) if past is not None else 1
-        attention_mask = torch.ones(1, seq_len, device=self._device)
-        cache_position = torch.tensor([seq_len - 1], device=self._device)
         out = self.model(
-            input_ids=token.reshape(1, 1).to(self._device),
-            attention_mask=attention_mask,
-            cache_position=cache_position,
+            input_ids=tokens,
+            attention_mask=mask,
+            cache_position=torch.tensor([position], device=self._device),
             past_key_values=past,
             use_cache=True,
         )
         self._state["past"] = out.past_key_values
-        return out.logits[0, -1, :].detach()
+        return out.logits[:, -1, :].detach()
 
-    @staticmethod
-    def _select(logits: torch.Tensor, config: GenerationConfig,
-                sampler: torch.Generator) -> int:
+    def _select_rows(self, logits: torch.Tensor, finished: torch.Tensor,
+                     config: GenerationConfig,
+                     sampler: torch.Generator) -> list[int]:
         if not config.do_sample or config.temperature <= 0.0:
-            return int(torch.argmax(logits).item())
-        # Sample on CPU: tiny tensor, avoids device/generator mismatches.
+            return torch.argmax(logits, dim=-1).tolist()
+        # Sample on CPU in fixed row order: deterministic regardless of
+        # batching. Finished rows still draw (ignored) to keep the
+        # sampler stream position-independent of finish order.
         probs = torch.softmax(
             logits.float() / max(config.temperature, 1e-9), dim=-1).cpu()
         if config.top_p < 1.0:
             order = torch.argsort(probs, descending=True)
-            ranked = probs[order]
+            ranked = probs.gather(1, order)
             keep = torch.cumsum(ranked, dim=-1) <= config.top_p
-            keep[0] = True
-            ranked = ranked * keep / (ranked * keep).sum()
-            probs = torch.zeros_like(probs).scatter_(0, order, ranked)
-        return int(torch.multinomial(probs, 1, generator=sampler).item())
+            keep[:, 0] = True
+            denom = (ranked * keep).sum(dim=-1, keepdim=True)
+            ranked = ranked * keep / denom
+            probs = torch.zeros_like(ranked).scatter_(1, order, ranked)
+        return [int(torch.multinomial(probs[r], 1,
+                                      generator=sampler).item())
+                for r in range(probs.shape[0])]
