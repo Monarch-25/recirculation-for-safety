@@ -5,6 +5,7 @@ import pytest
 from eval_harness.prompting.chat import (
     GSM8K_COT_V1,
     GSM8K_KOJIMA_V1,
+    GSM8K_ANSWER_EXTRACT_V1,
     PromptTemplate,
     check_bos_present,
     get_template,
@@ -59,3 +60,9 @@ def test_bos_check_missing_warns():
 
 def test_bos_check_no_bos_token_ok():
     assert check_bos_present(object(), [[10]]) is True
+
+
+def test_extract_trigger_template():
+    t = get_template("gsm8k_answer_extract_v1", "1.0")
+    assert t.render() == GSM8K_ANSWER_EXTRACT_V1
+    assert "arabic numerals" in t.render()

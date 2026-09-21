@@ -1,5 +1,6 @@
-# Official pinned debug config: 5-example smoke test, pinned revisions.
-# Floating twin: configs/gsm8k_smollm2_360m_debug.yaml
+# Local mechanics test: SmolLM2-360M + fixed Recirculation (HF backend).
+# Validates the recirculation adapter through the full evaluator.
+# NOT a research result (wrong model family, small layers, ramp off).
 model:
   name: HuggingFaceTB/SmolLM2-360M-Instruct
   revision: a10cc1512eabd3dde888204e902eca88bddb4951
@@ -10,13 +11,22 @@ model:
   use_chat_template: true
   attn_implementation: eager
   intervention:
-    type: none
+    type: recirculation
+    source_layer: 11
+    destination_layer: 4
+    alpha: 0.15
+    mixture:
+      mode: convex
+    normalization:
+      type: destination_l2
+    ramping:
+      enabled: false
 
 task:
   name: gsm8k
   version: "1.0"
   split: test
-  limit: 5
+  limit: 2
   dataset_id: openai/gsm8k
   dataset_config: main
   dataset_revision: 740312add88f781978c0658806c59bc2815b9866
@@ -26,7 +36,7 @@ prompt:
   template_version: "1.0"
 
 generation:
-  max_new_tokens: 256
+  max_new_tokens: 64
   temperature: 0.0
   top_p: 1.0
   do_sample: false
@@ -38,5 +48,5 @@ runtime:
   seed: 42
 
 experiment:
-  name: gsm8k_baseline_smollm2_debug_pinned
+  name: gsm8k_smollm2_recirc_mechanics_debug
   evaluation_code_version: "0.2.0"

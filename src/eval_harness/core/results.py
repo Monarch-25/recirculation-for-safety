@@ -22,6 +22,16 @@ class PredictionRecord:
     parse_success: bool
     correct: bool
     score: float
+    # Optional per-example token counts (P2 §22/§32). None when the
+    # adapter cannot report them (e.g. mock); never fabricated.
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    # Source question text (P2 §20 per-example diffs). Old runs lack it.
+    question: str | None = None
+    # Two-stage protocols: stage-1 reasoning + stage-2 prompt. None for
+    # single-stage runs. raw_output always holds the SCORED (final) text.
+    reasoning: str | None = None
+    extraction_prompt: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

@@ -115,11 +115,16 @@ is unchanged for instruct models; this section freezes the PT variant.
   ```text
   Q: {question} A: Let's think step by step.
   ```
-  SINGLE-STAGE: one generation per example + the unchanged
-  `gsm8k_parser v1.0` / `gsm8k_exact_match v1.0`. This is NOT Kojima's
-  two-stage protocol (no second "Therefore, the answer (arabic numerals)
-  is" extraction call). Comparisons against the paper are therefore
-  **qualitative replications**, never exact reproductions.
+- **Two-stage generation (Kojima protocol, `evaluation_code_version`
+  `0.2.0`).** Stage 1 generates reasoning with the template above;
+  stage 2 feeds `"[stage-1 prompt] [stage-1 reasoning] Therefore, the
+  answer (arabic numerals) is"` (template `gsm8k_answer_extract_v1`
+  v1.0) through the SAME model adapter and generation config, and the
+  stage-2 output is what the parser scores. Per-example records carry
+  `reasoning` + `extraction_prompt`; the manifest `prompt.extraction`
+  block versions the second template. Configs without
+  `extraction_template_name` run single-stage with byte-identical
+  behavior to v0.1.0 (only additive schema fields differ).
 - **PT rendering:** `model.use_chat_template: false`. Base models get the
   raw prompt with no chat-template wrapping.
 - **BOS requirement (paper-v2 confound):** every input window MUST start

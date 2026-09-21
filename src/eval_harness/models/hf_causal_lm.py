@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 import random
+import time
 from typing import Any, Sequence
 
 import numpy as np
@@ -25,7 +26,7 @@ from eval_harness.core.config import (
     InterventionConfig,
     normalize_intervention,
 )
-from eval_harness.core.interfaces import GenerationConfig, ModelAdapter
+from eval_harness.core.interfaces import BatchTiming, GenerationConfig, ModelAdapter
 from eval_harness.prompting.chat import check_bos_present, format_for_chat
 from eval_harness.runtime import reproducibility
 from eval_harness.utils.hub import resolve_hub_revision
@@ -185,7 +186,10 @@ class HFCausalLMAdapter(ModelAdapter):
         input_ids = enc["input_ids"].to(self._device)
         attention_mask = enc.get("attention_mask")
         if attention_mask is not None:
+            widths = attention_mask.sum(dim=1).tolist()
             attention_mask = attention_mask.to(self._device)
+        else:
+            widths = [input_ids.shape[1]] * len(formatted)
 
         gen_kwargs: dict[str, Any] = {
             "max_new_tokens": config.max_new_tokens,
@@ -196,15 +200,34 @@ class HFCausalLMAdapter(ModelAdapter):
         if config.do_sample:
             gen_kwargs["temperature"] = config.temperature
             gen_kwargs["top_p"] = config.top_p
+        # Parallel prefill + decode are inseparable inside a single
+        # generate() call, so only total time is reported (P2 §32:
+        # report what you can measure, null the rest).
+        t0 = time.perf_counter()
         output_ids = self.model.generate(
             input_ids, attention_mask=attention_mask, **gen_kwargs)
+        elapsed = time.perf_counter() - t0
         # generate() returns [padded input (width = input_width) + new
         # tokens]; slicing at input_width yields only new tokens for both
         # left- and right-padded batches.
         results: list[str] = []
+        out_counts: list[int] = []
         input_width = input_ids.shape[1]
+        pad_id = self.tokenizer.pad_token_id
         for row in output_ids:
             new_tokens = row[input_width:]
+            if pad_id is not None and pad_id != self.tokenizer.eos_token_id:
+                out_counts.append(int((new_tokens != pad_id).sum().item()))
+            else:
+                # pad==eos (or no pad): cannot distinguish trailing pads;
+                # report the uniform slice length instead of fabricating.
+                out_counts.append(int(new_tokens.numel()))
             text = self.tokenizer.decode(new_tokens, skip_special_tokens=True)
             results.append(text)
+        self.last_batch_info = BatchTiming(
+            input_tokens=[int(w) for w in widths],
+            output_tokens=out_counts,
+            prefill_seconds=None,
+            generation_seconds=elapsed,
+        )
         return results

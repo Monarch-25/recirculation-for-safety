@@ -15,7 +15,9 @@ model:
   tensor_parallel_size: 1
   gpu_memory_utilization: 0.9
   enforce_eager: false
-  max_model_len: null
+  # Caps context to cut vLLM graph-capture warmup (prompts + 512 new
+  # tokens fit comfortably); does not affect scores.
+  max_model_len: 4096
   intervention:
     type: recirculation
     source_layer: 11
@@ -41,6 +43,8 @@ task:
 prompt:
   template_name: gsm8k_kojima_v1
   template_version: "1.0"
+  extraction_template_name: gsm8k_answer_extract_v1
+  extraction_template_version: "1.0"
 
 generation:
   max_new_tokens: 512
@@ -56,4 +60,5 @@ runtime:
 
 experiment:
   name: gsm8k_gemma3_1b_pt_recirc_11_4_a015_vllm
-  evaluation_code_version: "0.1.0"
+  evaluation_code_version: "0.2.0"
+  wandb_project: recirc-gsm8k

@@ -39,6 +39,8 @@ task:
 prompt:
   template_name: gsm8k_kojima_v1
   template_version: "1.0"
+  extraction_template_name: gsm8k_answer_extract_v1
+  extraction_template_version: "1.0"
 
 generation:
   max_new_tokens: 512
@@ -54,4 +56,5 @@ runtime:
 
 experiment:
   name: gsm8k_gemma3_1b_pt_recirc_11_4_a015
-  evaluation_code_version: "0.1.0"
+  evaluation_code_version: "0.2.0"
+  wandb_project: recirc-gsm8k

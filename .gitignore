@@ -5,5 +5,8 @@ results/*/
 !results/.gitkeep
 .hf_cache/
 *.egg-info/
+# Run outputs — never commit (reproducible from code + configs).
+comparisons/
+wandb/
 # Secrets — never commit. Local-only tokens (HF/Modal).
 access_tokens.txt

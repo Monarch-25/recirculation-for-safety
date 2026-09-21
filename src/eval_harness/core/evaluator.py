@@ -15,13 +15,14 @@ from __future__ import annotations
 import datetime
 import logging
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
 import yaml
 
 from eval_harness.core.config import EvalConfig
-from eval_harness.core.interfaces import ModelAdapter, Task
+from eval_harness.core.interfaces import BatchTiming, ModelAdapter, Task
 from eval_harness.core.results import (
     RESULT_SCHEMA_VERSION,
     EvaluationResult,
@@ -33,6 +34,134 @@ from eval_harness.runtime.environment import collect_environment_metadata
 from eval_harness.utils import hashing, io
 
 log = logging.getLogger(__name__)
+
+
+NULL_PERFORMANCE: dict[str, Any] = {
+    "wall_clock_seconds": None,
+    "prefill_seconds": None,
+    "generation_seconds": None,
+    "input_tokens": None,
+    "output_tokens": None,
+    "tokens_per_second": None,
+    "peak_memory_bytes": None,
+    "token_stats_complete": False,
+}
+
+
+def _reset_cuda_peak() -> None:
+    try:
+        import torch
+        if torch.cuda.is_available():
+            torch.cuda.reset_peak_memory_stats()
+    except Exception:
+        pass
+
+
+def _cuda_peak_bytes() -> int | None:
+    """Peak device allocation; None where no CUDA API exists (MPS/CPU)."""
+    try:
+        import torch
+        if torch.cuda.is_available():
+            return int(torch.cuda.max_memory_allocated())
+    except Exception:
+        pass
+    return None
+
+
+class _PerfTracker:
+    """Accumulates BatchTiming across generate() calls and stages.
+
+    Stage 0 writes per-example token counts; stage 1 (answer extraction)
+    adds to them. Any gap — a missing report, misaligned lists, or a
+    None entry — invalidates the totals (all-or-nothing, never partial).
+    Timing sums accumulate independently per phase with their own
+    completeness flags.
+    """
+
+    def __init__(self, n: int) -> None:
+        self.in_tokens: list[int | None] = [None] * n
+        self.out_tokens: list[int | None] = [None] * n
+        self.prefill_sum = 0.0
+        self.gen_sum = 0.0
+        self.prefill_known = True
+        self.gen_known = True
+        self.tokens_complete = True
+
+    def consume(self, model: Any, batch_prompts: list[str],
+                start: int, stage: int, batch_idx: int) -> None:
+        info = getattr(model, "last_batch_info", None)
+        try:
+            model.last_batch_info = None  # consume; avoid stale reuse
+        except Exception:
+            pass
+        if not isinstance(info, BatchTiming):
+            self.prefill_known = False
+            self.gen_known = False
+            self._invalidate()
+            return
+        if info.prefill_seconds is None:
+            self.prefill_known = False
+        else:
+            self.prefill_sum += info.prefill_seconds
+        if info.generation_seconds is None:
+            self.gen_known = False
+        else:
+            self.gen_sum += info.generation_seconds
+        batch_in = info.input_tokens or []
+        batch_out = info.output_tokens or []
+        if (len(batch_in) == len(batch_prompts)
+                and len(batch_out) == len(batch_prompts)
+                and all(isinstance(v, int) for v in batch_in + batch_out)):
+            for j in range(len(batch_prompts)):
+                i = start + j
+                if stage == 0:
+                    self.in_tokens[i] = batch_in[j]
+                    self.out_tokens[i] = batch_out[j]
+                elif (self.in_tokens[i] is None
+                        or self.out_tokens[i] is None):
+                    self._invalidate()
+                    return
+                else:
+                    self.in_tokens[i] += batch_in[j]  # type: ignore[operator]
+                    self.out_tokens[i] += batch_out[j]  # type: ignore[operator]
+        else:
+            self._invalidate()
+            if batch_in or batch_out:
+                log.warning(
+                    "batch %d token lists misaligned "
+                    "(got %d/%d for %d prompts); ignoring",
+                    batch_idx, len(batch_in), len(batch_out),
+                    len(batch_prompts))
+
+    def _invalidate(self) -> None:
+        self.tokens_complete = False
+        self.in_tokens = [None] * len(self.in_tokens)
+        self.out_tokens = [None] * len(self.out_tokens)
+
+    def performance(self, wall_clock_seconds: float,
+                    backend: str) -> dict[str, Any]:
+        complete = (self.tokens_complete
+                    and all(v is not None for v in self.in_tokens)
+                    and all(v is not None for v in self.out_tokens))
+        in_sum = sum(v for v in self.in_tokens if v is not None)
+        out_sum = sum(v for v in self.out_tokens if v is not None)
+        return {
+            "wall_clock_seconds": wall_clock_seconds,
+            "prefill_seconds": self.prefill_sum if self.prefill_known else None,
+            "generation_seconds": self.gen_sum if self.gen_known else None,
+            "input_tokens": in_sum if complete else None,
+            "output_tokens": out_sum if complete else None,
+            "tokens_per_second": (
+                out_sum / self.gen_sum
+                if self.gen_known and complete and self.gen_sum > 0
+                else None),
+            # CUDA peak is only meaningful for in-process execution. The
+            # vLLM backend runs in a child EngineCore process, so the
+            # parent counter stays 0 — record null instead of a lie.
+            "peak_memory_bytes": (
+                None if backend == "vllm" else _cuda_peak_bytes()),
+            "token_stats_complete": complete,
+        }
 
 
 def _utc_now() -> datetime.datetime:
@@ -82,6 +211,8 @@ class Evaluator:
         timestamp: str,
         num_examples: int,
         dataset_revision: str | None,
+        performance: dict[str, Any] | None = None,
+        extraction_hash: str | None = None,
     ) -> dict[str, Any]:
         model_meta = model.get_metadata()
         return {
@@ -125,8 +256,17 @@ class Evaluator:
                 "version": config.prompt.template_version,
                 "hash": prompt_hash,
                 "canonical_template_preview": prompt_text[:2000],
+                "extraction": (
+                    None if (config.prompt.extraction_template_name is None
+                             or extraction_hash is None)
+                    else {
+                        "name": config.prompt.extraction_template_name,
+                        "version": config.prompt.extraction_template_version,
+                        "hash": extraction_hash,
+                    }),
             },
             "generation": config.generation.to_dict(),
+            "performance": dict(performance) if performance else dict(NULL_PERFORMANCE),
             "runtime": {
                 "python_version": environment.get("python_version"),
                 "torch_version": environment.get("torch_version"),
@@ -220,26 +360,76 @@ class Evaluator:
         )
 
         # -- generation in batches, order-preserving --------------------
-        raw_outputs: list[str] = [""] * len(examples)
+        # Timing/token stats (P2 §32) come from the optional per-call
+        # BatchTiming adapters publish as `last_batch_info`. Anything an
+        # adapter cannot measure stays null (never fabricated).
+        _reset_cuda_peak()
+        tracker = _PerfTracker(len(examples))
+        gen_wall_start = time.perf_counter()
         batch_size = config.runtime.batch_size
-        n_batches = (len(examples) + batch_size - 1) // batch_size
-        for b, (start, batch_prompts) in enumerate(
-            _chunked_with_start(prompts, batch_size)
-        ):
-            log.info("generation batch %d/%d (size %d)",
-                     b + 1, n_batches, len(batch_prompts))
-            outputs = model.generate(batch_prompts, config.generation)
-            if len(outputs) != len(batch_prompts):
-                raise RuntimeError(
-                    f"Model adapter returned {len(outputs)} outputs for "
-                    f"{len(batch_prompts)} prompts (batch {b})"
+
+        def _generate_batched(prompt_list: list[str], stage: int,
+                              label: str) -> list[str]:
+            outputs: list[str] = [""] * len(prompt_list)
+            n_batches = (len(prompt_list) + batch_size - 1) // batch_size
+            for b, (start, batch_prompts) in enumerate(
+                _chunked_with_start(prompt_list, batch_size)
+            ):
+                log.info("%s batch %d/%d (size %d)", label,
+                         b + 1, n_batches, len(batch_prompts))
+                chunk = model.generate(batch_prompts, config.generation)
+                if len(chunk) != len(batch_prompts):
+                    raise RuntimeError(
+                        f"Model adapter returned {len(chunk)} outputs for "
+                        f"{len(batch_prompts)} prompts ({label} {b})"
+                    )
+                for j, out in enumerate(chunk):
+                    outputs[start + j] = out
+                tracker.consume(model, batch_prompts, start, stage, b)
+            return outputs
+
+        # Stage 1: reasoning (or the full response for single-stage).
+        reasoning = _generate_batched(prompts, 0, "generation")
+
+        # Stage 2 (optional): answer extraction. Tasks without
+        # build_extraction_prompt, or returning all-None, stay
+        # single-stage with identical behavior to previous versions.
+        raw_outputs = reasoning
+        reasoning_list: list[str | None] = [None] * len(examples)
+        extraction_prompts: list[str] | None = None
+        extraction_hash: str | None = None
+        extract_fn = getattr(task, "build_extraction_prompt", None)
+        if extract_fn is not None:
+            maybe_prompts = [extract_fn(ex, z)
+                             for ex, z in zip(examples, reasoning)]
+            if any(p is None for p in maybe_prompts):
+                if not all(p is None for p in maybe_prompts):
+                    raise ValueError(
+                        "build_extraction_prompt returned None for only "
+                        "some examples; must be all or nothing")
+                log.info("task declined extraction; single-stage run")
+            else:
+                extraction_prompts = maybe_prompts
+                reasoning_list = list(reasoning)
+                raw_outputs = _generate_batched(
+                    extraction_prompts, 1, "extraction")
+                extraction_hash = hashing.sha256_hex(
+                    f"{config.prompt.extraction_template_name}\n"
+                    f"{config.prompt.extraction_template_version}\n"
+                    f"{extraction_prompts[0] if extraction_prompts else ''}"
                 )
-            for j, out in enumerate(outputs):
-                raw_outputs[start + j] = out
+        gen_wall = time.perf_counter() - gen_wall_start
+        performance = tracker.performance(gen_wall, config.model.backend)
 
         # -- parse + score (per-example failures never crash the run) ---
+        # raw_outputs holds the SCORED text: stage-2 output when an
+        # extraction stage ran, else the stage-1 response.
         records: list[PredictionRecord] = []
-        for i, (ex, prompt, raw) in enumerate(zip(examples, prompts, raw_outputs)):
+        ext_list = (extraction_prompts if extraction_prompts is not None
+                    else [None] * len(examples))
+        for i, (ex, prompt, raw, rsn, ext) in enumerate(
+                zip(examples, prompts, raw_outputs, reasoning_list,
+                    ext_list)):
             try:
                 parsed = task.parse_answer(raw)
             except Exception as exc:  # parser must not kill the run
@@ -268,6 +458,11 @@ class Evaluator:
                 parse_success=parsed.success,
                 correct=correct,
                 score=s,
+                input_tokens=tracker.in_tokens[i],
+                output_tokens=tracker.out_tokens[i],
+                question=ex.question,
+                reasoning=rsn,
+                extraction_prompt=ext,
             ))
 
         metrics = compute_metrics(records)
@@ -281,6 +476,8 @@ class Evaluator:
             prompt_hash=prompt_hash, environment=environment, git=git,
             command=command, timestamp=timestamp,
             num_examples=len(examples), dataset_revision=dataset_revision,
+            performance=performance,
+            extraction_hash=extraction_hash,
         )
 
         # -- artifacts --------------------------------------------------
@@ -290,6 +487,12 @@ class Evaluator:
         io.write_jsonl(run_dir / "predictions.jsonl",
                        [r.to_dict() for r in records])
         io.write_json(run_dir / "environment.json", environment)
+        # Optional experiment tracking (never fails the run).
+        from eval_harness.runtime import wandb_logging
+        wandb_logging.log_evaluation(
+            config, run_id=run_id, run_dir=str(run_dir),
+            metrics=metrics, performance=manifest.get("performance"),
+        )
         # logs.txt already streaming via handler; append run summary line.
         with open(run_dir / "logs.txt", "a") as f:
             f.write(f"run completed: {run_id} "

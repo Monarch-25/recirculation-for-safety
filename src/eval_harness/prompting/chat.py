@@ -31,9 +31,16 @@ Give the final answer clearly."""
 # reproduction (see docs/evaluation_protocol.md).
 GSM8K_KOJIMA_V1 = "Q: {question} A: Let's think step by step."
 
+# Answer-extraction trigger for Kojima-style two-stage prompting.
+# Stage 2 input is "[stage1 prompt] [stage-1 reasoning] [this trigger]",
+# exactly the Kojima et al. (2022) "[X'] [Z] [A]" composition for
+# numerical answers.
+GSM8K_ANSWER_EXTRACT_V1 = "Therefore, the answer (arabic numerals) is"
+
 TEMPLATES: dict[tuple[str, str], str] = {
     ("gsm8k_cot_v1", "1.0"): GSM8K_COT_V1,
     ("gsm8k_kojima_v1", "1.0"): GSM8K_KOJIMA_V1,
+    ("gsm8k_answer_extract_v1", "1.0"): GSM8K_ANSWER_EXTRACT_V1,
 }
 
 

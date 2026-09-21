@@ -26,6 +26,7 @@ import modal
 GPU_TYPE = "A100-40GB"  # L4/A10G suffice for 1B-only iteration
 RESULTS_VOLUME = "recirc-results"
 HF_SECRET = "huggingface"  # must provide HF_TOKEN (gated Gemma access)
+WANDB_SECRET = "wandb"  # must provide WANDB_API_KEY; harmless if unset
 
 app = modal.App("recirc-eval")
 
@@ -39,6 +40,7 @@ image = (
         "huggingface-hub>=0.20",
         "numpy",
         "vllm>=0.7",
+        "wandb>=0.17",
     )
     .add_local_dir("src", remote_path="/root/recirc/src")
     .add_local_dir("scripts", remote_path="/root/recirc/scripts")
@@ -52,7 +54,8 @@ image = (
     timeout=60 * 60 * 6,  # full GSM8K headroom
     volumes={"/root/recirc/results": modal.Volume.from_name(
         RESULTS_VOLUME, create_if_missing=True)},
-    secrets=[modal.Secret.from_name(HF_SECRET)],
+    secrets=[modal.Secret.from_name(HF_SECRET),
+             modal.Secret.from_name(WANDB_SECRET)],
 )
 def run_eval(config: str, limit: int | None, batch_size: int | None) -> str:
     """Execute scripts/evaluate.py on the GPU worker; results persist."""

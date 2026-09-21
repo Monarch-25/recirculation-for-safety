@@ -79,6 +79,23 @@ def test_attn_implementation_passthrough():
     assert load_config_from_dict(raw).model.attn_implementation == "eager"
 
 
+def test_extraction_prompt_defaults_single_stage():
+    cfg = load_config_from_dict(_base())
+    assert cfg.prompt.extraction_template_name is None
+    assert cfg.prompt.extraction_template_version == "1.0"
+
+
+def test_extraction_prompt_parsed():
+    raw = _base()
+    raw["prompt"] = {"template_name": "gsm8k_kojima_v1",
+                     "extraction_template_name": "gsm8k_answer_extract_v1",
+                     "extraction_template_version": "1.0"}
+    cfg = load_config_from_dict(raw)
+    assert cfg.prompt.extraction_template_name == "gsm8k_answer_extract_v1"
+    d = cfg.to_dict()["prompt"]
+    assert d["extraction_template_name"] == "gsm8k_answer_extract_v1"
+
+
 def test_intervention_none_default():
     cfg = load_config_from_dict(_base())
     assert cfg.model.intervention.type == "none"

@@ -229,6 +229,10 @@ class TaskConfig:
 class PromptConfig:
     template_name: str = "gsm8k_cot_v1"
     template_version: str = "1.0"
+    # Second-stage answer-extraction template (Kojima "[X'] [Z] [A]").
+    # None = single-stage evaluation.
+    extraction_template_name: str | None = None
+    extraction_template_version: str = "1.0"
 
 
 @dataclass(frozen=True)
@@ -246,6 +250,9 @@ class RuntimeConfig:
 class ExperimentConfig:
     name: str = "experiment"
     evaluation_code_version: str = "0.1.0"
+    # W&B tracking (P2 research logging). None = disabled.
+    wandb_project: str | None = None
+    wandb_entity: str | None = None
 
 
 @dataclass(frozen=True)
@@ -287,6 +294,10 @@ class EvalConfig:
             "prompt": {
                 "template_name": self.prompt.template_name,
                 "template_version": self.prompt.template_version,
+                "extraction_template_name":
+                    self.prompt.extraction_template_name,
+                "extraction_template_version":
+                    self.prompt.extraction_template_version,
             },
             "generation": self.generation.to_dict(),
             "runtime": {
@@ -297,6 +308,8 @@ class EvalConfig:
             "experiment": {
                 "name": self.experiment.name,
                 "evaluation_code_version": self.experiment.evaluation_code_version,
+                "wandb_project": self.experiment.wandb_project,
+                "wandb_entity": self.experiment.wandb_entity,
             },
         }
 
@@ -392,6 +405,9 @@ def load_config_from_dict(
     prompt = PromptConfig(
         template_name=p.get("template_name", "gsm8k_cot_v1"),
         template_version=str(p.get("template_version", "1.0")),
+        extraction_template_name=p.get("extraction_template_name"),
+        extraction_template_version=str(
+            p.get("extraction_template_version", "1.0")),
     )
     generation = GenerationConfig(
         max_new_tokens=int(g.get("max_new_tokens", 512)),
@@ -408,6 +424,8 @@ def load_config_from_dict(
     experiment = ExperimentConfig(
         name=str(e.get("name", "experiment")),
         evaluation_code_version=str(e.get("evaluation_code_version", "0.1.0")),
+        wandb_project=e.get("wandb_project"),
+        wandb_entity=e.get("wandb_entity"),
     )
     return EvalConfig(
         model=model, task=task, prompt=prompt,

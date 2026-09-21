@@ -29,11 +29,19 @@ def build_task(config):
         dataset_id=config.task.dataset_id,
         dataset_config=config.task.dataset_config,
         dataset_revision=config.task.dataset_revision,
+        extraction_template_name=config.prompt.extraction_template_name,
+        extraction_template_version=config.prompt.extraction_template_version,
     )
 
 
 def build_model(config):
+    want_recirc = config.model.intervention.type == "recirculation"
     if config.model.backend == "vllm":
+        if want_recirc:
+            raise ValueError(
+                "intervention.type='recirculation' is not supported by the "
+                "vLLM backend yet (needs engine-level support); use the "
+                "default hf backend with RecirculationModelAdapter")
         from eval_harness.models.vllm_adapter import VLLMModelAdapter
         return VLLMModelAdapter(
             config.model.name,
@@ -52,6 +60,21 @@ def build_model(config):
         )
     if config.model.backend != "hf":
         raise ValueError(f"Unknown model backend: {config.model.backend!r}")
+    if want_recirc:
+        from eval_harness.models.recirculation import (
+            RecirculationModelAdapter,
+        )
+        return RecirculationModelAdapter(
+            config.model.name,
+            revision=config.model.revision,
+            tokenizer_revision=config.model.tokenizer_revision,
+            dtype=config.model.dtype,
+            device=config.model.device,
+            trust_remote_code=config.model.trust_remote_code,
+            use_chat_template=config.model.use_chat_template,
+            attn_implementation=config.model.attn_implementation,
+            intervention=config.model.intervention,
+        )
     return HFCausalLMAdapter(
         config.model.name,
         revision=config.model.revision,

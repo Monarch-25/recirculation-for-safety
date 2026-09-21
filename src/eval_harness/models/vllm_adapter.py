@@ -22,6 +22,9 @@ Platform notes:
 from __future__ import annotations
 
 import logging
+import multiprocessing
+import os
+import time
 from importlib import metadata
 from typing import Any, Sequence
 
@@ -29,7 +32,11 @@ from eval_harness.core.config import (
     InterventionConfig,
     normalize_intervention,
 )
-from eval_harness.core.interfaces import GenerationConfig, ModelAdapter
+from eval_harness.core.interfaces import (
+    BatchTiming,
+    GenerationConfig,
+    ModelAdapter,
+)
 from eval_harness.prompting.chat import check_bos_present, format_for_chat
 from eval_harness.utils.hub import resolve_hub_revision
 
@@ -65,6 +72,24 @@ class VLLMModelAdapter(ModelAdapter):
         seed: int = 0,
         intervention: InterventionConfig | dict[str, Any] | None = None,
     ) -> None:
+        # vLLM's v1 engine starts its EngineCore in a forked subprocess.
+        # If the parent has already initialized CUDA (e.g. an earlier
+        # torch.cuda.is_available() during device resolution), the child
+        # dies with "Cannot re-initialize CUDA in forked subprocess".
+        # Forcing spawn gives the child a fresh interpreter (documented
+        # vLLM workaround). No-op when already spawn or on CUDA-free
+        # machines; runs before any vLLM import/construction.
+        os.environ.setdefault("VLLM_WORKER_MULTIPROC_METHOD", "spawn")
+        # The v1 sampler defaults to a flashinfer JIT path that needs nvcc
+        # at engine warmup; minimal images (Modal debian_slim) ship only
+        # the CUDA runtime. Disabling it selects vLLM's torch-native
+        # sampler — identical greedy outputs, no compiler needed.
+        os.environ.setdefault("VLLM_USE_FLASHINFER_SAMPLER", "0")
+        try:
+            if multiprocessing.get_start_method(allow_none=True) != "spawn":
+                multiprocessing.set_start_method("spawn", force=True)
+        except RuntimeError as exc:
+            log.warning("could not force spawn start method: %s", exc)
         try:
             from vllm import LLM
         except ImportError as exc:
@@ -203,11 +228,32 @@ class VLLMModelAdapter(ModelAdapter):
             log.warning("BOS probe skipped (%s)", exc)
         params = self._sampling_params(config)
         # vLLM returns outputs in input order.
+        t0 = time.perf_counter()
         request_outputs = self._llm.generate(formatted, params)
+        elapsed = time.perf_counter() - t0
         results = []
+        in_list: list[int] = []
+        out_list: list[int] = []
+        counts_ok = True
         for prompt, req in zip(formatted, request_outputs):
             if not req.outputs:
                 raise RuntimeError(
                     f"vLLM returned no completions for prompt: {prompt[:120]!r}")
             results.append(req.outputs[0].text)
+            plen = (len(req.prompt_token_ids)
+                    if getattr(req, "prompt_token_ids", None) else None)
+            comp_ids = getattr(req.outputs[0], "token_ids", None)
+            clen = len(comp_ids) if comp_ids is not None else None
+            if plen is None or clen is None:
+                counts_ok = False
+            else:
+                in_list.append(plen)
+                out_list.append(clen)
+        # Engine prefill/decode are fused; only total time is measurable.
+        self.last_batch_info = BatchTiming(
+            input_tokens=in_list if counts_ok else None,
+            output_tokens=out_list if counts_ok else None,
+            prefill_seconds=None,
+            generation_seconds=elapsed,
+        )
         return results

@@ -56,6 +56,24 @@ class GenerationConfig:
         }
 
 
+@dataclass
+class BatchTiming:
+    """Optional per-generate()-call stats reported by model adapters.
+
+    Convention (P2 §32): an adapter MAY set ``self.last_batch_info`` to a
+    ``BatchTiming`` at the end of each :meth:`ModelAdapter.generate` call.
+    The evaluator consumes it (then clears it) once per batch. Token
+    lists align with the ``prompts`` argument order. Every field is
+    optional — adapters report only what they can measure honestly and
+    leave the rest None (never fabricate; the evaluator records nulls).
+    """
+
+    input_tokens: list[int] | None = None
+    output_tokens: list[int] | None = None
+    prefill_seconds: float | None = None
+    generation_seconds: float | None = None
+
+
 # ---------------------------------------------------------------------------
 # Model adapter
 # ---------------------------------------------------------------------------
@@ -70,7 +88,12 @@ class ModelAdapter(ABC):
     Future adapters (Recirculation, vLLM, Modal, API) implement this
     same contract, potentially with token-by-token ``forward()``
     internals, while the evaluator remains unaware.
+
+    Adapters MAY publish per-call stats via the ``last_batch_info``
+    attribute (a :class:`BatchTiming` or None); see its docstring.
     """
+
+    last_batch_info: BatchTiming | None = None
 
     @property
     @abstractmethod
@@ -169,6 +192,18 @@ class Task(ABC):
     The task owns dataset loading, prompt construction, answer
     extraction, and scoring. It MUST NOT know whether the model is a
     baseline, Recirculation, or any future intervention.
+
+    Two-stage protocols (e.g. Kojima reasoning + answer extraction) are
+    supported via an OPTIONAL method::
+
+        def build_extraction_prompt(
+            self, example: EvalExample, reasoning: str) -> str | None: ...
+
+    Tasks without this method (checked via getattr) run single-stage.
+    Tasks with it return None to stay single-stage, or a second-stage
+    prompt string per example. The evaluator runs both stages through
+    the same model adapter and generation config, scores the FINAL
+    output, and records the stage-1 reasoning alongside.
     """
 
     @property

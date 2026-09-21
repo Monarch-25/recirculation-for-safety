@@ -234,25 +234,80 @@ prompt/parse/score/dataset interpretation requires a version bump + a note there
 
 ### Next steps (ordered)
 
-- [ ] **1. `RecirculationModelAdapter` (the main build).** HF-based,
-  frozen weights, serial path: normal pass → record source/dest
-  residuals → destination-L2 rescale (+eps) → `α·s + β·d` (honor
-  `effective_beta`) → rerun layers `d+1..N` → overwrite upper KV.
-  Ramping over first N tokens; opt-in debug norms/cosine; assert layer
-  bounds at init; document cross-step semantics in code. Reuse
-  `HFCausalLMAdapter` loading/device/dtype/chat machinery (subclass or
-  compose — cleanest fit wins).
-- [ ] **2. Invariant + determinism tests.** alpha=0 ≡ baseline;
-  `none` ≡ recirc(α=0) integration test; batch 1/2/4 invariance and
-  twice-identical reruns against the new adapter (mock where possible,
-  tiny-real where not).
-- [ ] **3. `compare_runs.py` + §32 timing hooks.** File-output paired
-  comparison (comparison.json/csv, transitions, Δ-accuracy, length
-  stats); evaluator phase timing (prefill/decode/token counts) before
-  Runs 1–3 so no run must be repeated for missing metadata.
-- [ ] **4. Modal access (user) → Runs 1–3.** `modal secret create
-  huggingface HF_TOKEN=…`; 1B baseline n=5 → recirc n=5 → 50-pair;
-  verify BOS-ok logs, manifest pins, paired tables.
+- [x] **0. Kojima two-stage prompting (2026-09-22).** Real Kojima
+  protocol: stage 1 reasoning (`gsm8k_kojima_v1`), stage 2
+  `"[X'] [Z] Therefore, the answer (arabic numerals) is"`
+  (`gsm8k_answer_extract_v1` v1.0) through the SAME adapter +
+  generation config; parser scores the final output. Evaluator
+  auto-detects via optional `Task.build_extraction_prompt`
+  (all-or-nothing, else loud error); records gain
+  `reasoning`/`extraction_prompt`; manifest gains `prompt.extraction`
+  (null unless extraction actually ran); `evaluation_code_version`
+  bumped to `0.2.0` in all 10 configs. Proven: mock two-stage +
+  batch invariance + real SmolLM2 smoke. Full suite: 109 passed,
+  1 skipped. Previous single-stage GPU numbers are now superseded —
+  re-run baselines under two-stage before any claim.
+
+- [x] **1. `RecirculationModelAdapter` (2026-09-22).** Built in
+  `src/eval_harness/models/recirculation.py`: subclasses
+  `HFCausalLMAdapter` (reuses loading/device/dtype/tokenizer/revision),
+  serial token-by-token cross-step loop, pre-hook at block `d+1` input,
+  capture hook at block `s` output, warm-up at position 0, provisional
+  linear ramp, opt-in `debug_steps` norm/cosine tracing (capped),
+  `layer_indexing_convention` + `recurrence_variant` in metadata,
+  layer bounds fail-fast via Hub config probe (backstop post-load).
+  `scripts/evaluate.py` dispatches `intervention.type=recirculation`
+  (hf) and rejects vLLM+recirc with an explanatory error.
+- [x] **2. Invariant + determinism tests (2026-09-22).**
+  `tests/unit/test_recirculation.py` (9 offline: mix math, eps safety,
+  ramp, round-trip) + `tests/integration/test_recirculation.py`
+  (`-m model`, SmolLM2 local): **alpha=0 outputs byte-identical to
+  `HFCausalLMAdapter`**, twice-identical determinism, batch invariance,
+  debug capture, bounds rejection. Full suite: 86 passed, 1 skipped.
+- [x] **3. `compare_runs.py` + §32 timing hooks (2026-09-22).**
+  `BatchTiming` convention (`interfaces.py`): adapters publish per-call
+  input/output token lists + prefill/decode seconds; evaluator consumes
+  per batch, aggregates, nulls anything unmeasured. Manifest gains a
+  `performance` block (wall/prefill/decode, in/out tokens, tok/s, CUDA
+  peak else null, coverage flag); `PredictionRecord` gains
+  `input_tokens/output_tokens/question` (additive; old runs compare).
+  HF reports totals, recirc a genuine prefill/decode split, vLLM
+  best-effort, mock nulls. `scripts/compare_runs.py` writes
+  comparison.json/csv + summary.json + report.txt into `comparisons/`
+  (runs stay immutable): cells, deltas (relative null-safe),
+  rescued/regressed, length stats + answer-offset heuristic.
+  Proven live: old batch1-vs-batch2 identical (0 changed, coverage 0.00
+  on pre-instrumentation runs); fresh HF n=2 (tok/s 13.0, coverage 1.00)
+  vs fresh SmolLM2-recirc n=2 (prefill 12.9s / decode 9.2s — the paper's
+  §31 serial-prefill phenomenon, measured). Full suite: 94 passed,
+  1 skipped.
+- [x] **4a. Modal access + GPU smoke Run 1 (2026-09-22).**
+  vLLM engine fixed twice (spawn for fork bug, `FLASHINFER_SAMPLER=0`
+  for missing nvcc) + `max_model_len: 4096` warmup trim. Gemma-3-1b-PT
+  baseline n=5 on A100: **success** (`run_20260921_195252_1e08cf`,
+  Kojima prompt, pins `fcf18a2a`/`740312ad`, greedy, batch 16,
+  **1322 tok/s**, coverage 1.00, wandb `recirc-gsm8k` logged).
+  Result 0/5 accuracy is a smoke-test non-claim (1B PT zero-shot).
+  Known gaps: `peak_memory_bytes` was 0 (parent-process counter
+  meaningless for vLLM → now recorded null), `git` null on Modal
+  (no repo in image — bake a sha later if needed).
+- [x] **4b. Recirc n=5 + first GPU paired compare (2026-09-22).**
+  Recirc (`11→4 α.15`, HF backend on A100) n=5: success
+  (`run_20260921_195803_b59052`, prefill 28.2s / decode 174.1s serial,
+  peak 2.08 GB real, wandb logged). Paired vs vLLM baseline:
+  5 common, 0.0 vs 0.0 acc (non-claim, 1B PT zero-shot), **2 changed
+  examples**, shorter recirc traces (1348 vs 1564 mean chars);
+  comparison + deltas logged to wandb (`comparisons/gpu_smoke_base_vs_recirc`).
+  Caveat: backends differ (vLLM baseline vs HF recirc) — fine for smoke,
+  full runs should share a backend where possible.
+- [x] **4c. 50-pair on GPU (2026-09-22).** Baseline
+  (`run_20260921_200944_e94ca7`, 2831 tok/s) vs recirc
+  (`run_20260921_200454_b4dbcd`): 50 common, 0.0 vs 0.0 acc
+  (1B-PT floor, non-claim), **39/50 changed outputs**, recirc 0 parse
+  failures vs baseline 2, shorter traces (1358 vs 1481 mean chars).
+  Logged to wandb (`comparisons/gpu_50_base_vs_recirc`).
+- [ ] **5. Run 4 (full 1B pair) + freeze `docs/phase2_gsm8k_protocol.md`
+  + lm-harness cross-check.** Only then Runs 5–6 (4B).
 - [ ] **5. Run 4 (full 1B pair) + freeze `docs/phase2_gsm8k_protocol.md`
   + lm-harness cross-check.** Only then Runs 5–6 (4B).
 - [ ] **6. Defer explicitly:** 4B/12B configs (trivial clones once 1B

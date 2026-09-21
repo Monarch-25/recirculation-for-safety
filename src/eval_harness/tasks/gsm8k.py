@@ -20,7 +20,6 @@ from eval_harness.parsing.gsm8k import GSM8KAnswerParser
 from eval_harness.prompting.chat import get_template
 from eval_harness.scoring.gsm8k import GSM8KScorer
 from eval_harness.utils.hashing import sha256_hex
-
 log = logging.getLogger(__name__)
 
 PRIMARY_DATASET_ID = "openai/gsm8k"
@@ -44,6 +43,8 @@ class GSM8KTask(Task):
         dataset_id: str = PRIMARY_DATASET_ID,
         dataset_config: str = DATASET_CONFIG,
         dataset_revision: str | None = None,
+        extraction_template_name: str | None = None,
+        extraction_template_version: str = "1.0",
     ) -> None:
         self._template = get_template(template_name, template_version)
         self._parser = GSM8KAnswerParser()
@@ -53,6 +54,12 @@ class GSM8KTask(Task):
         self._dataset_revision = dataset_revision
         self._resolved_dataset_id = dataset_id
         self._resolved_dataset_revision = dataset_revision
+        self.extraction_template_name = extraction_template_name
+        self.extraction_template_version = extraction_template_version
+        self._extract_template = (
+            get_template(extraction_template_name,
+                         extraction_template_version)
+            if extraction_template_name else None)
 
     @property
     def dataset_revision(self) -> str | None:
@@ -121,6 +128,18 @@ class GSM8KTask(Task):
     def build_prompt(self, example: EvalExample) -> str:
         return self._template.render(question=example.question)
 
+    def build_extraction_prompt(
+        self,
+        example: EvalExample,
+        reasoning: str,
+    ) -> str | None:
+        """Stage-2 prompt ("[X'] [Z] [A]"), or None for single-stage."""
+        if self._extract_template is None:
+            return None
+        stage1 = self.build_prompt(example)
+        trigger = self._extract_template.render()
+        return f"{stage1} {reasoning.strip()} {trigger}".strip()
+
     def parse_answer(self, output: str) -> ParsedAnswer:
         return self._parser.parse(output)
 
@@ -136,10 +155,14 @@ class GSM8KTask(Task):
         rows: list[dict[str, str]],
         template_name: str = "gsm8k_cot_v1",
         template_version: str = "1.0",
+        extraction_template_name: str | None = None,
+        extraction_template_version: str = "1.0",
     ) -> tuple["GSM8KTask", list[EvalExample]]:
         """Build a task + example list from in-memory rows (tests only)."""
         task = cls(template_name=template_name,
-                   template_version=template_version)
+                   template_version=template_version,
+                   extraction_template_name=extraction_template_name,
+                   extraction_template_version=extraction_template_version)
         examples = [
             EvalExample(
                 example_id=make_example_id(i, r["question"]),
