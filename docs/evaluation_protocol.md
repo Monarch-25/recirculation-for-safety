@@ -104,3 +104,35 @@ Run dir `results/<task>/<model-slug>/run_<UTC-stamp>_<shortid>/` holds
 Before research claims, validate against `lm-evaluation-harness`
 (`lm_eval --model hf --tasks gsm8k`) under the same greedy protocol and
 document any delta (prompt wording and answer regex are the usual sources).
+
+## Phase 2 addendum — PT models and Kojima wording
+
+Applies to `google/gemma-3-{1b,4b,12b}-pt` runs. The v0.1.0 contract above
+is unchanged for instruct models; this section freezes the PT variant.
+
+- **Prompt template (`gsm8k_kojima_v1`, version `1.0`)**, paper-following
+  wording (Kojima et al. 2022):
+  ```text
+  Q: {question} A: Let's think step by step.
+  ```
+  SINGLE-STAGE: one generation per example + the unchanged
+  `gsm8k_parser v1.0` / `gsm8k_exact_match v1.0`. This is NOT Kojima's
+  two-stage protocol (no second "Therefore, the answer (arabic numerals)
+  is" extraction call). Comparisons against the paper are therefore
+  **qualitative replications**, never exact reproductions.
+- **PT rendering:** `model.use_chat_template: false`. Base models get the
+  raw prompt with no chat-template wrapping.
+- **BOS requirement (paper-v2 confound):** every input window MUST start
+  with BOS. Adapters verify the first token id after tokenization and log
+  a warning otherwise (`prompting.chat.check_bos_present`). Gemma results
+  without BOS are not trustworthy.
+- **Layer indexing:** 0-based transformer blocks; `source_layer >
+  destination_layer` enforced at config load (identity rejected).
+  Semantics: mix at boundary `d`, rerun layers `d+1..N`, upper KV
+  overwritten (corroborated by the public vLLM Recirculation RFC).
+- **Ramping (1B, provisional):** linear ramp of alpha over the first
+  `ramp_tokens` (default 10, RFC-following). The exact paper schedule is
+  TBD; whatever is used is recorded in `manifest.model.intervention`.
+- **Pinned vs floating configs:** `configs/*_pinned.yaml` are official
+  (pinned model/tokenizer/dataset revisions). Unpinned twins are for
+  iteration. In both cases the manifest sha is the canonical record.

@@ -23,8 +23,17 @@ GSM8K_COT_V1 = """Solve the following math problem step by step.
 
 Give the final answer clearly."""
 
+# Kojima-style zero-shot CoT (paper-following wording for PT models).
+# This is SINGLE-STAGE: one generation + regex answer parsing, unlike
+# Kojima et al. (2022) two-stage prompting with a second
+# "Therefore, the answer (arabic numerals) is" extraction call.
+# Label comparisons honestly: qualitative replication, not exact
+# reproduction (see docs/evaluation_protocol.md).
+GSM8K_KOJIMA_V1 = "Q: {question} A: Let's think step by step."
+
 TEMPLATES: dict[tuple[str, str], str] = {
     ("gsm8k_cot_v1", "1.0"): GSM8K_COT_V1,
+    ("gsm8k_kojima_v1", "1.0"): GSM8K_KOJIMA_V1,
 }
 
 
@@ -76,3 +85,34 @@ def format_for_chat(
             except Exception as exc:
                 log.warning("chat template failed, using raw prompt: %s", exc)
     return prompt
+
+
+def check_bos_present(tokenizer: Any, input_ids: Any, context: str = "") -> bool:
+    """Guard against the paper-v2 BOS confound.
+
+    Gemma expects a BOS token at the start of every input window; a
+    missing BOS inflates baseline perplexity and distorts intervention
+    effects. Returns True when BOS handling looks correct (or the
+    tokenizer defines no BOS token), False + warning otherwise.
+    Adapters should call this after tokenization; it never raises.
+    """
+    try:
+        bos_id = getattr(tokenizer, "bos_token_id", None)
+        if bos_id is None:
+            return True
+        first = input_ids[0][0] if hasattr(input_ids, "__getitem__") else None
+        try:
+            first_id = int(first.tolist()) if hasattr(first, "tolist") else int(first)
+        except (TypeError, ValueError):
+            return True  # uninspectable batch layout; don't cry wolf
+        if first_id != int(bos_id):
+            log.warning(
+                "first input token id=%s is not BOS id=%s %s; "
+                "Gemma-family results without BOS are unreliable",
+                first_id, bos_id, f"({context})" if context else "",
+            )
+            return False
+        return True
+    except Exception as exc:
+        log.warning("BOS check failed (%s); continuing", exc)
+        return True

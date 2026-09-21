@@ -156,3 +156,29 @@ Key files: `scripts/evaluate.py`, `src/eval_harness/core/{interfaces,evaluator,c
 `src/eval_harness/{models/hf_causal_lm,tasks/gsm8k,parsing/gsm8k,scoring/gsm8k,prompting/chat,runtime/*}.py`,
 `configs/gsm8k_smollm2_360m{,_debug,_vllm}.yaml`, `docs/evaluation_protocol.md` (frozen contract — any change to
 prompt/parse/score/dataset interpretation requires a version bump + a note there).
+
+## 5. Phase 2 kickoff (2026-09-22, uncommitted)
+
+Decisions locked: **pinned configs**, **Kojima wording single-stage**,
+**Modal GPU scaffold (1B focus, no run yet)**, **skip full SmolLM2 run**.
+
+- `InterventionConfig` (typed, validated) in `core/config.py`: `none` |
+  `recirculation` with source/dest/alpha/beta/mixture/normalization/ramp;
+  `effective_beta` resolves convex→`1-alpha`, nonconvex→`1.0`; manifest
+  records the full record. `source<=dest` rejected at load.
+- `gsm8k_kojima_v1` template (`Q: {q} A: Let's think step by step.`);
+  protocol addendum in `docs/evaluation_protocol.md` (PT raw prompt,
+  BOS requirement, 0-based block indexing, provisional 1B ramp=10).
+- BOS guard `check_bos_present` wired into both adapters (paper-v2
+  confound; warn-only, never fails a run).
+- Pins: SmolLM2 `a10cc15…`, Gemma-1B-PT `fcf18a2a…`, Gemma-4B-PT
+  `cc012e0a…` (verified accessible), dataset `740312ad…`.
+- 6 new configs: 2 pinned SmolLM2 + 4 Gemma-1B (baseline/recirc ×
+  hf/vllm). Recirc configs validate but cannot execute until
+  `RecirculationModelAdapter` lands (noted in-file).
+- `modal_app.py` scaffold (A100-40GB, vLLM image, results volume,
+  `huggingface` secret for `HF_TOKEN`); `py_compile` clean, never run.
+- Secrets: `access_tokens.txt` gitignored; HF token verified against the
+  Hub in-process (values never printed/stored).
+- Verify state: `pytest` 71 passed/1 skipped; all 9 configs parse;
+  pinned + Gemma dry-runs pass. Next: commit, then `RecirculationModelAdapter`.

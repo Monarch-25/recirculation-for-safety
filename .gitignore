@@ -5,3 +5,5 @@ results/*/
 !results/.gitkeep
 .hf_cache/
 *.egg-info/
+# Secrets — never commit. Local-only tokens (HF/Modal).
+access_tokens.txt

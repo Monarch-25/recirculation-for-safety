@@ -25,8 +25,12 @@ import logging
 from importlib import metadata
 from typing import Any, Sequence
 
+from eval_harness.core.config import (
+    InterventionConfig,
+    normalize_intervention,
+)
 from eval_harness.core.interfaces import GenerationConfig, ModelAdapter
-from eval_harness.prompting.chat import format_for_chat
+from eval_harness.prompting.chat import check_bos_present, format_for_chat
 from eval_harness.utils.hub import resolve_hub_revision
 
 log = logging.getLogger(__name__)
@@ -59,7 +63,7 @@ class VLLMModelAdapter(ModelAdapter):
         enforce_eager: bool = False,
         max_model_len: int | None = None,
         seed: int = 0,
-        intervention: dict[str, Any] | None = None,
+        intervention: InterventionConfig | dict[str, Any] | None = None,
     ) -> None:
         try:
             from vllm import LLM
@@ -83,7 +87,7 @@ class VLLMModelAdapter(ModelAdapter):
         self._gpu_memory_utilization = gpu_memory_utilization
         self._enforce_eager = enforce_eager
         self._max_model_len = max_model_len
-        self._intervention = dict(intervention or {"type": "none"})
+        self._intervention = normalize_intervention(intervention)
 
         llm_kwargs: dict[str, Any] = {
             "model": model_id,
@@ -189,6 +193,14 @@ class VLLMModelAdapter(ModelAdapter):
         tokenizer = self._llm.get_tokenizer()
         formatted = [format_for_chat(tokenizer, p, self._use_chat_template)
                      for p in prompts]
+        # Best-effort BOS guard (paper-v2 confound); engine owns batching
+        # so we probe only the first prompt and never fail the run.
+        try:
+            check_bos_present(
+                tokenizer, [tokenizer.encode(formatted[0])],
+                context=f"model={self._model_id}")
+        except Exception as exc:
+            log.warning("BOS probe skipped (%s)", exc)
         params = self._sampling_params(config)
         # vLLM returns outputs in input order.
         request_outputs = self._llm.generate(formatted, params)

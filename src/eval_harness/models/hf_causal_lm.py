@@ -21,8 +21,12 @@ import numpy as np
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+from eval_harness.core.config import (
+    InterventionConfig,
+    normalize_intervention,
+)
 from eval_harness.core.interfaces import GenerationConfig, ModelAdapter
-from eval_harness.prompting.chat import format_for_chat
+from eval_harness.prompting.chat import check_bos_present, format_for_chat
 from eval_harness.runtime import reproducibility
 from eval_harness.utils.hub import resolve_hub_revision
 
@@ -74,7 +78,7 @@ class HFCausalLMAdapter(ModelAdapter):
         trust_remote_code: bool = False,
         use_chat_template: bool = True,
         attn_implementation: str | None = None,
-        intervention: dict[str, Any] | None = None,
+        intervention: InterventionConfig | dict[str, Any] | None = None,
     ) -> None:
         if dtype not in _DTYPE_MAP:
             raise ValueError(f"Unsupported dtype '{dtype}'")
@@ -86,7 +90,7 @@ class HFCausalLMAdapter(ModelAdapter):
         self._trust_remote_code = trust_remote_code
         self._use_chat_template = use_chat_template
         self._attn_implementation = attn_implementation
-        self._intervention = dict(intervention or {"type": "none"})
+        self._intervention = normalize_intervention(intervention)
 
         torch_dtype = _DTYPE_MAP[dtype]
         log.info("loading tokenizer %s rev=%s", model_id, self._tokenizer_revision)
@@ -175,6 +179,9 @@ class HFCausalLMAdapter(ModelAdapter):
 
         formatted = [self._format_prompt(p) for p in prompts]
         enc = self.tokenizer(formatted, return_tensors="pt", padding=True)
+        check_bos_present(
+            self.tokenizer, enc["input_ids"],
+            context=f"model={self._model_id}")
         input_ids = enc["input_ids"].to(self._device)
         attention_mask = enc.get("attention_mask")
         if attention_mask is not None:

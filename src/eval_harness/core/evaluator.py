@@ -103,7 +103,7 @@ class Evaluator:
                 "dtype": model_meta.get("dtype", config.model.dtype),
                 "device": model_meta.get("device", None),
                 "device_requested": config.model.device,
-                "intervention": config.model.intervention,
+                "intervention": config.model.intervention.to_dict(),
                 "extra": {
                     k: v for k, v in model_meta.items()
                     if k not in ("name", "revision", "tokenizer_revision",

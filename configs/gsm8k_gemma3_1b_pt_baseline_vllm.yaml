@@ -1,0 +1,47 @@
+# Phase 2 — Gemma3 1B PT baseline via vLLM (GPU/Modal, pinned).
+# Same protocol as gsm8k_gemma3_1b_pt_baseline.yaml; only the inference
+# backend differs. vLLM has Linux-only wheels; run on GPU workers.
+model:
+  name: google/gemma-3-1b-pt
+  backend: vllm
+  revision: fcf18a2a879aab110ca39f8bffbccd5d49d8eb29
+  tokenizer_revision: fcf18a2a879aab110ca39f8bffbccd5d49d8eb29
+  dtype: auto
+  device: auto
+  trust_remote_code: false
+  use_chat_template: false
+  tensor_parallel_size: 1
+  gpu_memory_utilization: 0.9
+  enforce_eager: false
+  max_model_len: null
+  intervention:
+    type: none
+
+task:
+  name: gsm8k
+  version: "1.0"
+  split: test
+  limit: null
+  dataset_id: openai/gsm8k
+  dataset_config: main
+  dataset_revision: 740312add88f781978c0658806c59bc2815b9866
+
+prompt:
+  template_name: gsm8k_kojima_v1
+  template_version: "1.0"
+
+generation:
+  max_new_tokens: 512
+  temperature: 0.0
+  top_p: 1.0
+  do_sample: false
+  seed: 42
+
+runtime:
+  batch_size: 16
+  output_dir: results
+  seed: 42
+
+experiment:
+  name: gsm8k_gemma3_1b_pt_baseline_vllm
+  evaluation_code_version: "0.1.0"
