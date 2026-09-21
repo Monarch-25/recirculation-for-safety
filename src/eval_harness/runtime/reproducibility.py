@@ -43,19 +43,12 @@ def get_git_metadata(repo: str | Path | None = None) -> dict[str, Any]:
             )
             if out.returncode != 0:
                 return None
-            return out.stdout.strip() or None
-        meta["commit"] = _run("rev-parse", "HEAD")
-        meta["branch"] = _run("rev-parse", "--abbrev-ref", "HEAD")
+            return out.stdout.strip()
+        meta["commit"] = _run("rev-parse", "HEAD") or None
+        meta["branch"] = _run("rev-parse", "--abbrev-ref", "HEAD") or None
         status = _run("status", "--porcelain")
-        meta["dirty"] = (len(status) > 0) if status is not None else None
-        if status is None and meta["commit"] is None:
-            meta["dirty"] = None
-        elif status is None:
-            meta["dirty"] = None
-        elif status == "":
-            meta["dirty"] = False
-        else:
-            meta["dirty"] = True
+        # status is None only when git failed; "" means a clean tree.
+        meta["dirty"] = None if status is None else bool(status)
     except Exception:
         pass
     return meta

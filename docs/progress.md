@@ -1,7 +1,7 @@
 # Progress vs `research_plan.md` — agent guide
 
 > Purpose: single source of truth for "where are we, what's proven, what's next".
-> Plan source: `docs/research_plan.md` (§1–§53). Last checked: 2026-09-21.
+> Plan source: `docs/research_plan.md` (§1–§53). Last checked: 2026-09-21 (steps 1–3 re-verified this date).
 > Working dir: `/Users/mozart/Documents/ml/research/recirculation`.
 
 ## 1. TL;DR
@@ -16,15 +16,18 @@ not new architecture. **Do NOT implement Recirculation, safety benchmarks, Modal
 | GSM8K + SmolLM2-360M-Instruct (<500M) on MPS | ✅ Done, 2 real runs, acc 0.2 @ n=5 |
 | Determinism, batching, ordering, per-example JSONL, manifests | ✅ Done in code + mock tests |
 | Docs (`README.md`, `docs/evaluation_protocol.md`) | ✅ Done |
-| Acceptance evidence (§47 steps 1–6) | ⚠️ Partial — artifacts exist, but `pytest` / `--dry-run` / batch-invariance re-check not re-run in this session |
-| Git traceability | ❌ Gap — not a git repo, manifests have `git: {null,null,null}` |
-| Minor metadata gaps | ⚠️ `tokenizer_revision: null`, `ram_gb: null` on macOS |
+| Acceptance evidence (§47 steps 1–6) | ✅ Done 2026-09-21 — pytest 56 passed/1 skipped, dry-run ok, 2 fresh n=5 runs, paired table clean |
+| Git traceability | ✅ Fixed 2026-09-21 — repo init'd (`4eaffe0`), manifests carry real commit/branch/dirty |
+| Minor metadata gaps | ✅ Fixed 2026-09-21 — `tokenizer_revision` resolves to model sha; `dirty=false` on clean trees (was `None`) |
 | Future work (full 1319, lm-harness cross-check, Recirculation, Modal) | ⏳ Intentionally not started |
 
 Existing runs (do not delete):
-- `results/gsm8k/smollm2-360m-instruct/run_20260905_063204_7ae5c7/` (`--limit 5`)
-- `results/gsm8k/smollm2-360m-instruct/run_20260905_064219_0f658c/` (`--limit 5 --batch-size 2`)
-- Both contain all 6 artifacts and score `acc=0.2, parse_rate=1.0, n=5`.
+- `results/gsm8k/smollm2-360m-instruct/run_20260905_063204_7ae5c7/` (`--limit 5`, pre-git, null git fields)
+- `results/gsm8k/smollm2-360m-instruct/run_20260905_064219_0f658c/` (`--limit 5 --batch-size 2`, pre-git)
+- `results/gsm8k/smollm2-360m-instruct/run_20260921_171914_3e3edf/` (`--limit 5`, batch 1 — acceptance re-run)
+- `results/gsm8k/smollm2-360m-instruct/run_20260921_172120_1cbda9/` (`--limit 5 --batch-size 2` — acceptance re-run)
+- All n=5 runs score `acc=0.2, parse_rate=1.0`. The 2026-09-21 pair has real git fields,
+  `tokenizer_revision == model revision == a10cc15…`, and byte-identical `raw_output` per `example_id`.
 
 ## 2. Section-by-section status
 
@@ -64,8 +67,8 @@ Existing runs (do not delete):
 ### Reproducibility (§18–§22)
 | Plan | Status | Evidence |
 |---|---|---|
-| §18 mandatory list (git, python, torch, transformers, cuda, model/dataset/tokenizer rev, dtype, seed, gen, batch, prompt, task+code version) | ⚠️ | All collected **except** git (null — no repo) and `tokenizer_revision` (null). Code: `core/evaluator.py:build_manifest`, `runtime/environment.py`, `runtime/hardware.py`, `runtime/reproducibility.py` |
-| §19 git commit/branch/dirty, never fail, warn on dirty | ✅ code / ❌ env | Code correct; env has no `.git` (`git log` fails). Manifests show nulls |
+| §18 mandatory list (git, python, torch, transformers, cuda, model/dataset/tokenizer rev, dtype, seed, gen, batch, prompt, task+code version) | ✅ (2026-09-21) | All present in fresh manifests; git real, tokenizer resolved. Code: `core/evaluator.py:build_manifest`, `runtime/environment.py`, `runtime/hardware.py`, `runtime/reproducibility.py` |
+| §19 git commit/branch/dirty, never fail, warn on dirty | ✅ code + env (2026-09-21) | Commit `4eaffe0`, dirty correctly `true` with uncommitted changes. Also fixed a bug: clean trees reported `dirty=None` (empty porcelain mapped to None); now `false`. See `runtime/reproducibility.py:get_git_metadata` |
 | §20–21 package + CUDA/device metadata, `null` when unavailable, no `nvidia-smi` assumption | ✅ | `environment.json` shows `mps/device`, `cuda_available:false`, `cuda_version:null`, `gpu_model:"Apple Apple M2"` |
 | §22 single `collect_environment_metadata()` | ✅ | `src/eval_harness/runtime/environment.py:23` |
 
@@ -92,7 +95,7 @@ Existing runs (do not delete):
 |---|---|---|
 | §45 lm-eval-harness cross-check | ⏳ documented, not run (correct) | `docs/evaluation_protocol.md:102` |
 | §46 `README.md` + `docs/evaluation_protocol.md` contract | ✅ | Both exist; README covers install/test/dry-run/smoke/full/results |
-| §47 steps 1–6 | ⚠️ partial (see §3 below) | Artifacts prove steps 3–5; steps 1, 2, 6 need one clean re-run |
+| §47 steps 1–6 | ✅ (2026-09-21, see §3 below) | `pytest` 56 passed/1 skipped; dry-run ok; 2 fresh n=5 runs with all 6 files and 7-key rows; batch 1 vs 2 byte-identical |
 | §48 CLI output | ✅ ~minor | Matches spec except header lacks pre-execution `Run ID` (ID is created inside `evaluate()` — acceptable, don't fake it) |
 | §52 deliverables 1–18 | ✅ | All files present; #18 M2 commands in README |
 | §53 swappability (HF→Recirculation, same task/prompts/scoring/schema) | ✅ by construction | HF + vLLM already swap with zero evaluator/task change |
@@ -101,26 +104,36 @@ Existing runs (do not delete):
 
 **Do these in order. Stop after item 4 unless the user explicitly asks for scale-up.**
 
-- [ ] **1. Make the directory a git repo (fixes §19 traceability).**
+- [x] **1. Make the directory a git repo (fixes §19 traceability).** — Done by user 2026-09-21 (`4eaffe0 Phase-1 harness baseline`).
   ```bash
   git init && git add -A && git commit -m "Phase-1 harness baseline"
   python scripts/evaluate.py --config configs/gsm8k_smollm2_360m_debug.yaml --dry-run
   ```
-  Expect: new manifests get real `git.commit/branch/dirty` instead of nulls.
+  ~~Expect~~ New manifests carry real `git.commit/branch/dirty` instead of nulls. ✅ Confirmed.
 
-- [ ] **2. Fix `tokenizer_revision: null` (small, §7/§18).**
-  In `src/eval_harness/models/hf_causal_lm.py`, when `tokenizer_revision` is unpinned it should fall back to the resolved model sha (vLLM adapter already does this at `vllm_adapter.py:119`). Then re-run `--limit 5` and confirm `manifest.model.tokenizer_revision == manifest.model.revision`.
+- [x] **2. Fix `tokenizer_revision: null` (small, §7/§18).** — No edit needed: the fallback
+  (`hf_causal_lm.py:116-119`, tokenizer defaults to resolved model sha) was already in the
+  committed code; the Sept-5 nulls came from pre-commit code. Fresh manifests confirm
+  `tokenizer_revision == revision == a10cc15…`. ✅ Verified, not changed.
+  Bonus fix in the same area: `get_git_metadata()` reported `dirty=None` on clean trees
+  (empty porcelain output was mapped to None, leaving a dead `status == ""` branch).
+  Fixed in `src/eval_harness/runtime/reproducibility.py` — now `false` when clean,
+  `true` when dirty, `None` only when git fails. **Uncommitted — needs a commit.**
+  Offline tests re-run green after the edit (55 passed).
 
-- [ ] **3. Re-run the §47 acceptance chain cleanly (conda env `torch` — plain `python` here has no `pytest`).**
+- [x] **3. Re-run the §47 acceptance chain cleanly (conda env `torch`).** — Done 2026-09-21:
   ```bash
   conda activate torch
-  pytest -q                                  # §47 step 1, must be green offline
-  python scripts/evaluate.py --config configs/gsm8k_smollm2_360m_debug.yaml --dry-run   # step 2
-  python scripts/evaluate.py --config configs/gsm8k_smollm2_360m_debug.yaml --limit 5    # step 3 (batch 1)
-  python scripts/evaluate.py --config configs/gsm8k_smollm2_360m_debug.yaml --limit 5 --batch-size 2  # step 6
+  pytest -q                                  # ✅ 56 passed, 1 skipped (vLLM/Linux-only)
+  python scripts/evaluate.py --config configs/gsm8k_smollm2_360m_debug.yaml --dry-run   # ✅ passed
+  python scripts/evaluate.py --config configs/gsm8k_smollm2_360m_debug.yaml --limit 5    # ✅ run_20260921_171914_3e3edf, acc=0.2
+  python scripts/evaluate.py --config configs/gsm8k_smollm2_360m_debug.yaml --limit 5 --batch-size 2  # ✅ run_20260921_172120_1cbda9, acc=0.2
   python scripts/inspect_run.py results/gsm8k/smollm2-360m-instruct/run_<A> results/gsm8k/smollm2-360m-instruct/run_<B>
+  # ✅ paired 1 cc + 4 ww, zero off-diagonal; raw_output byte-identical per example_id
   ```
-  Pass criteria: both runs have all 6 files (`manifest.json config.yaml metrics.json predictions.jsonl environment.json logs.txt`); every `predictions.jsonl` row has the 7 keys; paired table totals 5 with identical `example_id→(raw_output)` mapping across batch sizes (accuracy may be low — 0.2 so far — that's a model result, not a harness failure).
+  Pass criteria met: both runs have all 6 files; every `predictions.jsonl` row has the 7 keys;
+  `example_id→raw_output` mapping identical across batch sizes. (Accuracy 0.2 is a model
+  result, not a harness failure.)
 
 - [ ] **4. Optional tidy (only if trivial): record `ram_gb` on macOS.**
   `runtime/environment.py:_ram_gb` returns `None` on Darwin despite the `sysctl` fallback — check why and fix or document as known gap. Do not block on this.
