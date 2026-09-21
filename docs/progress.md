@@ -157,28 +157,103 @@ Key files: `scripts/evaluate.py`, `src/eval_harness/core/{interfaces,evaluator,c
 `configs/gsm8k_smollm2_360m{,_debug,_vllm}.yaml`, `docs/evaluation_protocol.md` (frozen contract — any change to
 prompt/parse/score/dataset interpretation requires a version bump + a note there).
 
-## 5. Phase 2 kickoff (2026-09-22, uncommitted)
+## 5. Phase 2 progress vs `research_plan_phase2.md` (committed `9fe22ca`)
 
-Decisions locked: **pinned configs**, **Kojima wording single-stage**,
-**Modal GPU scaffold (1B focus, no run yet)**, **skip full SmolLM2 run**.
+> Verdict: **scaffolding is in place, the intervention itself is not.**
+> Configs validate, protocol wording is frozen, execution path exists —
+> but no `RecirculationModelAdapter` exists yet, so Objectives B/C have
+> not started. Do NOT run safety experiments, adaptive recirculation, or
+> pass@128 yet (P2 §58).
 
-- `InterventionConfig` (typed, validated) in `core/config.py`: `none` |
-  `recirculation` with source/dest/alpha/beta/mixture/normalization/ramp;
-  `effective_beta` resolves convex→`1-alpha`, nonconvex→`1.0`; manifest
-  records the full record. `source<=dest` rejected at load.
-- `gsm8k_kojima_v1` template (`Q: {q} A: Let's think step by step.`);
-  protocol addendum in `docs/evaluation_protocol.md` (PT raw prompt,
-  BOS requirement, 0-based block indexing, provisional 1B ramp=10).
-- BOS guard `check_bos_present` wired into both adapters (paper-v2
-  confound; warn-only, never fails a run).
-- Pins: SmolLM2 `a10cc15…`, Gemma-1B-PT `fcf18a2a…`, Gemma-4B-PT
-  `cc012e0a…` (verified accessible), dataset `740312ad…`.
-- 6 new configs: 2 pinned SmolLM2 + 4 Gemma-1B (baseline/recirc ×
-  hf/vllm). Recirc configs validate but cannot execute until
-  `RecirculationModelAdapter` lands (noted in-file).
-- `modal_app.py` scaffold (A100-40GB, vLLM image, results volume,
-  `huggingface` secret for `HF_TOKEN`); `py_compile` clean, never run.
-- Secrets: `access_tokens.txt` gitignored; HF token verified against the
-  Hub in-process (values never printed/stored).
-- Verify state: `pytest` 71 passed/1 skipped; all 9 configs parse;
-  pinned + Gemma dry-runs pass. Next: commit, then `RecirculationModelAdapter`.
+### Objectives, models, configs (P2 §2–§4, §12–§13, §35, §50–§51)
+
+| Plan | Status | Evidence / note |
+|---|---|---|
+| §2 Objective A trusted baseline | ⏳ Not started | Needs Gemma-1B-PT n=5 smoke on GPU |
+| §2 Objectives B/C impl + reproduction | ⏳ Not started | Blocked on adapter |
+| §3 Stage 2A (1B first), 2B (4B), 2C (12B optional) | ✅ Scaffolded | 1B configs exist (hf+vllm × baseline/recirc); 4B/12B = same layout, different model+L/S + pair (4B sha verified `cc012e0a…`) |
+| §4 PT not IT (`family/size/tuning`) | ⚠️ Partial | Configs use PT checkpoints + `use_chat_template: false`; explicit `family/size/tuning` fields not yet in `ModelConfig` — add with adapter work or accept model-name-implies-it |
+| §12–13 1B `11→4 α.15 β.85`, 4B `18→9 α.15 β1` dest-L2 | ✅ Configured | `gsm8k_gemma3_1b_pt_recirc{,_vllm}.yaml`; 4B twin still to write (trivial once 1B runs) |
+| §35 freeze `docs/phase2_gsm8k_protocol.md` | ⚠️ Partial | PT/Kojima/BOS/indexing frozen in `evaluation_protocol.md` addendum; dedicated phase-2 file not yet split out |
+| §50 manifest recirc fields | ✅ Ready | `InterventionConfig.to_dict()` records type/layers/alpha/beta/effective_beta/mixture/normalization/ramping |
+| §51 run naming (`..._baseline`, `..._recirc_11_4_a015`) | ✅ Done | Experiment names follow the convention |
+
+### Architecture & intervention abstraction (P2 §5–§11)
+
+| Plan | Status | Evidence / note |
+|---|---|---|
+| §5 evaluator untouched, logic in model layer | ✅ By construction | No task/evaluator/scorer/parser changes this phase |
+| §6 `Intervention` abstraction | ⚠️ Half-done | **Config side done** (typed + validated). Runtime side (adapter/intervention classes) not started |
+| §7 baseline as `type: none` | ✅ Done | First-class, tested |
+| §8 typed recirc config | ✅ Done | Incl. nested `mixture`/`normalization`/`ramping` shapes |
+| §9 fixed training-free only | ✅ Scoped | No adaptive/MLP/finetune code exists |
+| §10 destination-L2 norm + eps + norm logging | ⏳ Adapter work | Formula + debug-logging requirement captured; implement in adapter |
+| §11 convex + nonconvex beta | ✅ Config-ready | `effective_beta` tested (0.85 / 1.0); adapter must honor it, never hardcode |
+
+### Protocol & pass@1 (P2 §14–§17, §36–§37)
+
+| Plan | Status | Evidence / note |
+|---|---|---|
+| §14 R1/R2/R3 separation | ✅ Documented | Kojima template comment + protocol addendum label ours "qualitative replication" |
+| §15–16 zero-shot CoT, greedy pass@1, `max_new_tokens` 512 | ✅ Frozen | `gsm8k_kojima_v1` v1.0 + deterministic generation; same config for baseline/recirc |
+| §17 no tuning on test | ✅ Policy | Paper params used verbatim; ramp=10 marked provisional |
+| §36 lm-harness cross-check | ⏳ Scheduled | Required before any research claim; after first full runs |
+| §37 reproduction classification honesty | ✅ Policy | Single-stage ≠ Kojima two-stage; documented, not hidden |
+
+### Runs, comparison, analysis (P2 §18–§22, §52–§54)
+
+| Plan | Status | Evidence / note |
+|---|---|---|
+| §18 Runs 1–6 (5 → 50 → full; 1B then 4B) | ⏳ Blocked | Needs Modal access (user) + adapter; `modal_app.py` scaffold ready, `py_compile` clean, never run |
+| §19 paired transitions, §21 Δ-accuracy | ⚠️ Partial | `inspect_run.py` prints 4-cell table; file-output `compare_runs.py` (§20) not built |
+| §20 `compare_runs.py` → comparison.json/csv | ⏳ Next scaffolding | Build before first paired runs |
+| §22 generation-length analysis | ⏳ Analysis work | Lengths derivable from `raw_output` today; token counts TBD (store vs post-hoc) |
+| §52–54 artifacts, figures, `analysis/gsm8k_phase2.py` | ⏳ Not started | After first real paired runs |
+
+### Correctness mechanics (P2 §23–§31)
+
+| Plan | Status | Evidence / note |
+|---|---|---|
+| §23–25 alpha=0 ≡ baseline; `src==dst` rejected; none≡recirc(α=0) test | ⚠️ Partial | Rejection enforced in config + tested; equivalence tests await the adapter |
+| §26 cross-step recurrence (t→t+1, not same-step) | ⏳ Adapter core | Must be documented in code; vLLM RFC corroborates design (mix at `d`, rerun `d+1..N`, overwrite upper KV) |
+| §27 not naive `d += α·s` | ⏳ Adapter core | Norm + beta + offset + state + boundary all required |
+| §28 opt-in activation debug (norms, cosine; 1 ex, few positions) | ⏳ Adapter work | Config `ramping`/debug shape anticipated; implement with adapter |
+| §29 0-based block indexing | ✅ Documented | Protocol addendum; adapter must assert `num_layers` bounds at init |
+| §30 KV-cache semantics, §31 prefill vs decode | ⏳ Adapter + §32 hooks | Correctness-first; no premature optimization |
+
+### Robustness, perf, acceptance (P2 §32–§34, §38–§40, §55–§62)
+
+| Plan | Status | Evidence / note |
+|---|---|---|
+| §32 timing/memory instrumentation | ⏳ Evaluator hooks | wall/prefill/decode, tok/s, peak-mem (null on MPS); build before Runs 1–3 |
+| §33 batch invariance 1/2/4 on recirc | ⏳ Awaits adapter | Harness proven on baseline; adapter must preserve it |
+| §34 repeated-run determinism | ⏳ Awaits adapter | Same; rerun-compare procedure exists from Phase 1 |
+| §38–40 pass@128 (separate mode + `pass_at_*` layout) | ⏳ Explicitly later | Only after pass@1 validated |
+| §55 acceptance (suite green, 1B+4B load, full comparisons, identical reruns, paired compare, immutable runs) | ⏳ 1/11 | Suite green (71/1); rest pending |
+| §56 report, §58 non-goals, §59 Phase-3 reuse, §60 commands, §61–62 done criteria | ⏳ Pending / scoped | `modal_app.py` covers §60 shape; no safety/adaptive code present (§58 clean) |
+
+### Next steps (ordered)
+
+- [ ] **1. `RecirculationModelAdapter` (the main build).** HF-based,
+  frozen weights, serial path: normal pass → record source/dest
+  residuals → destination-L2 rescale (+eps) → `α·s + β·d` (honor
+  `effective_beta`) → rerun layers `d+1..N` → overwrite upper KV.
+  Ramping over first N tokens; opt-in debug norms/cosine; assert layer
+  bounds at init; document cross-step semantics in code. Reuse
+  `HFCausalLMAdapter` loading/device/dtype/chat machinery (subclass or
+  compose — cleanest fit wins).
+- [ ] **2. Invariant + determinism tests.** alpha=0 ≡ baseline;
+  `none` ≡ recirc(α=0) integration test; batch 1/2/4 invariance and
+  twice-identical reruns against the new adapter (mock where possible,
+  tiny-real where not).
+- [ ] **3. `compare_runs.py` + §32 timing hooks.** File-output paired
+  comparison (comparison.json/csv, transitions, Δ-accuracy, length
+  stats); evaluator phase timing (prefill/decode/token counts) before
+  Runs 1–3 so no run must be repeated for missing metadata.
+- [ ] **4. Modal access (user) → Runs 1–3.** `modal secret create
+  huggingface HF_TOKEN=…`; 1B baseline n=5 → recirc n=5 → 50-pair;
+  verify BOS-ok logs, manifest pins, paired tables.
+- [ ] **5. Run 4 (full 1B pair) + freeze `docs/phase2_gsm8k_protocol.md`
+  + lm-harness cross-check.** Only then Runs 5–6 (4B).
+- [ ] **6. Defer explicitly:** 4B/12B configs (trivial clones once 1B
+  runs), sweeps (§41–48), stats (§49), pass@128 (§38–40), report (§56).
