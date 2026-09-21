@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "llm-eval-harness"
+version = "0.1.0"
+description = "Research-grade modular LLM evaluation harness (GSM8K baseline)"
+requires-python = ">=3.10"
+dependencies = [
+  "torch",
+  "transformers>=4.40",
+  "datasets>=2.18",
+  "pyyaml>=6",
+  "huggingface-hub>=0.20",
+  "numpy",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+vllm = ["vllm>=0.7"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "model: model-backed tests requiring downloads/GPU (deselected by default)",
+  "vllm: vLLM-backend tests requiring the vllm package (Linux-only)",
+]
+
+[tool.ruff]
+line-length = 100

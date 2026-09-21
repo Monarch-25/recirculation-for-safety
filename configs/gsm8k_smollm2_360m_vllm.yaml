@@ -1,0 +1,46 @@
+# GPU/Linux example: same GSM8K protocol via the vLLM backend.
+# Requires: pip install -e ".[vllm]" (Linux x86_64 only; no macOS wheels).
+model:
+  name: HuggingFaceTB/SmolLM2-360M-Instruct
+  backend: vllm
+  revision: null
+  tokenizer_revision: null
+  dtype: auto
+  device: auto
+  trust_remote_code: false
+  use_chat_template: true
+  tensor_parallel_size: 1
+  gpu_memory_utilization: 0.9
+  enforce_eager: false
+  max_model_len: null
+  intervention:
+    type: none
+
+task:
+  name: gsm8k
+  version: "1.0"
+  split: test
+  limit: 5
+  dataset_id: openai/gsm8k
+  dataset_config: main
+  dataset_revision: null
+
+prompt:
+  template_name: gsm8k_cot_v1
+  template_version: "1.0"
+
+generation:
+  max_new_tokens: 256
+  temperature: 0.0
+  top_p: 1.0
+  do_sample: false
+  seed: 42
+
+runtime:
+  batch_size: 16
+  output_dir: results
+  seed: 42
+
+experiment:
+  name: gsm8k_baseline_smollm2_vllm_debug
+  evaluation_code_version: "0.1.0"

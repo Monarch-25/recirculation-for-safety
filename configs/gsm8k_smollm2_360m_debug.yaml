@@ -1,0 +1,42 @@
+model:
+  name: HuggingFaceTB/SmolLM2-360M-Instruct
+  revision: null
+  tokenizer_revision: null
+  dtype: float32
+  device: auto
+  trust_remote_code: false
+  use_chat_template: true
+  # Required on Apple Silicon MPS with torch 2.6 (SDPA fast path aborts);
+  # harmless on CPU/CUDA. Recorded in the manifest.
+  attn_implementation: eager
+  intervention:
+    type: none
+
+task:
+  name: gsm8k
+  version: "1.0"
+  split: test
+  limit: 5
+  dataset_id: openai/gsm8k
+  dataset_config: main
+  dataset_revision: null
+
+prompt:
+  template_name: gsm8k_cot_v1
+  template_version: "1.0"
+
+generation:
+  max_new_tokens: 256
+  temperature: 0.0
+  top_p: 1.0
+  do_sample: false
+  seed: 42
+
+runtime:
+  batch_size: 1
+  output_dir: results
+  seed: 42
+
+experiment:
+  name: gsm8k_baseline_smollm2_debug
+  evaluation_code_version: "0.1.0"
