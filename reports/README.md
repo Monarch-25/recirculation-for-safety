@@ -29,8 +29,11 @@ Everything here regenerates from `data/`; nothing is hand-copied.
 | `figures/schematic_recirculation_schedules.png` | cross-step vs two-pass mechanics (generated; build via `figures/make_schematics.py`) |
 | `figures/paper_looping_vs_recirc.png` | paper Fig 8, recirc-vs-looping (CC BY-NC-SA 4.0, attributed) |
 | `figures/paper_hyperparm_sweep.png` | paper Fig 5, 1B sweep landscape (CC BY-NC-SA 4.0, attributed) |
-
-| `figures/figG_layer_heatmap.png` | accuracy + delta heatmaps (α=0.10, 3×2) |
+| `figures/figH_architecture.png` | harness + evidence-flow diagram (build via `figures/make_lead_review.py`) |
+| `figures/figH_cost_breakdown.png` | metered + reported GPU-hours (same generator) |
+| `figures/figH_blocks.png` | 4B base vs recirc per 100-example block (same generator) |
+| `figures/figH_schedules.png` | rescued/regressed: cross-step twins vs two-pass (same generator) |
+| `figures/figI_transitions_100.png` | paired transition matrices at n=100, both schedules (same generator) |
 
 ## Reproduce
 

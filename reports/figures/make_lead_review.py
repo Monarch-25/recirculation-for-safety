@@ -5,6 +5,10 @@ Reads only frozen committed data (reports/data/*.json, *.csv) and writes:
   figH_cost_breakdown.png  metered + reported GPU-hours per experiment
   figH_blocks.png          4B base vs recirc per 100-example block (uniform null)
   figH_schedules.png       rescued/regressed: cross-step twins vs two-pass cells
+  figI_transitions_100.png paired 2x2 matrices at n=100, both schedules
+    (two-pass cc/ww derived exactly: same-100 baseline is 25/100, so
+    cc = 25 - cw and ww = 75 - wc; cross-step rows read verbatim from
+    data/sweep_4b_100_transitions.csv)
 Rerun: conda run -n torch python reports/figures/make_lead_review.py (repo root).
 """
 
@@ -159,9 +163,54 @@ def fig_schedules():
     plt.close(fig)
 
 
+def figI_transitions_100():
+    trans = {r["tag"]: r for r in
+             csv.DictReader(open(DATA / "sweep_4b_100_transitions.csv"))}
+    two = {r["tag"]: r for r in
+           csv.DictReader(open(DATA / "twopass_4b_100.csv"))}
+    cfgs = [("a010_s18_d7", "2p_a010_s18_d7"),
+            ("a004_s20_d9", "2p_a004_s20_d9"),
+            ("a015_s20_d9", "2p_a015_s20_d9"),
+            ("a015_s18_d9", "2p_a015_s18_d9")]
+    fig, axes = plt.subplots(2, 4, figsize=(9, 5.2))
+    for j, (cs, tp) in enumerate(cfgs):
+        c = trans[cs]
+        mats = {
+            "cross-step": [[int(c["ww"]), int(c["wc"])],
+                           [int(c["cw"]), int(c["cc"])]],
+        }
+        r = two[tp]
+        cw, wc = int(r["regressed_vs_base"]), int(r["rescued_vs_base"])
+        mats["two-pass"] = [[75 - wc, wc], [cw, 25 - cw]]
+        for i, (sched, mat) in enumerate(mats.items()):
+            ax = axes[i][j]
+            im = ax.imshow(mat, cmap="Blues", vmin=0, vmax=75)
+            for a in range(2):
+                for b in range(2):
+                    ax.text(b, a, mat[a][b], ha="center", va="center",
+                            fontsize=11, fontweight="bold",
+                            color="white" if mat[a][b] > 37 else "black")
+            arm = "recirc" if sched == "cross-step" else "two-pass"
+            ax.set_xticks([0, 1], [f"{arm}\nwrong", f"{arm}\ncorrect"], fontsize=7)
+            if i == 0:
+                ax.tick_params(labelbottom=False)
+                ax.set_xticks([])
+            ax.set_yticks([0, 1], ["base\nwrong", "base\ncorrect"], fontsize=7)
+            ax.tick_params(labelright=False)
+            acc = (mat[1][1] + mat[0][1]) / 100
+            ax.set_title(f"{cs}\n{sched} (acc {acc:.2f})", fontsize=9)
+    fig.suptitle("Paired transitions at n=100 — both methods move verdicts both ways\n"
+                 "two-pass cc/ww derived exactly from 25/100 baseline + flips",
+                 fontsize=11, fontweight="bold", y=0.99)
+    fig.tight_layout(rect=[0, 0, 1, 0.88], h_pad=3.0)
+    fig.savefig(OUT / "figI_transitions_100.png", dpi=DPI, bbox_inches="tight")
+    plt.close(fig)
+
+
 if __name__ == "__main__":
     fig_architecture()
     fig_cost()
     fig_blocks()
     fig_schedules()
-    print("wrote figH_*.png")
+    figI_transitions_100()
+    print("wrote figH_*.png + figI_transitions_100.png")
