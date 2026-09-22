@@ -1,0 +1,3056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recirculation for Reasoning: An Independent Replication</title>
+
+<!-- KaTeX for LaTeX math -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
+
+<!-- Chart.js for inline charts -->
+<script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+<!-- highlight.js for code syntax highlighting -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/styles/github.min.css">
+<script defer src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js"></script>
+
+
+<style>
+/* Colloquium Default Theme */
+
+/* ===== Custom Properties ===== */
+:root {
+    --colloquium-bg: #ffffff;
+    --colloquium-text: #1a1a2e;
+    --colloquium-heading: #16213e;
+    --colloquium-accent: #0f3460;
+    --colloquium-link: #e94560;
+    --colloquium-code-bg: #f4f4f8;
+    --colloquium-code-text: #1a1a2e;
+    --colloquium-muted: #6b7280;
+    --colloquium-border: #e5e7eb;
+    --colloquium-progress-bg: #e5e7eb;
+    --colloquium-progress-fill: #0f3460;
+
+    --colloquium-font-body: "Inter", "Helvetica Neue", Arial, sans-serif;
+    --colloquium-font-heading: "Inter", "Helvetica Neue", Arial, sans-serif;
+    --colloquium-font-mono: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+
+    /* 16:9 reference dimensions — slides are authored at this size and scaled */
+    --colloquium-slide-width: 1280;
+    --colloquium-slide-height: 720;
+    --colloquium-slide-padding: 60px;
+}
+
+/* ===== Reset & Base ===== */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: var(--colloquium-font-body);
+    color: var(--colloquium-text);
+    background: #000;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== Slide Container — 16:9 scaling ===== */
+/* The deck is a fixed 1280x720 canvas that gets CSS-transformed to fit the viewport */
+.colloquium-deck {
+    width: 1280px;
+    height: 720px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    background: var(--colloquium-bg);
+    overflow: hidden;
+}
+
+.slide {
+    display: none;
+    flex-direction: column;
+    justify-content: flex-start;
+    width: 1280px;
+    height: 720px;
+    padding: var(--colloquium-slide-padding);
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: visible;
+    font-size: 24px;
+    line-height: 1.5;
+    background: var(--colloquium-bg);
+}
+
+.slide.active {
+    display: flex;
+}
+
+/* ===== Typography ===== */
+.slide h1 {
+    font-family: var(--colloquium-font-heading);
+    font-size: 2.2em;
+    font-weight: 700;
+    color: var(--colloquium-heading);
+    margin-bottom: 0.4em;
+    line-height: 1.2;
+}
+
+.slide h2 {
+    font-family: var(--colloquium-font-heading);
+    font-size: 1.6em;
+    font-weight: 600;
+    color: var(--colloquium-heading);
+    margin-bottom: 0.5em;
+    line-height: 1.3;
+}
+
+.slide h3 {
+    font-family: var(--colloquium-font-heading);
+    font-size: 1.2em;
+    font-weight: 600;
+    color: var(--colloquium-heading);
+    margin-bottom: 0.4em;
+}
+
+.slide p {
+    margin-bottom: 0.8em;
+}
+
+.slide p:last-child {
+    margin-bottom: 0;
+}
+
+/* Step/animate reveals wrap blocks in generated fragment <div>s, which makes a
+   mid-slide paragraph :last-child of its wrapper and strips the 0.8em spacing
+   above -- visually merging it with the next fragment's paragraph. Restore the
+   margin unless the wrapper really is the last block in its container. */
+.slide div.fragment[data-fragment-index]:not(:last-child) > p:last-child {
+    margin-bottom: 0.8em;
+}
+
+.slide strong {
+    font-weight: 600;
+}
+
+.slide em {
+    font-style: italic;
+}
+
+/* ===== Lists ===== */
+.slide ul, .slide ol {
+    margin-bottom: 0.8em;
+    padding-left: 1.4em;
+}
+
+.slide li {
+    margin-bottom: 0.3em;
+}
+
+.slide li::marker {
+    color: var(--colloquium-accent);
+}
+
+/* ===== Links ===== */
+.slide a {
+    color: var(--colloquium-link);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s;
+}
+
+.slide a:hover {
+    border-bottom-color: var(--colloquium-link);
+}
+
+/* ===== Code ===== */
+.slide code {
+    font-family: var(--colloquium-font-mono);
+    font-size: 0.85em;
+    background: var(--colloquium-code-bg);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.slide pre {
+    background: var(--colloquium-code-bg);
+    border-radius: 8px;
+    padding: 1em 1.2em;
+    margin-bottom: 0.8em;
+    overflow-x: hidden;
+    font-size: 0.75em;
+    line-height: 1.5;
+}
+
+.slide pre code {
+    background: none;
+    padding: 0;
+    font-size: inherit;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* ===== Images ===== */
+.slide img {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 4px;
+    object-fit: contain;
+}
+
+.slide .slide-content {
+    flex: 1;
+    min-height: 0;
+    overflow: visible;
+}
+
+.slide .slide-content img {
+    max-height: calc(720px - var(--colloquium-slide-padding) * 2 - 100px);
+    display: block;
+}
+
+.colloquium-iframe-container {
+    max-width: 100%;
+}
+
+.colloquium-iframe {
+    display: block;
+    max-width: 100%;
+}
+
+.align-center .slide-content > .colloquium-iframe-container {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.align-left .slide-content > .colloquium-iframe-container {
+    margin-right: auto;
+}
+
+.align-right .slide-content > .colloquium-iframe-container {
+    margin-left: auto;
+}
+
+.slide figure.colloquium-figure {
+    margin: 0 auto 0.8em;
+    max-width: 100%;
+    width: fit-content;
+}
+
+.slide figure.colloquium-figure > img {
+    display: block;
+}
+
+.slide figure.colloquium-figure > figcaption {
+    margin-top: 0.45em;
+    font-size: 0.6em;
+    line-height: 1.35;
+    color: var(--colloquium-muted);
+}
+
+.slide.figure-caption,
+.slide.figure-captions {
+    counter-reset: colloquium-figure;
+}
+
+.slide.figure-caption figure.colloquium-figure,
+.slide.figure-captions figure.colloquium-figure {
+    counter-increment: colloquium-figure;
+}
+
+.slide.figure-caption figure.colloquium-figure > figcaption::before,
+.slide.figure-captions figure.colloquium-figure > figcaption::before {
+    content: "Figure " counter(colloquium-figure) ": ";
+    color: var(--colloquium-heading);
+    font-weight: 600;
+}
+
+/* ===== Box ===== */
+.colloquium-box {
+    border-radius: 18px;
+    padding: 0.85em 1em;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.colloquium-box--accent {
+    background: var(--colloquium-accent);
+    color: white;
+}
+
+.colloquium-box--muted {
+    background: var(--colloquium-code-bg);
+    color: var(--colloquium-text);
+}
+
+.colloquium-box--surface {
+    background: color-mix(in srgb, var(--colloquium-bg) 85%, white 15%);
+    color: var(--colloquium-text);
+    border: 1px solid var(--colloquium-border);
+}
+
+.colloquium-box--align-center {
+    text-align: center;
+}
+
+.colloquium-box--align-right {
+    text-align: right;
+}
+
+.colloquium-box-title {
+    font-weight: 700;
+    margin-bottom: 0.35em;
+}
+
+.colloquium-box-content > :first-child {
+    margin-top: 0;
+}
+
+.colloquium-box-content > :last-child {
+    margin-bottom: 0;
+}
+
+.colloquium-box ul,
+.colloquium-box ol {
+    margin-bottom: 0;
+    padding-left: 1.25em;
+}
+
+.colloquium-box li::marker {
+    color: var(--colloquium-accent);
+}
+
+.colloquium-box--compact .colloquium-box-title {
+    margin-bottom: 0.25em;
+}
+
+.colloquium-box--compact .colloquium-box-content p {
+    margin: 0.3em 0;
+}
+
+.colloquium-box--compact ul,
+.colloquium-box--compact ol {
+    margin-top: 0.35em;
+    margin-bottom: 0;
+    padding-left: 1.2em;
+}
+
+.colloquium-box--compact li {
+    margin-bottom: 0.08em;
+    line-height: 1.14;
+}
+
+.colloquium-box--compact li + li {
+    margin-top: 0.02em;
+}
+
+.colloquium-box--accent li::marker {
+    color: white;
+}
+
+.colloquium-box--accent a,
+.colloquium-box--accent strong,
+.colloquium-box--accent em,
+.colloquium-box--accent code {
+    color: inherit;
+}
+
+.colloquium-box--accent code {
+    background: color-mix(in srgb, black 12%, transparent);
+}
+
+/* ===== Charts ===== */
+.colloquium-chart-container {
+    width: 100%;
+    height: 400px;
+    margin: 0.5em 0;
+}
+
+.slide .slide-content img.colloquium-chart-print {
+    display: none;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    max-height: none;
+}
+
+/* ===== Tables ===== */
+.slide table {
+    border-collapse: collapse;
+    margin-bottom: 0.8em;
+    font-size: 0.85em;
+    width: 100%;
+}
+
+.slide th, .slide td {
+    border: 1px solid var(--colloquium-border);
+    padding: 0.4em 0.7em;
+    text-align: left;
+}
+
+.slide th {
+    background: var(--colloquium-code-bg);
+    font-weight: 600;
+}
+
+/* ===== Blockquotes ===== */
+.slide blockquote {
+    border-left: 4px solid var(--colloquium-accent);
+    padding-left: 1em;
+    margin-bottom: 0.8em;
+    color: var(--colloquium-muted);
+    font-style: italic;
+}
+
+/* ===== Horizontal Rule ===== */
+.slide hr {
+    border: none;
+    border-top: 2px solid var(--colloquium-border);
+    margin: 1em 0;
+}
+
+/* ===== Math (KaTeX) ===== */
+.slide .katex-display {
+    margin: 0.8em 0;
+    overflow-x: hidden;
+    overflow-x: clip;
+    overflow-y: visible;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    width: 100%;
+    touch-action: pan-y;
+    overscroll-behavior-x: none;
+}
+
+.slide .katex-display .katex {
+    max-width: 100%;
+    pointer-events: none;
+}
+
+.slide .katex-display::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+
+/* ===== Layout: Title Slide ===== */
+.slide--title {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.slide--title.active {
+    display: flex;
+}
+
+.slide--title h1 {
+    font-size: 2.8em;
+    margin-bottom: 0.3em;
+}
+
+.slide--title .slide-content {
+    flex: 0 0 auto;
+}
+
+.slide--title .slide-content p {
+    font-size: 1.1em;
+    color: var(--colloquium-muted);
+}
+
+/* Shared title-slide components */
+.colloquium-title-eyebrow {
+    font-size: 0.72em;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--colloquium-accent);
+    margin-bottom: 1.1em;
+}
+
+.colloquium-title-rule {
+    width: 84px;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--colloquium-accent);
+    margin-bottom: 1.4em;
+}
+
+.colloquium-title-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15em;
+}
+
+.colloquium-title-meta p {
+    margin: 0;
+    color: var(--colloquium-muted);
+}
+
+.colloquium-title-name {
+    font-size: 1.55em;
+    font-weight: 500;
+    color: var(--colloquium-heading);
+}
+
+.colloquium-title-note {
+    font-size: 0.9em;
+    line-height: 1.45;
+    color: var(--colloquium-muted);
+    max-width: 26em;
+}
+
+/* ===== Layout: Title Left ===== */
+.slide--title-left {
+    justify-content: center;
+    align-items: flex-start;
+    text-align: left;
+    padding: 72px 84px 60px;
+}
+
+.slide--title-left.active {
+    display: flex;
+}
+
+.slide--title-left h1 {
+    max-width: 980px;
+    font-size: 3em;
+    line-height: 1.02;
+    letter-spacing: -0.05em;
+    margin-bottom: 0.95em;
+}
+
+.slide--title-left .slide-content {
+    flex: 0 0 auto;
+    max-width: 560px;
+}
+
+.slide--title-left .slide-content > * + * {
+    margin-top: 1em;
+}
+
+/* ===== Layout: Title Sidebar ===== */
+.slide--title-sidebar {
+    padding: 72px 84px 60px;
+}
+
+.slide--title-sidebar.active {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    column-gap: 56px;
+    align-content: center;
+    align-items: start;
+}
+
+.slide--title-sidebar h1 {
+    grid-column: 1;
+    align-self: start;
+    max-width: 760px;
+    font-size: 2.9em;
+    line-height: 1.03;
+    letter-spacing: -0.045em;
+    text-align: left;
+    margin: 0;
+}
+
+.slide--title-sidebar .slide-content {
+    grid-column: 2;
+    align-self: start;
+    position: relative;
+    padding: 0 0 24px 28px;
+}
+
+.slide--title-sidebar .slide-content::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 24px;
+    left: 0;
+    width: 3px;
+    border-radius: 999px;
+    background: var(--colloquium-accent);
+}
+
+.slide--title-sidebar .slide-content > * + * {
+    margin-top: 1em;
+}
+
+.slide--title-sidebar.title-sidebar-rule-full .slide-content {
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.slide--title-sidebar.title-sidebar-rule-full .slide-content::before {
+    bottom: 0;
+}
+
+/* Title-sidebar uses grid, so vertical positioning maps to align-content. */
+.slide--title-sidebar.valign-top.active {
+    align-content: start;
+}
+
+.slide--title-sidebar.valign-center.active {
+    align-content: center;
+}
+
+.slide--title-sidebar.valign-bottom.active {
+    align-content: end;
+}
+
+/* ===== Layout: Title Banner ===== */
+.slide--title-banner {
+    justify-content: flex-start;
+    align-items: flex-start;
+    text-align: left;
+    padding: 72px 84px 60px;
+}
+
+.slide--title-banner.active {
+    display: flex;
+}
+
+.slide--title-banner h1 {
+    max-width: 980px;
+    font-size: 3em;
+    line-height: 1.02;
+    letter-spacing: -0.05em;
+    margin-bottom: 0.45em;
+}
+
+.slide--title-banner .slide-content {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    max-width: 620px;
+}
+
+.slide--title-banner .slide-content > * + * {
+    margin-top: 1em;
+}
+
+/* ===== Layout: Section Break ===== */
+.slide--section-break {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: var(--colloquium-accent);
+    color: #ffffff;
+}
+
+.slide--section-break.active {
+    display: flex;
+}
+
+.slide--section-break h2 {
+    color: #ffffff;
+    font-size: 2.2em;
+}
+
+.slide--section-break .slide-content {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+/* ===== Layout: Two Column ===== */
+.slide--two-column .slide-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2em;
+    align-items: start;
+    width: 100%;
+}
+
+/* ===== Layout: Image Left ===== */
+.slide--image-left .slide-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2em;
+    align-items: center;
+    width: 100%;
+}
+
+.slide--image-left .slide-content img {
+    max-height: 500px;
+}
+
+/* ===== Layout: Image Right ===== */
+.slide--image-right .slide-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2em;
+    align-items: center;
+    width: 100%;
+}
+
+.slide--image-right .slide-content img {
+    max-height: 500px;
+    order: 2;
+}
+
+/* ===== Layout: Code ===== */
+.slide--code pre {
+    font-size: 0.7em;
+    max-height: 500px;
+}
+
+/* ===== Utility: Title Position ===== */
+.title-top.active { justify-content: flex-start; }
+.title-center.active { justify-content: center; }
+.title-center.active > h1, .title-center.active > h2 { text-align: center; }
+.title-hidden h1, .title-hidden h2 { display: none; }
+
+/* ===== Utility: Text Alignment ===== */
+.align-left.active { text-align: left; }
+.align-center.active { text-align: center; }
+.align-right.active { text-align: right; }
+
+.align-center.active .slide-content > img,
+.align-center.active .slide-content > p > img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.align-left.active .slide-content > img,
+.align-left.active .slide-content > p > img {
+    display: block;
+    margin-right: auto;
+}
+
+.align-right.active .slide-content > img,
+.align-right.active .slide-content > p > img {
+    display: block;
+    margin-left: auto;
+}
+
+/* ===== Utility: Vertical Alignment ===== */
+.valign-top.active { justify-content: flex-start; }
+.valign-center.active { justify-content: center; }
+.valign-bottom.active { justify-content: flex-end; }
+
+/* ===== Utility: Columns ===== */
+.colloquium-grid {
+    display: grid;
+    gap: 2em;
+    align-items: stretch;
+    width: 100%;
+}
+
+/* ===== Utility: Rows ===== */
+.colloquium-rows {
+    display: grid;
+    gap: 0.9em;
+    width: 100%;
+    min-height: 0;
+    flex: 1;
+}
+
+.colloquium-row {
+    min-height: 0;
+}
+
+/* Images in grid layouts: fit within the available content height */
+.colloquium-grid img {
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: calc(720px - var(--colloquium-slide-padding) * 2 - 100px);
+    object-fit: contain;
+}
+
+.colloquium-rows img {
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.colloquium-grid > .col,
+.colloquium-rows > .colloquium-row {
+    min-width: 0;
+    min-height: 0;
+    overflow: visible;
+}
+
+.slide .slide-content:has(> figure.colloquium-figure:first-child:last-child),
+.slide .colloquium-grid > .col:has(> figure.colloquium-figure:first-child:last-child),
+.slide .colloquium-row:has(> figure.colloquium-figure:first-child:last-child) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.colloquium-grid > .col > :last-child,
+.colloquium-rows > .colloquium-row > :last-child {
+    margin-bottom: 0;
+}
+
+/* Standalone images inside grid cells should fit the cell by default. */
+.slide .colloquium-grid > .col > p:first-child:last-child:has(> img),
+.slide .colloquium-row > p:first-child:last-child:has(> img) {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+}
+
+.slide.img-valign-top .colloquium-grid > .col > p:first-child:last-child:has(> img),
+.slide.img-valign-top .colloquium-row > p:first-child:last-child:has(> img) {
+    align-items: flex-start;
+}
+
+.slide.img-valign-center .colloquium-grid > .col > p:first-child:last-child:has(> img),
+.slide.img-valign-center .colloquium-row > p:first-child:last-child:has(> img) {
+    align-items: center;
+}
+
+.slide.img-valign-bottom .colloquium-grid > .col > p:first-child:last-child:has(> img),
+.slide.img-valign-bottom .colloquium-row > p:first-child:last-child:has(> img) {
+    align-items: flex-end;
+}
+
+.slide.img-valign-center .slide-content:has(> figure.colloquium-figure:first-child:last-child),
+.slide.img-valign-center .colloquium-grid > .col:has(> figure.colloquium-figure:first-child:last-child),
+.slide.img-valign-center .colloquium-row:has(> figure.colloquium-figure:first-child:last-child) {
+    justify-content: center;
+}
+
+.slide.img-valign-bottom .slide-content:has(> figure.colloquium-figure:first-child:last-child),
+.slide.img-valign-bottom .colloquium-grid > .col:has(> figure.colloquium-figure:first-child:last-child),
+.slide.img-valign-bottom .colloquium-row:has(> figure.colloquium-figure:first-child:last-child) {
+    justify-content: flex-end;
+}
+
+.slide .slide-content > figure.colloquium-figure:first-child:last-child,
+.slide .colloquium-grid > .col > figure.colloquium-figure:first-child:last-child,
+.slide .colloquium-row > figure.colloquium-figure:first-child:last-child {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    width: auto;
+    height: auto;
+    max-height: none;
+    margin: 0;
+    overflow: visible;
+}
+
+.slide .colloquium-grid > .col > p:first-child:last-child:has(> img) > img,
+.slide .colloquium-row > p:first-child:last-child:has(> img) > img {
+    width: 100%;
+    height: 100%;
+    flex: 1 1 auto;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    object-position: top center;
+    min-height: 0;
+}
+
+.slide .slide-content > figure.colloquium-figure:first-child:last-child > img,
+.slide .colloquium-grid > .col > figure.colloquium-figure:first-child:last-child > img,
+.slide .colloquium-row > figure.colloquium-figure:first-child:last-child > img {
+    width: auto;
+    height: auto;
+    flex: 0 0 auto;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    object-position: top center;
+    min-height: 0;
+}
+
+.slide.img-valign-top .colloquium-grid > .col > p:first-child:last-child:has(> img) > img,
+.slide.img-valign-top .colloquium-row > p:first-child:last-child:has(> img) > img,
+.slide.img-valign-top .slide-content > figure.colloquium-figure:first-child:last-child > img,
+.slide.img-valign-top .colloquium-grid > .col > figure.colloquium-figure:first-child:last-child > img,
+.slide.img-valign-top .colloquium-row > figure.colloquium-figure:first-child:last-child > img {
+    object-position: top center;
+}
+
+.slide.img-valign-center .colloquium-grid > .col > p:first-child:last-child:has(> img) > img,
+.slide.img-valign-center .colloquium-row > p:first-child:last-child:has(> img) > img,
+.slide.img-valign-center .slide-content > figure.colloquium-figure:first-child:last-child > img,
+.slide.img-valign-center .colloquium-grid > .col > figure.colloquium-figure:first-child:last-child > img,
+.slide.img-valign-center .colloquium-row > figure.colloquium-figure:first-child:last-child > img {
+    object-position: center center;
+}
+
+.slide.img-valign-bottom .colloquium-grid > .col > p:first-child:last-child:has(> img) > img,
+.slide.img-valign-bottom .colloquium-row > p:first-child:last-child:has(> img) > img,
+.slide.img-valign-bottom .slide-content > figure.colloquium-figure:first-child:last-child > img,
+.slide.img-valign-bottom .colloquium-grid > .col > figure.colloquium-figure:first-child:last-child > img,
+.slide.img-valign-bottom .colloquium-row > figure.colloquium-figure:first-child:last-child > img {
+    object-position: bottom center;
+}
+
+.img-overflow .colloquium-grid > .col,
+.img-overflow .colloquium-rows > .colloquium-row,
+.img-overflow .slide-content {
+    overflow: visible;
+}
+
+.slide.img-overflow .colloquium-grid > .col > p:first-child:last-child:has(> img),
+.slide.img-overflow .colloquium-row > p:first-child:last-child:has(> img),
+.slide.img-overflow .slide-content > figure.colloquium-figure:first-child:last-child,
+.slide.img-overflow .colloquium-grid > .col > figure.colloquium-figure:first-child:last-child,
+.slide.img-overflow .colloquium-row > figure.colloquium-figure:first-child:last-child {
+    overflow: visible;
+}
+
+.slide.img-overflow .colloquium-grid > .col > p:first-child:last-child:has(> img) > img,
+.slide.img-overflow .colloquium-row > p:first-child:last-child:has(> img) > img,
+.slide.img-overflow .slide-content > figure.colloquium-figure:first-child:last-child > img,
+.slide.img-overflow .colloquium-grid > .col > figure.colloquium-figure:first-child:last-child > img,
+.slide.img-overflow .colloquium-row > figure.colloquium-figure:first-child:last-child > img {
+    width: auto;
+    height: auto;
+    flex: 0 0 auto;
+    max-width: none;
+    max-height: none;
+}
+
+/* ===== Utility: Image Alignment (independent of title) ===== */
+.img-align-center .slide-content img,
+.img-align-left .slide-content img,
+.img-align-right .slide-content img {
+    display: block;
+}
+
+.img-align-center .slide-content img { margin-left: auto; margin-right: auto; }
+.img-align-left .slide-content img { margin-right: auto; }
+.img-align-right .slide-content img { margin-left: auto; }
+
+/* ===== Utility: Image Fill ===== */
+.img-fill .slide-content img {
+    max-height: none;
+    max-width: none;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+.img-fill .slide-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+}
+
+/* ===== Utility: Padding ===== */
+.pad-compact.active { padding: 30px; }
+.pad-normal.active  { padding: 60px; }
+.pad-wide.active    { padding: 90px; }
+
+/* ===== Utility: Font Size (slide-level) ===== */
+.size-small.active  { font-size: 20px; }
+.size-normal.active { font-size: 24px; }
+.size-large.active  { font-size: 28px; }
+
+/* ===== Utility: Inline/Block Text Size ===== */
+.text-xs { font-size: 0.65em; }
+.text-sm { font-size: 0.8em; }
+.text-base { font-size: 1em; }
+.text-lg { font-size: 1.2em; }
+.text-xl { font-size: 1.4em; }
+.text-2xl { font-size: 1.7em; }
+.text-3xl { font-size: 2.2em; }
+.text-4xl { font-size: 2.8em; }
+
+/* ===== Utility: Spacing ===== */
+.colloquium-spacer-sm { height: 0.75em; }
+.colloquium-spacer-md { height: 1.25em; }
+.colloquium-spacer-lg { height: 2em; }
+
+/* ===== Utility: Footnotes ===== */
+.colloquium-footnote {
+    margin-top: 1em;
+    font-size: 0.68em;
+    line-height: 1.35;
+    color: var(--colloquium-muted);
+}
+
+.colloquium-footnote p {
+    margin: 0.35em 0 0;
+}
+
+.colloquium-footnote p:first-child {
+    margin-top: 0;
+}
+
+/* ===== Fragments (incremental reveal) ===== */
+.fragment[data-fragment-index] {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+}
+.fragment[data-fragment-index].visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* ===== Footer (inside each slide) ===== */
+.colloquium-footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    font-size: 13px;
+    color: var(--colloquium-muted);
+    user-select: none;
+}
+
+.colloquium-footer-left,
+.colloquium-footer-center,
+.colloquium-footer-right {
+    display: flex;
+    align-items: center;
+}
+
+.colloquium-footer-left   { justify-content: flex-start; }
+.colloquium-footer-center { justify-content: center; flex: 1; }
+.colloquium-footer-right  { justify-content: flex-end; }
+
+.colloquium-footer-nav {
+    cursor: pointer;
+}
+
+.slide .colloquium-footer-logo {
+    height: 24px;
+    width: auto;
+    border-radius: 0;
+    max-height: none;
+}
+
+.colloquium-counter {
+    cursor: pointer;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.colloquium-counter:hover {
+    opacity: 1;
+}
+
+.colloquium-footer-nav:hover {
+    color: var(--colloquium-accent);
+}
+
+/* Inverted footer on section breaks */
+.slide--section-break .colloquium-footer {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* ===== Slide Picker Overlay ===== */
+.colloquium-picker-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 200;
+}
+
+.colloquium-picker-overlay.active {
+    display: block;
+}
+
+.colloquium-picker {
+    position: absolute;
+    bottom: 48px;
+    right: 24px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    max-height: 70vh;
+    overflow-y: auto;
+    width: 360px;
+    padding: 8px 0;
+}
+
+.colloquium-picker-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 20px;
+    border: none;
+    background: none;
+    font-family: var(--colloquium-font-body);
+    font-size: 15px;
+    color: var(--colloquium-text);
+    cursor: pointer;
+    text-align: left;
+}
+
+.colloquium-picker-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.colloquium-picker-item:hover {
+    background: var(--colloquium-code-bg);
+}
+
+.colloquium-picker-item.current {
+    color: var(--colloquium-accent);
+    font-weight: 600;
+}
+
+.colloquium-picker-num {
+    min-width: 28px;
+    color: var(--colloquium-muted);
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    text-align: right;
+}
+
+.colloquium-picker-item.current .colloquium-picker-num {
+    color: var(--colloquium-accent);
+}
+
+/* ===== Picker Trigger ===== */
+.colloquium-picker-trigger {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 155;
+    display: none;
+    align-items: center;
+    gap: 10px;
+    border: none;
+    border-radius: 999px;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--colloquium-heading);
+    font-family: var(--colloquium-font-body);
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.colloquium-picker-trigger:hover {
+    background: #fff;
+}
+
+.colloquium-picker-trigger-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--colloquium-muted);
+}
+
+.colloquium-picker-trigger-count {
+    font-size: 14px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--colloquium-accent);
+}
+
+body.colloquium-embedded .colloquium-picker-trigger {
+    display: none !important;
+}
+
+/* ===== Present Button ===== */
+.colloquium-present {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 150;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: var(--colloquium-accent);
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+body:hover .colloquium-present {
+    opacity: 0.7;
+}
+
+.colloquium-present:hover {
+    opacity: 1 !important;
+}
+
+/* Hide when already fullscreen */
+:fullscreen .colloquium-present {
+    display: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+    .colloquium-present {
+        display: none !important;
+    }
+
+    .colloquium-picker-trigger {
+        display: flex;
+        right: max(12px, env(safe-area-inset-right));
+        bottom: max(12px, env(safe-area-inset-bottom));
+        min-height: 52px;
+        padding: 12px 16px;
+        gap: 12px;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 6px 24px rgba(0,0,0,0.22);
+    }
+
+    .colloquium-picker-trigger-label {
+        font-size: 12px;
+    }
+
+    .colloquium-picker-trigger-count {
+        font-size: 16px;
+    }
+
+    .colloquium-picker {
+        right: 12px;
+        left: 12px;
+        bottom: 76px;
+        width: auto;
+        max-height: min(72vh, 560px);
+    }
+}
+
+/* ===== Overflow Warning ===== */
+.colloquium-overflow-warn {
+    position: absolute;
+    bottom: 40px;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: repeating-linear-gradient(
+        90deg, #e94560 0, #e94560 8px, transparent 8px, transparent 16px
+    );
+    opacity: 0.8;
+    pointer-events: none;
+}
+
+:fullscreen .colloquium-overflow-warn {
+    display: none;
+}
+
+/* ===== Progress Bar ===== */
+.colloquium-progress {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--colloquium-progress-bg);
+    z-index: 100;
+}
+
+.colloquium-progress-bar {
+    height: 100%;
+    background: var(--colloquium-progress-fill);
+    transition: width 0.3s ease;
+}
+
+/* ===== Conversation Bubbles ===== */
+.colloquium-conversation {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6em;
+    width: 100%;
+}
+
+.colloquium-message {
+    max-width: 80%;
+    border-radius: 12px;
+    padding: 0.5em 0.8em;
+}
+
+.colloquium-message--user {
+    align-self: flex-end;
+    background: var(--colloquium-accent);
+    color: #ffffff;
+}
+
+.colloquium-message--assistant {
+    align-self: flex-start;
+    background: var(--colloquium-code-bg);
+    color: var(--colloquium-text);
+}
+
+.colloquium-message--system {
+    align-self: center;
+    border: 1px solid var(--colloquium-border);
+    background: transparent;
+    color: var(--colloquium-muted);
+    font-style: italic;
+    font-size: 0.85em;
+    max-width: 90%;
+}
+
+.colloquium-message-role {
+    font-size: 0.65em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.15em;
+    opacity: 0.75;
+}
+
+.colloquium-message--user .colloquium-message-role {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.colloquium-message-role-name {
+    display: inline;
+}
+
+.colloquium-message-model {
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 500;
+    opacity: 0.9;
+}
+
+.colloquium-message-content p {
+    margin: 0 0 0.3em;
+    white-space: pre-line;
+}
+
+.colloquium-message-content p:last-child {
+    margin-bottom: 0;
+}
+
+.colloquium-message-content li {
+    white-space: pre-line;
+}
+
+.colloquium-message-content code {
+    font-size: 0.85em;
+}
+
+.colloquium-message--user .colloquium-message-content code {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* ===== Built With Badge ===== */
+.slide a.colloquium-builtwith {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75em;
+    max-width: 100%;
+    padding: 0.55em 0.8em;
+    border: 1px solid color-mix(in srgb, var(--colloquium-border) 75%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--colloquium-code-bg) 75%, white 25%);
+    color: var(--colloquium-text);
+    text-decoration: none;
+    line-height: 1.1;
+}
+
+.slide a.colloquium-builtwith:hover {
+    border-color: color-mix(in srgb, var(--colloquium-accent) 55%, var(--colloquium-border) 45%);
+    color: var(--colloquium-heading);
+}
+
+.colloquium-builtwith-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.15em;
+    height: 1.15em;
+    flex: 0 0 auto;
+}
+
+.colloquium-builtwith-icon svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.colloquium-builtwith-text {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.05em;
+}
+
+.colloquium-builtwith-label {
+    font-size: 0.6em;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--colloquium-muted);
+}
+
+.colloquium-builtwith-repo {
+    font-size: 0.82em;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.colloquium-builtwith-stars {
+    font-size: 0.72em;
+    color: var(--colloquium-muted);
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+
+/* ===== Citations ===== */
+.slide a.colloquium-cite {
+    color: var(--colloquium-accent);
+    text-decoration: none;
+    font-size: 0.85em;
+    white-space: nowrap;
+}
+
+.slide a.colloquium-cite:hover {
+    text-decoration: underline;
+}
+
+.colloquium-footnote-ref {
+    font-size: 0.65em;
+    line-height: 0;
+    vertical-align: super;
+}
+
+.slide .colloquium-footnote-ref a {
+    color: var(--colloquium-accent);
+    text-decoration: none;
+}
+
+.slide .colloquium-footnote-ref a:hover {
+    text-decoration: underline;
+}
+
+.colloquium-cite-missing {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+/* ===== Per-Slide Footnote Area ===== */
+.colloquium-slide-meta {
+    position: absolute;
+    bottom: 40px;
+    font-size: 12px;
+    color: var(--colloquium-muted);
+    max-width: 40%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2em;
+    z-index: 4;
+}
+
+.colloquium-slide-meta--left {
+    left: 24px;
+    align-items: flex-start;
+    text-align: left;
+}
+
+.colloquium-slide-meta--right {
+    right: 24px;
+    align-items: flex-end;
+    text-align: right;
+}
+
+.colloquium-slide-cite,
+.colloquium-slide-footnote {
+    max-width: 100%;
+}
+
+.colloquium-slide-cite {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.colloquium-slide-cite a.colloquium-cite {
+    font-size: inherit;
+    color: var(--colloquium-accent);
+}
+
+.colloquium-slide-cite a.colloquium-cite:hover {
+    color: var(--colloquium-heading);
+}
+
+.colloquium-slide-footnote {
+    line-height: 1.35;
+}
+
+.colloquium-slide-footnote-item + .colloquium-slide-footnote-item {
+    margin-top: 0.15em;
+}
+
+.colloquium-slide-footnote-label {
+    font-weight: 600;
+}
+
+.colloquium-slide-footnote-text {
+    display: inline;
+}
+
+.colloquium-slide-footnote-text .colloquium-cite {
+    white-space: normal;
+}
+
+.colloquium-slide-footnote > :first-child {
+    margin-top: 0;
+}
+
+.colloquium-slide-footnote > :last-child {
+    margin-bottom: 0;
+}
+
+.colloquium-slide-meta--right .colloquium-slide-footnote ul,
+.colloquium-slide-meta--right .colloquium-slide-footnote ol {
+    padding-right: 1.2em;
+    padding-left: 0;
+    list-style-position: inside;
+}
+
+/* ===== References Slide ===== */
+.colloquium-references-slide {
+}
+
+.colloquium-reference {
+    padding-left: 2em;
+    text-indent: -2em;
+    margin-bottom: 0.6em;
+    font-size: 0.75em;
+    line-height: 1.5;
+}
+
+.colloquium-ref-url {
+    color: var(--colloquium-muted);
+    font-size: 0.9em;
+    text-decoration: none;
+}
+
+.colloquium-ref-url:hover {
+    color: var(--colloquium-accent);
+    text-decoration: underline;
+}
+
+/* ===== Print / PDF Styles ===== */
+@page {
+    size: 13.333in 7.5in;  /* 16:9 widescreen at 96 CSS px/in => 1280x720 */
+    margin: 0;
+}
+
+@media print {
+    html, body {
+        width: 13.333in;
+        height: auto;
+        overflow: visible;
+        background: #fff;
+        margin: 0;
+        padding: 0;
+    }
+
+    .colloquium-deck {
+        position: static;
+        transform: none !important;
+        width: auto;
+        height: auto;
+        background: none;
+    }
+
+    .slide {
+        display: flex !important;
+        position: relative;
+        width: 1280px;
+        height: 720px;
+        page-break-after: always;
+        page-break-inside: avoid;
+        break-after: page;
+        break-inside: avoid;
+        margin: 0;
+        font-size: 24px;
+        overflow: visible;
+    }
+
+    .slide:last-child {
+        page-break-after: auto;
+    }
+
+    /* Display equations can be clipped inside printed columns even when the
+       right side of the slide has free space available. */
+    .slide .katex-display {
+        overflow: visible !important;
+    }
+
+    /* Hidden slides never get the runtime figure fit pass, so printed grid
+       figures need an explicit container-sized fallback. (Row figures are
+       excluded: they get the row-fraction cap below instead. img-overflow
+       slides opted into a deliberate bleed, so no print cap applies.) */
+    .slide:not(.img-overflow) .slide-content > figure.colloquium-figure:first-child:last-child,
+    .slide:not(.img-overflow) .slide-content.colloquium-grid > .col > figure.colloquium-figure:first-child:last-child {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .slide:not(.img-overflow) .slide-content > figure.colloquium-figure:first-child:last-child > img,
+    .slide:not(.img-overflow) .slide-content.colloquium-grid > .col > figure.colloquium-figure:first-child:last-child > img {
+        width: 100% !important;
+        height: auto !important;
+        max-width: 100% !important;
+        max-height: calc(720px - var(--colloquium-slide-padding) * 2 - 100px) !important;
+    }
+
+    /* Row images: cap to the row's height share of the slide. On screen the
+       runtime fit pass sizes these, but printed slides never run it, and an
+       image taller than its row overflows the fixed-height slide -- Chromium's
+       print fragmentation then silently moves the whole image onto the next
+       PDF page. --colloquium-print-row-frac is emitted on each row at build
+       time; 96px approximates the title block. */
+    .slide:not(.img-overflow) .colloquium-row img {
+        width: auto !important;
+        height: auto !important;
+        max-width: 100% !important;
+        max-height: calc(
+            (720px - var(--colloquium-slide-padding) * 2 - 96px)
+            * var(--colloquium-print-row-frac, 1)
+        ) !important;
+    }
+
+    /* Leave room for the caption under captioned row figures. */
+    .slide:not(.img-overflow) .colloquium-row figure.colloquium-figure:has(> figcaption) > img {
+        max-height: calc(
+            (720px - var(--colloquium-slide-padding) * 2 - 96px)
+            * var(--colloquium-print-row-frac, 1) - 48px
+        ) !important;
+    }
+
+    /* Printed slides are not .active, so re-apply layout/utility rules without that gate. */
+    .slide--title,
+    .slide--title-left,
+    .slide--title-banner,
+    .slide--section-break {
+        display: flex !important;
+    }
+
+    .slide--title-sidebar {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) 300px;
+        column-gap: 56px;
+        align-content: center;
+        align-items: start;
+    }
+
+    .slide--title-sidebar.valign-top {
+        align-content: start;
+    }
+
+    .slide--title-sidebar.valign-center {
+        align-content: center;
+    }
+
+    .slide--title-sidebar.valign-bottom {
+        align-content: end;
+    }
+
+    .title-top { justify-content: flex-start; }
+    .title-center { justify-content: center; }
+    .title-center > h1, .title-center > h2 { text-align: center; }
+
+    .align-left { text-align: left; }
+    .align-center { text-align: center; }
+    .align-right { text-align: right; }
+
+    .align-center .slide-content > img,
+    .align-center .slide-content > p > img {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .align-left .slide-content > img,
+    .align-left .slide-content > p > img {
+        display: block;
+        margin-right: auto;
+    }
+
+    .align-right .slide-content > img,
+    .align-right .slide-content > p > img {
+        display: block;
+        margin-left: auto;
+    }
+
+    .valign-top { justify-content: flex-start; }
+    .valign-center { justify-content: center; }
+    .valign-bottom { justify-content: flex-end; }
+
+    .size-small { font-size: 20px; }
+    .size-normal { font-size: 24px; }
+    .size-large { font-size: 28px; }
+
+    .colloquium-progress,
+    .colloquium-picker-overlay,
+    .colloquium-present,
+    .colloquium-picker-trigger,
+    .colloquium-overflow-warn {
+        display: none !important;
+    }
+
+    .colloquium-counter {
+        cursor: default;
+    }
+
+    a {
+        color: inherit !important;
+        text-decoration: underline;
+    }
+
+    .slide a.colloquium-cite,
+    .colloquium-slide-cite a.colloquium-cite,
+    .slide a.colloquium-ref-url {
+        color: var(--colloquium-accent) !important;
+    }
+
+    /* Swap chart canvases for static images */
+    .colloquium-chart-container canvas {
+        display: none !important;
+    }
+
+    .colloquium-chart-print {
+        display: block !important;
+    }
+
+    /* Show all fragments in print */
+    .fragment[data-fragment-index] {
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        transition: none !important;
+    }
+}
+
+/* ===== Toast (transient confirmation, e.g. "Copied slide markdown") ===== */
+.colloquium-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    z-index: 1000;
+    padding: 8px 16px;
+    border-radius: 6px;
+    background: rgba(20, 20, 20, 0.92);
+    color: #fff;
+    font-size: 14px;
+    font-family: var(--colloquium-font-body, sans-serif);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.colloquium-toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* ===== Capture mode — hide UI chrome for headless screenshots ===== */
+.colloquium-capture .colloquium-present,
+.colloquium-capture .colloquium-progress,
+.colloquium-capture .colloquium-overflow-warn,
+.colloquium-capture .colloquium-picker-trigger,
+.colloquium-capture .colloquium-picker-overlay,
+.colloquium-capture .colloquium-toast {
+    display: none !important;
+}
+
+/* Show all fragments in capture mode */
+.colloquium-capture .fragment[data-fragment-index] {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transition: none !important;
+}
+
+
+
+</style>
+</head>
+<body>
+<div class="colloquium-deck">
+<section class="slide slide--title active" data-index="0" data-colloquium-md="PCEtLSBsYXlvdXQ6IHRpdGxlIC0tPgoKIyBSZWNpcmN1bGF0aW9uIGZvciBSZWFzb25pbmc6IEFuIEluZGVwZW5kZW50IFJlcGxpY2F0aW9uCgpGaXhlZCwgdHJhaW5pbmctZnJlZSBkZWVw4oaSc2hhbGxvdyBmZWVkYmFjayBvbiBHU004SyDigJQgaW1wbGVtZW50ZWQgdHdvIHdheXMsIG1lYXN1cmVkIGhvbmVzdGx5Cgo8IS0tIG5vdGVzOiBDb25kaXRpb25hbCBudWxsIHRhbGsuIExlYWQgd2l0aCB0aGUgdmVyZGljdCwgdGhlbiBlYXJuIGl0IHRocm91Z2ggbWV0aG9kLiAtLT4=">
+<h1>Recirculation for Reasoning: An Independent Replication</h1>
+<div class="slide-content"><p>Fixed, training-free deep→shallow feedback on GSM8K — implemented two ways, measured honestly</p>
+</div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">1 / 26</span></div></div>
+</section>
+
+<section class="slide slide--content" data-index="1" data-colloquium-md="IyMgUmVzZWFyY2ggcXVlc3Rpb24KCmBgYGJveAp0aXRsZTogRG9lcyBkZWVwLXRvLXNoYWxsb3cgcmVwcmVzZW50YXRpb24gcmVjaXJjdWxhdGlvbiBpbXByb3ZlIExMTSByZWFzb25pbmcg4oCUIGFuZCBkbyB0aGUgYmVuZWZpdHMgY2Fycnkgb3ZlciB0byBMTE0gc2FmZXR5Pwp0b25lOiBhY2NlbnQKYGBgCgotICoqUGhhc2UgMiAodGhpcyB0YWxrKToqKiBjYXBhYmlsaXR5IHJlcGxpY2F0aW9uIG9uIEdTTThLIOKAlCBoZWFkbGluZSBpcyB0aGUgc3dlZXAgc3VyZmFjZSArIHJld3JpdHRlbiB0cmFqZWN0b3JpZXMsIG5vdCB0aGUgc2luZ2xlLWNvbmZpZyBudWxsCi0gKipQaGFzZSAzIChuZXh0KToqKiBzYWZldHkvc2VjdXJpdHkgdHJhbnNmZXIg4oCUIHJlZnJhbWVkIGFyb3VuZCB3aGF0IFBoYXNlIDIgYWN0dWFsbHkgcHJvdmVkCi0gU2NvcGUgdG9kYXk6IGZpeGVkIGNvZWZmaWNpZW50cyBvbmx5IMK3IGdyZWVkeSBwYXNzQDEgwrcgR1NNOEsgb25seSDCtyBHZW1tYTMgUFQgMUIvNEI=">
+<h2>Research question</h2>
+<div class="slide-content"><div class="colloquium-box colloquium-box--accent">
+<div class="colloquium-box-title">Does deep-to-shallow representation recirculation improve LLM reasoning — and do the benefits carry over to LLM safety?</div>
+</div>
+<ul>
+<li><strong>Phase 2 (this talk):</strong> capability replication on GSM8K — headline is the sweep surface + rewritten trajectories, not the single-config null</li>
+<li><strong>Phase 3 (next):</strong> safety/security transfer — reframed around what Phase 2 actually proved</li>
+<li>Scope today: fixed coefficients only · greedy pass@1 · GSM8K only · Gemma3 PT 1B/4B</li>
+</ul>
+</div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">2 / 26</span></div></div>
+</section>
+
+<section class="slide slide--content" data-index="2" data-colloquium-md="IyMgQmFja2dyb3VuZDogd2hhdCB0aGUgcGFwZXIgY2xhaW1zIFtAbW96ZXIyMDI2cmVjaXJjdWxhdGlvbl0KCi0gSW5mZXJlbmNlLXRpbWUgcmVjdXJyZW5jZSBmb3IgKipmcm96ZW4qKiB0cmFuc2Zvcm1lcnM6IGxlYWsgZGVlcC1sYXllciBhY3RpdmF0aW9uIGRvd24gdG8gYSBzaGFsbG93IGxheWVyIGVhY2ggc3RlcAotIE1peGluZyBydWxlOiAkZCcgPSBcYWxwaGEgXGNkb3QgZihzKSArIFxiZXRhIFxjZG90IGQkIHdpdGggZGVzdGluYXRpb24tTDIgcmVzY2FsaW5nCi0gKipSZWNpcmN1bGF0aW9uIOKJoCBsb29waW5nKiogKHNhbWUtc3RlcCBkZXB0aCByZWN1cnJlbmNlKSDigJQgdGhlaXIgc3dlZXBzIHNob3cgcmVjaXJjdWxhdGlvbiBoZWxwaW5nIGJyb2FkbHkgd2hlcmUgbG9vcGluZyBtb3N0bHkgaGFybXMKLSBSZXBvcnRlZDog4oiSMjMlIHBlcnBsZXhpdHksICsyMSUgR1NNOEsgKGFkYXB0aXZlLCBHZW1tYTMpOyBmaXhlZCB2YXJpYW50IGltcHJvdmVzIGdyZWVkeSBwYXNzQDEgYW5kIHBhc3NAMTI4IG9uIDRCIFBUIHdpdGggcGFpcnMgezEx4oaSNH0gLyB7MTjihpI5fSwgzrE9MC4xNQ==">
+<h2>Background: what the paper claims <a href="#colloquium-ref-mozer2026recirculation" class="colloquium-cite">(Mozer et al., 2026)</a></h2>
+<div class="slide-content"><ul>
+<li>Inference-time recurrence for <strong>frozen</strong> transformers: leak deep-layer activation down to a shallow layer each step</li>
+<li>Mixing rule: <span class="math inline">d' = \alpha \cdot f(s) + \beta \cdot d</span> with destination-L2 rescaling</li>
+<li><strong>Recirculation ≠ looping</strong> (same-step depth recurrence) — their sweeps show recirculation helping broadly where looping mostly harms</li>
+<li>Reported: −23% perplexity, +21% GSM8K (adaptive, Gemma3); fixed variant improves greedy pass@1 and pass@128 on 4B PT with pairs {11→4} / {18→9}, α=0.15</li>
+</ul>
+</div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">3 / 26</span></div></div>
+</section>
+
+<section class="slide slide--content" data-index="3" data-colloquium-md="IyMgSGFybmVzczogdHJ1c3QgYnkgY29uc3RydWN0aW9uCgotIFN0cmljdCBzZXBhcmF0aW9uOiBgVGFza2Agb3ducyBiZW5jaG1hcmsgc2VtYW50aWNzIMK3IGBNb2RlbEFkYXB0ZXJgIG93bnMgZ2VuZXJhdGlvbiDCtyBgRXZhbHVhdG9yYCBvcmNoZXN0cmF0ZXMKLSBCYXNlbGluZSBpcyBhICoqZmlyc3QtY2xhc3MgY29uZGl0aW9uKiogKGBpbnRlcnZlbnRpb246IHt0eXBlOiBub25lfWApIOKAlCBzd2FwcGluZyBpbiByZWNpcmN1bGF0aW9uIGNoYW5nZXMgbm8gZXZhbHVhdG9yLCB0YXNrLCBwcm9tcHQsIHBhcnNlciwgb3Igc2NvcmVyIGNvZGUKLSBFdmVyeSBydW4gZW1pdHMgYW4gaW1tdXRhYmxlIGRpcmVjdG9yeTogbWFuaWZlc3QsIGNvbmZpZywgbWV0cmljcywgcGVyLWV4YW1wbGUgSlNPTkwsIGVudmlyb25tZW50LCBsb2dzIOKAlCBwbHVzIFcmQiBtaXJyb3JpbmcKLSAqKkFjY2VwdGFuY2UgZ2F0ZXMsIGFsbCBncmVlbiBiZWZvcmUgYW55IEdQVSBjbGFpbToqKiDOsT0wIOKJoSBiYXNlbGluZSBiaXR3aXNlIMK3IHNyYz09ZHN0IHJlamVjdGVkIMK3IGJhdGNoLXNpemUgaW52YXJpYW5jZSDCtyBpZGVudGljYWwgcmVydW5z">
+<h2>Harness: trust by construction</h2>
+<div class="slide-content"><ul>
+<li>Strict separation: <code>Task</code> owns benchmark semantics · <code>ModelAdapter</code> owns generation · <code>Evaluator</code> orchestrates</li>
+<li>Baseline is a <strong>first-class condition</strong> (<code>intervention: {type: none}</code>) — swapping in recirculation changes no evaluator, task, prompt, parser, or scorer code</li>
+<li>Every run emits an immutable directory: manifest, config, metrics, per-example JSONL, environment, logs — plus W&amp;B mirroring</li>
+<li><strong>Acceptance gates, all green before any GPU claim:</strong> α=0 ≡ baseline bitwise · src==dst rejected · batch-size invariance · identical reruns</li>
+</ul>
+</div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">4 / 26</span></div></div>
+</section>
+
+<section class="slide slide--content cols-2" data-index="4" data-colloquium-md="PCEtLSBjbGFzczogY29scy0yIC0tPgoKIyMgRnJvemVuIHByb3RvY29sIChkby1ub3QtbW9kaWZ5KQoKLSBNb2RlbHM6IEdlbW1hMyBQVCwgd2VpZ2h0cyBkYXRlZCAyMDI1LTAzICgqKnByZS1wYXBlcioqKTsgMUIgcmV2IGBmY2YxOGEyYeKApmAsIDRCIHJldiBgY2MwMTJlMGHigKZgCi0gRGF0YXNldDogYG9wZW5haS9nc204a2AgdGVzdCwgKipuPTEzMTkqKiwgcmF3IG9yZGVyLCBzdGFibGUgaWRzCgp8fHwKCi0gUHJvbXB0aW5nOiB0d28tc3RhZ2UgS29qaW1hIFtAa29qaW1hMjAyMl0g4oCUIGBROiDigKYgQTogTGV0J3MgdGhpbmsgc3RlcCBieSBzdGVwLmAg4oaSIGV4dHJhY3Rpb24gcHJvbXB0OyByYXcgUFQgcHJvbXB0cywgQk9TLWd1YXJkZWQKLSBEZWNvZGluZzogZ3JlZWR5LCBzZWVkIDQyLCAyNTYgKyAzMiB0b2tlbnM7IHYxLjAgcGFyc2VyL3Njb3JlciBvbiBzdGFnZS0yIG91dHB1dCwgZmFpbHVyZXMgc2NvcmUgMAotIFN0YXRzOiBNY05lbWFyIGZsaXBzLCBXaWxzb24gOTUlIENJcywgQm9uZmVycm9uaSBvdmVyIHN3ZWVwIGNlbGxz">
+<h2>Frozen protocol (do-not-modify)</h2>
+<div class="slide-content colloquium-grid" style="grid-template-columns: repeat(2, minmax(0, 1fr));"><div class="col"><ul>
+<li>Models: Gemma3 PT, weights dated 2025-03 (<strong>pre-paper</strong>); 1B rev <code>fcf18a2a…</code>, 4B rev <code>cc012e0a…</code></li>
+<li>Dataset: <code>openai/gsm8k</code> test, <strong>n=1319</strong>, raw order, stable ids</li>
+</ul></div><div class="col"><ul>
+<li>Prompting: two-stage Kojima <a href="#colloquium-ref-kojima2022" class="colloquium-cite">(Kojima et al., 2022)</a> — <code>Q: … A: Let's think step by step.</code> → extraction prompt; raw PT prompts, BOS-guarded</li>
+<li>Decoding: greedy, seed 42, 256 + 32 tokens; v1.0 parser/scorer on stage-2 output, failures score 0</li>
+<li>Stats: McNemar flips, Wilson 95% CIs, Bonferroni over sweep cells</li>
+</ul></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">5 / 26</span></div></div>
+</section>
+
+<section class="slide slide--content cols-55-45 figure-captions img-align-center" data-index="5" data-colloquium-md="PCEtLSBjbGFzczogY29scy01NS00NSBmaWd1cmUtY2FwdGlvbnMgaW1nLWFsaWduLWNlbnRlciAtLT4KCiMjIE1ldGhvZCwgc3RlcCBieSBzdGVwICgxLzMpOiBzaGFyZWQgbWl4aW5nIG1hdGgKCkJvdGggc2NoZWR1bGVzIHNoYXJlIG9uZSBpbXBsZW1lbnRhdGlvbiBiZWhpbmQgYSBgc2NoZWR1bGVgIHBhcmFtZXRlcjoKCi0gJGQnID0gXGFscGhhIFxjZG90IGYocykgKyBcYmV0YSBcY2RvdCBkJCwgZGVzdGluYXRpb24tTDIgcmVzY2FsaW5nIChlcHMtc2FmZSksIGNvbnZleC9ub25jb252ZXggzrIgcmVzb2x2ZWQg4oCUIG5ldmVyIGhhcmRjb2RlZAotIFRlc3RlZDogKioxQioqIDEx4oaSNCwgzrE9MC4xNS/Osj0wLjg1IGNvbnZleCArIHJhbXAgwrcgKio0QioqIDE44oaSOSwgzrE9MC4xNS/Osj0xLjAsIHJhbXAgb2ZmCi0gV2h5IHJlc2NhbGluZyBpcyBsb2FkLWJlYXJpbmcgaXMgKiptZWFzdXJlZCwgbm90IGFzc2VydGVkKio6IGZpcnN0IG1peGVkIHBvc2l0aW9uIOKAlCBzb3VyY2Ugbm9ybSAqKjI1LDM3MSoqIHZzIGRlc3RpbmF0aW9uIG5vcm0gKioxMjQqKiAoMjA0w5cpCgp8fHwKCgoKCiFbT25lIG1lYXN1cmVkIG1peGluZyBldmVudDogbm9ybXMsIHJlc2NhbGVkIG1peHR1cmUsIGNvc2luZSAwLjYzNl0oLi4vcmVwb3J0cy9maWd1cmVzL3hzdGVwXzJfc3RlcF9kZXRhaWwucG5nKQ==">
+<h2>Method, step by step (1/3): shared mixing math</h2>
+<div class="slide-content colloquium-grid" style="grid-template-columns: minmax(0, 55fr) minmax(0, 45fr);"><div class="col"><p>Both schedules share one implementation behind a <code>schedule</code> parameter:</p>
+<ul>
+<li><span class="math inline">d' = \alpha \cdot f(s) + \beta \cdot d</span>, destination-L2 rescaling (eps-safe), convex/nonconvex β resolved — never hardcoded</li>
+<li>Tested: <strong>1B</strong> 11→4, α=0.15/β=0.85 convex + ramp · <strong>4B</strong> 18→9, α=0.15/β=1.0, ramp off</li>
+<li>Why rescaling is load-bearing is <strong>measured, not asserted</strong>: first mixed position — source norm <strong>25,371</strong> vs destination norm <strong>124</strong> (204×)</li>
+</ul></div><div class="col"><figure class="colloquium-figure"><img src="../figures/xstep_2_step_detail.png" alt="One measured mixing event: norms, rescaled mixture, cosine 0.636" /><figcaption class="colloquium-figure-caption">One measured mixing event: norms, rescaled mixture, cosine 0.636</figcaption></figure></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">6 / 26</span></div></div>
+</section>
+
+<section class="slide slide--content" data-index="6" data-colloquium-md="IyMgTWV0aG9kLCBzdGVwIGJ5IHN0ZXAgKDIvMyk6IHdhbGt0aHJvdWdoIEEg4oCUIGNyb3NzLXN0ZXAKCk9uZSBmb3J3YXJkIHBlciBpbnB1dCBwb3NpdGlvbjsgZGVzdGluYXRpb24gYXQgc3RlcCAqdCsxKiBtaXhlcyB0aGUgKipzdG9yZWQqKiBkZWVwIHNvdXJjZSBmcm9tIHN0ZXAgKnQqIChXZW5nIGJhYnlzaXR0aW5nIHF1ZXN0aW9uLCA0NSB0b2tlbnMpOgoKMS4gKipQb3NpdGlvbiAwIOKAlCB3YXJtLXVwLCBubyBtaXhpbmcuKiogTm8gcHJldmlvdXMgZGVlcCBzdGF0ZTsgYmxvY2stMTEgb3V0cHV0IGNhcHR1cmVkIGFuZCBzdG9yZWQKMi4gKipQb3NpdGlvbnMg4omlIDEg4oCUIG1peC4qKiBCbG9jayA0J3Mgb3V0cHV0IOKGkCAkMC4xNSBcY2RvdCBmKHMpICsgMC44NSBcY2RvdCBkJDsgYmxvY2tzIDXigJMzMSBydW4gb24gaXQsIHNvIHdyaXR0ZW4gS1YgZW50cmllcyBhbHJlYWR5IGNhcnJ5IHRoZSBpbmZsdWVuY2U7IGZyZXNoIGJsb2NrLTExIG91dHB1dCBvdmVyd3JpdGVzIHRoZSBzdG9yZQozLiAqKkRlY29kZSBydW5zIHRoZSBpZGVudGljYWwgbG9vcCoqIChwb3NpdGlvbnMgNDXigJM2OCk7IGNvc2luZSBzdGF5cyBpbiBhIDAuNTAx4oCTMC42OTMgYmFuZCB0aHJvdWdob3V0Cgo8ZGl2IGNsYXNzPSJjb2xsb3F1aXVtLWZvb3Rub3RlIj5GdWxsIHRyYWNlOiByZXBvcnRzL2FwcGVuZGl4X2Nyb3Nzc3RlcF93YWxrdGhyb3VnaC5tZCDCtyBmcm96ZW4gZGF0YS94c3RlcF90cmFjZS5qc29uIMK3IGFsbCBmdWxsLXNjYWxlIHJlc3VsdHMgdXNlIHRoaXMgc2NoZWR1bGUuPC9kaXY+">
+<h2>Method, step by step (2/3): walkthrough A — cross-step</h2>
+<div class="slide-content"><p>One forward per input position; destination at step <em>t+1</em> mixes the <strong>stored</strong> deep source from step <em>t</em> (Weng babysitting question, 45 tokens):</p>
+<ol>
+<li><strong>Position 0 — warm-up, no mixing.</strong> No previous deep state; block-11 output captured and stored</li>
+<li><strong>Positions ≥ 1 — mix.</strong> Block 4’s output ← <span class="math inline">0.15 \cdot f(s) + 0.85 \cdot d</span>; blocks 5–31 run on it, so written KV entries already carry the influence; fresh block-11 output overwrites the store</li>
+<li><strong>Decode runs the identical loop</strong> (positions 45–68); cosine stays in a 0.501–0.693 band throughout</li>
+</ol>
+<div class="colloquium-footnote">Full trace: reports/appendix_crossstep_walkthrough.md · frozen data/xstep_trace.json · all full-scale results use this schedule.</div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">7 / 26</span></div></div>
+</section>
+
+<section class="slide slide--content" data-index="7" data-colloquium-md="IyMgTWV0aG9kLCBzdGVwIGJ5IHN0ZXAgKDMvMyk6IHdhbGt0aHJvdWdoIEIg4oCUIHR3by1wYXNzICh0aGUgcGFwZXItZmlndXJlIHJlYWRpbmcpCgpQZXIgaW5wdXQgcG9zaXRpb24sICoqdHdvKiogZm9yd2FyZHM6CgoxLiBBIG5vcm1hbCBmdWxsIHBhc3MgKipjYXB0dXJlcyoqIHRoZSBzb3VyY2U7IHRoZSBjYWNoZSBpcyAqKnRydW5jYXRlZCoqCjIuIFRoZSBzYW1lIHRva2VuIGlzICoqcmVydW4qKiB3aXRoIHRoZSBzYW1lLXN0ZXAgc291cmNlIG1peGVkIGF0IHRoZSBib3VuZGFyeTsgdGhlIHJlcnVuIG92ZXJ3cml0ZXMgdXBwZXItbGF5ZXIgS1YgYW5kIHN1cHBsaWVzIHRoZSBsb2dpdHMKMy4gQ29zdCB+MsOXIGNvbXB1dGU7IHdhcm0tdXAgYXQgcG9zaXRpb24gMCBvbmx5OyBhdCDOsT0wIGJpdHdpc2UgaWRlbnRpY2FsIHRvIGJhc2VsaW5lCgpgYGBib3gKdGl0bGU6IERvY3VtZW50ZWQgY2hvaWNlLCBub3QgYSB0aGVvcmVtCnRvbmU6IHN1cmZhY2UKY29udGVudDogfAogIExvZ2l0cyBjb21lIGZyb20gdGhlIHJlcnVuLiBBIHJlYWRvdXQtZnJvbS1ub3JtYWwgYWJsYXRpb24gaXMgY2hlYXAgZnV0dXJlIHdvcmsg4oCUIGhlbGQgb3Blbiwgbm90IGFzc3VtZWQuCmBgYA==">
+<h2>Method, step by step (3/3): walkthrough B — two-pass (the paper-figure reading)</h2>
+<div class="slide-content"><p>Per input position, <strong>two</strong> forwards:</p>
+<ol>
+<li>A normal full pass <strong>captures</strong> the source; the cache is <strong>truncated</strong></li>
+<li>The same token is <strong>rerun</strong> with the same-step source mixed at the boundary; the rerun overwrites upper-layer KV and supplies the logits</li>
+<li>Cost ~2× compute; warm-up at position 0 only; at α=0 bitwise identical to baseline</li>
+</ol>
+<div class="colloquium-box colloquium-box--surface">
+<div class="colloquium-box-title">Documented choice, not a theorem</div>
+<div class="colloquium-box-content"><p>Logits come from the rerun. A readout-from-normal ablation is cheap future work — held open, not assumed.</p></div>
+</div>
+</div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">8 / 26</span></div></div>
+</section>
+
+<section class="slide slide--content" data-index="8" data-colloquium-md="IyMgVGhlIHR3byByZWFkaW5ncywgY29tcGFyZWQKCnwgfCBjcm9zcy1zdGVwIChBKSB8IHR3by1wYXNzIChCKSB8CnwtLS18LS0tfC0tLXwKfCBzb3VyY2UgY2FwdHVyZSB8IHByZXZpb3VzIHBvc2l0aW9uIHwgc2FtZSBwb3NpdGlvbiwgZmlyc3QgcGFzcyB8CnwgZm9yd2FyZHMgLyBwb3NpdGlvbiB8IDEgfCAyICh+MsOXIGNvbXB1dGUpIHwKfCBsb2dpdHMgZnJvbSB8IHRoZSBzaW5nbGUgbWl4ZWQgcGFzcyB8IHRoZSBtaXhlZCByZXJ1biB8CnwgZnVsbC1zY2FsZSBldmlkZW5jZSB8IG49MTMxOSDDlyAyIHNjYWxlcyB8IOKAlCB8CnwgcGFuZWwgZXZpZGVuY2UgfCBjb21wYXJpc29uIGJhc2VsaW5lIHwgbj0xMDAsIDQgY2VsbHMgfAoKVGhlIHBhcGVyJ3MgcHJvc2UgYW5kIGl0cyBGaWctM2MgZm9ybWFsaXphdGlvbiBhZG1pdCBib3RoIHJlYWRpbmdzIOKAlCBzbyB3ZSBidWlsdCBib3RoLiBXaXRob3V0IHRoZSBjcm9zcy1zdGVwIGFybSwgdGhlIHR3by1wYXNzIHBhbmVsIGNvdWxkIG5vdCBpc29sYXRlIHNjaGVkdWxlIGVmZmVjdHMgYXQgYWxsLg==">
+<h2>The two readings, compared</h2>
+<div class="slide-content"><table>
+<thead>
+<tr>
+<th></th>
+<th>cross-step (A)</th>
+<th>two-pass (B)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>source capture</td>
+<td>previous position</td>
+<td>same position, first pass</td>
+</tr>
+<tr>
+<td>forwards / position</td>
+<td>1</td>
+<td>2 (~2× compute)</td>
+</tr>
+<tr>
+<td>logits from</td>
+<td>the single mixed pass</td>
+<td>the mixed rerun</td>
+</tr>
+<tr>
+<td>full-scale evidence</td>
+<td>n=1319 × 2 scales</td>
+<td>—</td>
+</tr>
+<tr>
+<td>panel evidence</td>
+<td>comparison baseline</td>
+<td>n=100, 4 cells</td>
+</tr>
+</tbody>
+</table>
+<p>The paper’s prose and its Fig-3c formalization admit both readings — so we built both. Without the cross-step arm, the two-pass panel could not isolate schedule effects at all.</p>
+</div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">9 / 26</span></div></div>
+</section>
+
+<section class="slide slide--content figure-captions img-fill" data-index="9" data-colloquium-md="PCEtLSBjbGFzczogZmlndXJlLWNhcHRpb25zIGltZy1maWxsIC0tPgoKIyMgU2NoZW1hdGljOiB0aGUgdHdvIHNjaGVkdWxlcyBhcyBpbXBsZW1lbnRlZAoKIVtQYW5lbCBBIGNyb3NzLXN0ZXAsIHBhbmVsIEIgdHdvLXBhc3NdKC4uL3JlcG9ydHMvZmlndXJlcy9zY2hlbWF0aWNfcmVjaXJjdWxhdGlvbl9zY2hlZHVsZXMucG5nKQ==">
+<h2>Schematic: the two schedules as implemented</h2>
+<div class="slide-content"><figure class="colloquium-figure"><img src="../figures/schematic_recirculation_schedules.png" alt="Panel A cross-step, panel B two-pass" /><figcaption class="colloquium-figure-caption">Panel A cross-step, panel B two-pass</figcaption></figure>
+</div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">10 / 26</span></div></div>
+</section>
+
+<section class="slide slide--content" data-index="10" data-colloquium-md="IyMgT3VycyB2cyBsb29waW5nIHRyYW5zZm9ybWVycwoKLSAqKkxvb3BpbmcqKiA9IHJlLWV4ZWN1dGUgYSBibG9jayBvZiBsYXllcnMgb24gdGhlICpzYW1lKiBpbnB1dCAoZGVwdGggcmVjdXJyZW5jZSBpbnNpZGUgb25lIGZvcndhcmQgcGFzcykKLSAqKk91cnM6IG5vIGxheWVyIGlzIGV2ZXIgcmUtZXhlY3V0ZWQqKiDigJQgZXZlcnkgYmxvY2sgcnVucyBleGFjdGx5IG9uY2UgcGVyIHBvc2l0aW9uCi0gSW5mbHVlbmNlIHRyYXZlbHMgKmFjcm9zcyogcG9zaXRpb25zIGluc3RlYWQ6IG9uZSBzdG9yZWQgdmVjdG9yICsgYSBLViBjYWNoZSB3cml0dGVuIHBvc3QtbWl4Ci0gQm90aCBzY2hlZHVsZXMgYXJlIHB1cmUgcmVjaXJjdWxhdGlvbiDigJQgdGhlIHBhcGVyJ3MgRmlndXJlLTggY29udHJhc3QgYXBwbGllcyB0byB3aGF0IHdlIHRlc3Q7IG91ciBudWxsIHNheXMgbm90aGluZyBhYm91dCBsb29waW5n">
+<h2>Ours vs looping transformers</h2>
+<div class="slide-content"><ul>
+<li><strong>Looping</strong> = re-execute a block of layers on the <em>same</em> input (depth recurrence inside one forward pass)</li>
+<li><strong>Ours: no layer is ever re-executed</strong> — every block runs exactly once per position</li>
+<li>Influence travels <em>across</em> positions instead: one stored vector + a KV cache written post-mix</li>
+<li>Both schedules are pure recirculation — the paper’s Figure-8 contrast applies to what we test; our null says nothing about looping</li>
+</ul>
+</div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">11 / 26</span></div></div>
+</section>
+
+<section class="slide slide--content" data-index="11" data-colloquium-md="IyMgT3VycyB2cyB0aGUgcGFwZXIncyByZWNpcmN1bGF0aW9uCgo8ZGl2IGNsYXNzPSJ0ZXh0LXNtIj4KCjEuICoqU2NoZWR1bGUuKiogUHJvc2UgcmVhZGluZyDihpIgY3Jvc3Mtc3RlcDsgZmlndXJlIHJlYWRpbmcg4oaSIHR3by1wYXNzLiBCb3RoIGJ1aWx0LCBhbGlrZSB3aXRoaW4gbm9pc2UgKMKnNC4zKSDigJQgYnV0IGV4YWN0IHVucm9sbGluZyBhbmQgdGhlIHJlYWRvdXQgY2hvaWNlIHN0YXkgb3Blbi4KMi4gKipIYXJuZXNzLioqIFBhcGVyIHVucHVibGlzaGVkIChtb2RlbCBTSEFzLCBidWRnZXRzLCBwYXJzaW5nKSDihpIgb3VycyBmcm96ZW4gYW5kIHByaW50ZWQsIG5vdCBndWVzc2VkLiBTZXJpYWwgcHJlZmlsbCArIHBlci1yb3cgbWFza2luZzsgQk9TIGd1YXJkIHBlciB0aGUgdjIgZXJyYXR1bS4KMy4gKipOdW1lcmljcy4qKiBKQVgtdnMtSEYgdW5hZGRyZXNzZWQgYnkgZGVzaWduOyAxQiByYW1wIGFzIHB1Ymxpc2hlZCBidXQgcHJvdmlzaW9uYWwuCgo8L2Rpdj4=">
+<h2>Ours vs the paper’s recirculation</h2>
+<div class="slide-content"><div class="text-sm">
+<ol>
+<li><strong>Schedule.</strong> Prose reading → cross-step; figure reading → two-pass. Both built, alike within noise (§4.3) — but exact unrolling and the readout choice stay open.</li>
+<li><strong>Harness.</strong> Paper unpublished (model SHAs, budgets, parsing) → ours frozen and printed, not guessed. Serial prefill + per-row masking; BOS guard per the v2 erratum.</li>
+<li><strong>Numerics.</strong> JAX-vs-HF unaddressed by design; 1B ramp as published but provisional.</li>
+</ol>
+</div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">12 / 26</span></div></div>
+</section>
+
+<section class="slide slide--content" data-index="12" data-colloquium-md="IyMgRXZpZGVuY2UgbWFwOiB0aHJlZSBibG9ja3MsIHR3byBtZXRob2RzCgotICoqQSDCtyBGdWxsLXNjYWxlIHBhaXJzKiog4oCUIDxzcGFuIHN0eWxlPSJjb2xvcjojMWY3N2I0Ij5jcm9zcy1zdGVwIChvdXJzKTwvc3Bhbj4sIG49MTMxOSDDlyAyIHNjYWxlcywgcGFwZXIncyBzaW5nbGUgcG9pbnQgcGVyIHNjYWxlIOKGkiAqKm51bGwqKiwgNjnigJM5MCUgY2h1cm4KLSAqKkIgwrcgRGlhZ25vc3RpYyBzd2VlcCoqIOKAlCA8c3BhbiBzdHlsZT0iY29sb3I6IzFmNzdiNCI+Y3Jvc3Mtc3RlcCAob3Vycyk8L3NwYW4+LCBuPTEwMCwgMTggY2VsbHMg4oaSICoqMTYvMTggYmVhdCBiYXNlbGluZSoqLCBiZXN0ICswLjEzCi0gKipDIMK3IFNjaGVkdWxlIHBhbmVsKiog4oCUIDxzcGFuIHN0eWxlPSJjb2xvcjojMmU3ZDMyIj50d28tcGFzcyAocGFwZXIgcmVhZGluZyk8L3NwYW4+IHZzIGNyb3NzLXN0ZXAgdHdpbnMsIG49MTAwLCA0IGNlbGxzIOKGkiAqKmJlYXRzIGJhc2UsIMKxMC4wNyB2cyB0d2lucyoqCgo8IS0tIG5vdGVzOiBUYWxrIHRyYWNrOiB3ZSBzdGFydGVkIHdpdGggdGhlIHBhcGVyJ3Mgc3VnZ2VzdGVkIHBhcmFtcyBhbmQgZ290IGEgbnVsbCDigJQgc28gd2Ugc3dlcHQgYXJvdW5kIHRoZW0gYW5kIGZvdW5kIGEgbGl2ZSBzdXJmYWNlIOKAlCB0aGVuIHdlIGNoZWNrZWQgdGhlIHBhcGVyJ3Mgb3duIHJlYWRpbmcgYW5kIGl0IHRlbGxzIHRoZSBzYW1lIHN0b3J5LiAtLT4=">
+<h2>Evidence map: three blocks, two methods</h2>
+<div class="slide-content"><ul>
+<li><strong>A · Full-scale pairs</strong> — <span style="color:#1f77b4">cross-step (ours)</span>, n=1319 × 2 scales, paper’s single point per scale → <strong>null</strong>, 69–90% churn</li>
+<li><strong>B · Diagnostic sweep</strong> — <span style="color:#1f77b4">cross-step (ours)</span>, n=100, 18 cells → <strong>16/18 beat baseline</strong>, best +0.13</li>
+<li><strong>C · Schedule panel</strong> — <span style="color:#2e7d32">two-pass (paper reading)</span> vs cross-step twins, n=100, 4 cells → <strong>beats base, ±0.07 vs twins</strong></li>
+</ul>
+</div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">13 / 26</span></div></div>
+</section>
+
+<section class="slide slide--content cols-40-60 figure-captions img-align-center" data-index="13" data-colloquium-md="PCEtLSBjbGFzczogY29scy00MC02MCBmaWd1cmUtY2FwdGlvbnMgaW1nLWFsaWduLWNlbnRlciAtLT4KCiMjIEEgwrcgU2luZ2xlLWNvbmZpZyBjaGVjayAoY3Jvc3Mtc3RlcCwgbj0xMzE5KTogbnVsbCB2ZXJkaWN0LCBsaXZlIHRyYWplY3RvcmllcwoKLSBUZXN0ZWQgZXhhY3RseSAqKm9uZSAozrEsIM6yLCBsYXllcikgcG9pbnQgcGVyIHNjYWxlKiog4oCUIHRoZSBwYXBlcidzIHB1Ymxpc2hlZCBzZXR0aW5ncywgbm90IGEgdHVuZWQgc2VsZWN0aW9uCi0gMUIgzpQg4oiSMC4wMDIzIChwPTAuNzQyKSDCtyA0QiDOlCDiiJIwLjAxNjcgKHA9MC4yNjApOyBDSXMgb3ZlcmxhcCBmdWxseSDigJQgdmVyZGljdDogbnVsbCAqKmF0IHRoYXQgcG9pbnQqKgotIOKApmJ1dCA5MC40JSAvIDY5LjMlIG9mIG91dHB1dHMgY2hhbmdlZCB0ZXh0dWFsbHkg4oCUIG5leHQgc2xpZGUKCnx8fAoKCgoKIVtCYXNlbGluZSB2cyByZWNpcmN1bGF0aW9uIHdpdGggV2lsc29uIDk1JSBDSXNdKC4uL3JlcG9ydHMvZmlndXJlcy9maWdBX2FjY3VyYWN5LnBuZyk=">
+<h2>A · Single-config check (cross-step, n=1319): null verdict, live trajectories</h2>
+<div class="slide-content colloquium-grid" style="grid-template-columns: minmax(0, 40fr) minmax(0, 60fr);"><div class="col"><ul>
+<li>Tested exactly <strong>one (α, β, layer) point per scale</strong> — the paper’s published settings, not a tuned selection</li>
+<li>1B Δ −0.0023 (p=0.742) · 4B Δ −0.0167 (p=0.260); CIs overlap fully — verdict: null <strong>at that point</strong></li>
+<li>…but 90.4% / 69.3% of outputs changed textually — next slide</li>
+</ul></div><div class="col"><figure class="colloquium-figure"><img src="../figures/figA_accuracy.png" alt="Baseline vs recirculation with Wilson 95% CIs" /><figcaption class="colloquium-figure-caption">Baseline vs recirculation with Wilson 95% CIs</figcaption></figure></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">14 / 26</span></div></div>
+</section>
+
+<section class="slide slide--content figure-captions cols-45-55 img-align-center" data-index="14" data-colloquium-md="PCEtLSBjbGFzczogZmlndXJlLWNhcHRpb25zIGNvbHMtNDUtNTUgaW1nLWFsaWduLWNlbnRlciAtLT4KCiMjIEEgwrcgV2hhdCBjaGFuZ2VkIChjcm9zcy1zdGVwLCBuPTEzMTkpOiB0cmFqZWN0b3JpZXMgcmV3cml0dGVuCgotIEZsaXBzIGFyZSAqKnN5bW1ldHJpYyoqIOKAlCB0aGUgaW50ZXJ2ZW50aW9uIG1vdmVzIHZlcmRpY3RzIHZpZ29yb3VzbHkgaW4gYm90aCBkaXJlY3Rpb25zIGFuZCB0aGV5IGNhbmNlbAotIE91dHB1dC1sZW5ndGggcHJvZmlsZXMgbmVhci1pZGVudGljYWw6IGZsaXBzIGNvbWUgZnJvbSByZWFzb25pbmcgY29udGVudCwgbm90IHRydW5jYXRpb24gYXJ0aWZhY3RzCi0gQSBudWxsIG1lYW4gd2l0aCA2OeKAkzkwJSBjaHVybiBpcyBub3QgIm5vdGhpbmcgaGFwcGVuZWQiIOKAlCB0cmFqZWN0b3J5LWxldmVsIGFjdGlvbiwgdGhlIHN1YnN0cmF0ZSBzYWZldHkgY2FyZXMgYWJvdXQKCnx8fAoKCgohW1BhaXJlZCB2ZXJkaWN0IHRyYW5zaXRpb25zOiBzeW1tZXRyaWMgZmxpcHMgYm90aCBkaXJlY3Rpb25zXSguLi9yZXBvcnRzL2ZpZ3VyZXMvZmlnQl90cmFuc2l0aW9ucy5wbmcp">
+<h2>A · What changed (cross-step, n=1319): trajectories rewritten</h2>
+<div class="slide-content colloquium-grid" style="grid-template-columns: minmax(0, 45fr) minmax(0, 55fr);"><div class="col"><ul>
+<li>Flips are <strong>symmetric</strong> — the intervention moves verdicts vigorously in both directions and they cancel</li>
+<li>Output-length profiles near-identical: flips come from reasoning content, not truncation artifacts</li>
+<li>A null mean with 69–90% churn is not “nothing happened” — trajectory-level action, the substrate safety cares about</li>
+</ul></div><div class="col"><figure class="colloquium-figure"><img src="../figures/figB_transitions.png" alt="Paired verdict transitions: symmetric flips both directions" /><figcaption class="colloquium-figure-caption">Paired verdict transitions: symmetric flips both directions</figcaption></figure></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">15 / 26</span></div></div>
+</section>
+
+<section class="slide slide--content" data-index="15" data-colloquium-md="IyMgQ2F2ZWF0cyDigJQgd2hhdCB0aGUgc2luZ2xlLWNvbmZpZyBudWxsIGRvZXMgYW5kIGRvZXNuJ3Qgc2F5Cgo8ZGl2IGNsYXNzPSJ0ZXh0LWxnIj4KCjEuICoqT25lIHB1Ymxpc2hlZCBjb25maWcgcGVyIHNjYWxlIOKAlCBub3QgYSB0dW5lZCBzZWxlY3Rpb24uKiogVGhlIG49MTMxOSBydW5zIHRlc3QgdGhlIHBhcGVyJ3MgcG9pbnQgc2V0dGluZ3M7IHRoZSBzdXJmYWNlIGFyb3VuZCB0aGVtIGlzIHRoZSBuZXh0IHR3byBzbGlkZXMuCjIuICoqQ29uZGl0aW9uYWwgb24gb3VyIGZyb3plbiB0d28tc3RhZ2UgcHJvdG9jb2wuKiogVGhlIHBhcGVyJ3MgZXhhY3QgcHJvbXB0aW5nLCBidWRnZXRzLCBhbmQgcGFyc2luZyBhcmUgdW5wdWJsaXNoZWQg4oCUIHRoaXMgbnVsbCBjb3ZlcnMgb3VyIHJlYWxpemF0aW9uLCBub3QgZXZlcnkgcHJvbXB0aW5nLiAoMUIgYWRkaXRpb25hbGx5IHNpdHMgbmVhciBmbG9vcjogMjIvMTMxOSBiYXNlbGluZSBjb3JyZWN0LikKMy4gKipTaW5nbGUgcnVuczsgYmFja2VuZCBhc3ltbWV0cnkqKiAodkxMTSBiYXNlbGluZXMgdnMgc2VyaWFsLUhGIHRyZWF0bWVudHMpLiBObyBwYXNzQDEyOCwgbm8gYWRhcHRpdmUgdmFyaWFudCwgbm8gMTJCLgoKPC9kaXY+">
+<h2>Caveats — what the single-config null does and doesn’t say</h2>
+<div class="slide-content"><div class="text-lg">
+<ol>
+<li><strong>One published config per scale — not a tuned selection.</strong> The n=1319 runs test the paper’s point settings; the surface around them is the next two slides.</li>
+<li><strong>Conditional on our frozen two-stage protocol.</strong> The paper’s exact prompting, budgets, and parsing are unpublished — this null covers our realization, not every prompting. (1B additionally sits near floor: 22/1319 baseline correct.)</li>
+<li><strong>Single runs; backend asymmetry</strong> (vLLM baselines vs serial-HF treatments). No pass@128, no adaptive variant, no 12B.</li>
+</ol>
+</div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">16 / 26</span></div></div>
+</section>
+
+<section class="slide slide--section-break" data-index="16" data-colloquium-md="PCEtLSBsYXlvdXQ6IHNlY3Rpb24tYnJlYWsgLS0+CgojIyBUaGUgY29tcHJlaGVuc2l2ZSBzdHVkeTogYW4gMTgtY2VsbCBzd2VlcAoKTm90IG9uZSBwb2ludCDigJQgdGhlIHN1cmZhY2UgYXJvdW5kIGl0">
+<h2>The comprehensive study: an 18-cell sweep</h2>
+<div class="slide-content"><p>Not one point — the surface around it</p>
+</div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">17 / 26</span></div></div>
+</section>
+
+<section class="slide slide--content figure-captions cols-40-60 img-align-center" data-index="17" data-colloquium-md="PCEtLSBjbGFzczogZmlndXJlLWNhcHRpb25zIGNvbHMtNDAtNjAgaW1nLWFsaWduLWNlbnRlciAtLT4KCiMjIEIgwrcgU3dlZXAgKGNyb3NzLXN0ZXAsIDRCLCBuPTEwMCk6IDE2IG9mIDE4IGNlbGxzIGJlYXQgYmFzZWxpbmUKCi0gU2FtZS0xMDAgYmFzZWxpbmUgKiowLjI1Kio7IGJlc3QgYGEwMTBfczE4X2Q3YCBhdCAqKjAuMzgqKiAoKzAuMTMsIG5vbWluYWwgcD0wLjAxMiwgQm9uZmVycm9uaS1uLnMuKQotIFBhcGVyIHBhaXIgcGVha3MgYXQgzrE9MC4wNyBoZXJlOyBkZXN0aW5hdGlvbi03IGJlYXRzIGRlc3RpbmF0aW9uLTkgYXQgZXZlcnkgc291cmNlCgo8ZGl2IGNsYXNzPSJjb2xsb3F1aXVtLWZvb3Rub3RlIj5GaXJzdC0xMDAgc3Vic2V0IChiYXNlbGluZSAwLjI1IHZzIDAuMjk0MiBmdWxsLXRlc3QpOiBleHBsb3JhdG9yeSBzdXJmYWNlLCBuZXZlciBjb25maWd1cmF0aW9uIHNlbGVjdGlvbi48L2Rpdj4KCnx8fAoKCgohWzRCIGFscGhhLXJlc3BvbnNlIGN1cnZlcywgZGlhZ25vc3RpYyBuPTEwMF0oLi4vcmVwb3J0cy9maWd1cmVzL2ZpZ0RfYWxwaGFfc3dlZXAucG5nKQ==">
+<h2>B · Sweep (cross-step, 4B, n=100): 16 of 18 cells beat baseline</h2>
+<div class="slide-content colloquium-grid" style="grid-template-columns: minmax(0, 40fr) minmax(0, 60fr);"><div class="col"><ul>
+<li>Same-100 baseline <strong>0.25</strong>; best <code>a010_s18_d7</code> at <strong>0.38</strong> (+0.13, nominal p=0.012, Bonferroni-n.s.)</li>
+<li>Paper pair peaks at α=0.07 here; destination-7 beats destination-9 at every source</li>
+</ul>
+<div class="colloquium-footnote">First-100 subset (baseline 0.25 vs 0.2942 full-test): exploratory surface, never configuration selection.</div></div><div class="col"><figure class="colloquium-figure"><img src="../figures/figD_alpha_sweep.png" alt="4B alpha-response curves, diagnostic n=100" /><figcaption class="colloquium-figure-caption">4B alpha-response curves, diagnostic n=100</figcaption></figure></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">18 / 26</span></div></div>
+</section>
+
+<section class="slide slide--content figure-captions img-fill" data-index="18" data-colloquium-md="PCEtLSBjbGFzczogZmlndXJlLWNhcHRpb25zIGltZy1maWxsIC0tPgoKIyMgQiDCtyBMYXllciBsYW5kc2NhcGUgKGNyb3NzLXN0ZXAsIM6xPTAuMTApOiBzMTggaG90LCBzMTbihpJkOSBjb2xkCgohW0FjY3VyYWN5IGFuZCBkZWx0YSBoZWF0bWFwcyBvdmVyIHNvdXJjZcOXZGVzdGluYXRpb25dKC4uL3JlcG9ydHMvZmlndXJlcy9maWdHX2xheWVyX2hlYXRtYXAucG5nKQ==">
+<h2>B · Layer landscape (cross-step, α=0.10): s18 hot, s16→d9 cold</h2>
+<div class="slide-content"><figure class="colloquium-figure"><img src="../figures/figG_layer_heatmap.png" alt="Accuracy and delta heatmaps over source×destination" /><figcaption class="colloquium-figure-caption">Accuracy and delta heatmaps over source×destination</figcaption></figure>
+</div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">19 / 26</span></div></div>
+</section>
+
+<section class="slide slide--content" data-index="19" data-colloquium-md="IyMgQyDCtyBUd28tcGFzcyBwYW5lbCAocGFwZXIgcmVhZGluZywgbj0xMDApOiBzYW1lIHN0b3J5Cgp8IGNvbmZpZyB8IHR3by1wYXNzIGFjYyB8IM6UIHZzIGJhc2UgfCDOlCB2cyBjcm9zcy1zdGVwIHwKfC0tLXwtLS18LS0tfC0tLXwKfCBhMDEwX3MxOF9kNyB8IDAuMzEgfCArMC4wNiB8IOKIkjAuMDcgfAp8IGEwMDRfczIwX2Q5IHwgMC4zNSB8ICswLjEwIHwg4oiSMC4wMSB8CnwgYTAxNV9zMjBfZDkgfCAwLjM3IHwgKzAuMTIgfCArMC4wMiB8CnwgYTAxNV9zMThfZDkgKHBhcGVyKSB8IDAuMzMgfCArMC4wOCB8ICswLjA0IHwKCkFsbCBjZWxscyBiZWF0IHRoZSBzYW1lLTEwMCBiYXNlbGluZTsgbm9uZSBkb21pbmF0ZXMgaXRzIGNyb3NzLXN0ZXAgdHdpbi4gVGhlIHNjaGVkdWxlIHZhcmlhbnQgZG9lcyBub3Qgb2J2aW91c2x5IGV4cGxhaW4gdGhlIHBhcGVyIGdhcCDigJQgcmVhZG91dCBjaG9pY2UgYW5kIGV4YWN0IHVucm9sbGluZyByZW1haW4gb3Blbi4=">
+<h2>C · Two-pass panel (paper reading, n=100): same story</h2>
+<div class="slide-content"><table>
+<thead>
+<tr>
+<th>config</th>
+<th>two-pass acc</th>
+<th>Δ vs base</th>
+<th>Δ vs cross-step</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a010_s18_d7</td>
+<td>0.31</td>
+<td>+0.06</td>
+<td>−0.07</td>
+</tr>
+<tr>
+<td>a004_s20_d9</td>
+<td>0.35</td>
+<td>+0.10</td>
+<td>−0.01</td>
+</tr>
+<tr>
+<td>a015_s20_d9</td>
+<td>0.37</td>
+<td>+0.12</td>
+<td>+0.02</td>
+</tr>
+<tr>
+<td>a015_s18_d9 (paper)</td>
+<td>0.33</td>
+<td>+0.08</td>
+<td>+0.04</td>
+</tr>
+</tbody>
+</table>
+<p>All cells beat the same-100 baseline; none dominates its cross-step twin. The schedule variant does not obviously explain the paper gap — readout choice and exact unrolling remain open.</p>
+</div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">20 / 26</span></div></div>
+</section>
+
+<section class="slide slide--content" data-index="20" data-colloquium-md="IyMgQ29zdCBtb2RlbDogc2VyaWFsIHByZWZpbGwgaXMgdGhlIHJlY3VycmVuY2UgdGF4LCBwYWlkIGJ5IGJvdGgKCi0gKipTZXJpYWwgcHJlZmlsbCBpcyBpbmhlcmVudCB0byBib3RoKiog4oCUIHN0ZXAgKnQrMSogbmVlZHMgc3RlcCAqdConcyBkZWVwIHN0YXRlLCBzbyB0aGUgcGFwZXIgc3RhdGVzIHJlY2lyY3VsYXRpb24gImNhbm5vdCBiZSBwYXJhbGxlbGl6ZWQsIGV2ZW4gd2hlbiBhbiBlbnRpcmUgaW5wdXQgc2VxdWVuY2UgaXMgcHJvdmlkZWQiCi0gKipXb3JrIHBlciBwb3NpdGlvbiBkaWZmZXJzOioqIGNyb3NzLXN0ZXAg4omIICoqMcOXKiogKG9uZSBmdWxsIGZvcndhcmQpIMK3IHR3by1wYXNzIOKJiCAqKjEuNeKAkzLDlyoqIChmdWxsIHBhc3MgKyB1cHBlci1zdGFjayByZXJ1biArIGNhY2hlIHJld3JpdGUpCi0gUGFwZXIncyAibm8gYWRkZWQgbGF0ZW5jeSIgPSB0aGUgdHdvIHN0YWNrcyAqKmJhdGNoKiogb24gcGFyYWxsZWwgaGFyZHdhcmUg4oCUIHdhbGwtY2xvY2sgaGlkZXMgdGhlIHdvcms7IEZMT1BzIGFyZSBzdGlsbCB+MsOXICh2TExNIFJGQzogd2F2ZWZyb250ICJyZWR1Y2VzIGRpc3BhdGNoIG92ZXJoZWFkLCBub3QgbWF0aGVtYXRpY2FsIHdvcmsiKQotIE91ciBzbG93bmVzcyBpcyAqKmVuZ2luZS12cy1lYWdlcioqIChjb21waWxlZCB2TExNIGJhc2VsaW5lIHZzIFB5dGhvbi1sb29wIEhGKSwgbm90IG1ldGhvZC12cy1tZXRob2Qg4oCUIGF0IGVxdWFsIGVuZ2luZWVyaW5nLCBjcm9zcy1zdGVwIGNvc3RzIOKJpCB0d28tcGFzcywgbmV2ZXIgbW9yZQoKPCEtLSBub3RlczogUHJlLWVtcHQgImlzbid0IGNyb3NzLXN0ZXAgcHJpY2llcj8iIOKAlCBubzogc2VyaWFsIHByZWZpbGwgaXMgaW5oZXJlbnQgdG8gYm90aCByZWFkaW5nczsgdGhleSBkaWZmZXIgaW4gd29yayBwZXIgc3RlcC4gUGFwZXIncyBuby1sYXRlbmN5IGNsYWltIGlzIHBhcmFsbGVsaXNtLCBub3Qgd29yay4gLS0+">
+<h2>Cost model: serial prefill is the recurrence tax, paid by both</h2>
+<div class="slide-content"><ul>
+<li><strong>Serial prefill is inherent to both</strong> — step <em>t+1</em> needs step <em>t</em>’s deep state, so the paper states recirculation “cannot be parallelized, even when an entire input sequence is provided”</li>
+<li><strong>Work per position differs:</strong> cross-step ≈ <strong>1×</strong> (one full forward) · two-pass ≈ <strong>1.5–2×</strong> (full pass + upper-stack rerun + cache rewrite)</li>
+<li>Paper’s “no added latency” = the two stacks <strong>batch</strong> on parallel hardware — wall-clock hides the work; FLOPs are still ~2× (vLLM RFC: wavefront “reduces dispatch overhead, not mathematical work”)</li>
+<li>Our slowness is <strong>engine-vs-eager</strong> (compiled vLLM baseline vs Python-loop HF), not method-vs-method — at equal engineering, cross-step costs ≤ two-pass, never more</li>
+</ul>
+</div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">21 / 26</span></div></div>
+</section>
+
+<section class="slide slide--section-break" data-index="21" data-colloquium-md="PCEtLSBsYXlvdXQ6IHNlY3Rpb24tYnJlYWsgLS0+CgojIyBUaGUgYnJpZGdlIHRvIFBoYXNlIDMKCkEgbnVsbCB3aXRoIDY54oCTOTAlIG91dHB1dCBjaHVybiBpcyBub3QgIm5vdGhpbmcgaGFwcGVuZWQi">
+<h2>The bridge to Phase 3</h2>
+<div class="slide-content"><p>A null with 69–90% output churn is not “nothing happened”</p>
+</div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">22 / 26</span></div></div>
+</section>
+
+<section class="slide slide--content" data-index="22" data-colloquium-md="IyMgSW1wbGljYXRpb246IHNhZmV0eSBsaXZlcyBpbiB0cmFqZWN0b3JpZXMKCi0gU2FmZXR5IGJlaGF2aW9yIOKAlCByZWZ1c2FscywgaGFybWxlc3NuZXNzIHVuZGVyIHByZXNzdXJlLCByZWFzb25pbmcgaW50ZWdyaXR5IOKAlCBsaXZlcyBhdCB0aGUgbGV2ZWwgb2YgKipnZW5lcmF0aW9uIHRyYWplY3RvcmllcyoqLCBub3QgYWdncmVnYXRlIGFjY3VyYWN5Ci0gUGhhc2UgMiBwcm92ZXMgcmVjaXJjdWxhdGlvbiAqKmRlY2lzaXZlbHkgcmV3cml0ZXMgdHJhamVjdG9yaWVzKiouIFRoYXQgaXMgcHJlY2lzZWx5IHRoZSBzdWJzdHJhdGUgc2FmZXR5IHdvcmsgbmVlZHMKLSBTY2hlZHVsZS1hZ25vc3RpYyBwcmVtaXNlOiBjcm9zcy1zdGVwIDY54oCTOTAlIGNodXJuIGF0IHNjYWxlIMK3IHR3by1wYXNzIDE44oCTMzAgdmVyZGljdCBmbGlwcyBwZXIgMTAwIOKAlCBQaGFzZSAzIGNhbiBwcm9iZSBib3RoIHdpdGhvdXQgYmV0dGluZyBvbiBvbmUKLSBQaGFzZSAzLCByZWZyYW1lZDogKiJEbyByZWNpcmN1bGF0aW9uJ3MgdHJhamVjdG9yeSBlZmZlY3RzIHRyYW5zZmVyIHRvIHNhZmV0eSBiZWhhdmlvcj8iKiDigJQgcmVmdXNhbCByb2J1c3RuZXNzLCBoYXJtIHJlZnVzYWwgdW5kZXIgcHJlc3N1cmUsIHJlYXNvbmluZy1pbnRlZ3JpdHkgcHJvYmVzLCBlYWNoIHBhaXJlZCBiYXNlbGluZS12cy1yZWNpcmMsIHBsdXMgYSBHU004SyB1dGlsaXR5IGhvbGRvdXQgYWdhaW5zdCByZWdyZXNzaW9ucwotIFNldHRsZSB0aGUgc2NoZWR1bGUgcXVlc3Rpb24gZmlyc3Q7IG5vIGJsaW5kIDEyQiBzY2FsZS11cC4gQXNrOiAqKjI1IEdQVS1oKiogKFBoYXNlIDIgY29zdCDiiYg44oCTOSB0b3RhbCk=">
+<h2>Implication: safety lives in trajectories</h2>
+<div class="slide-content"><ul>
+<li>Safety behavior — refusals, harmlessness under pressure, reasoning integrity — lives at the level of <strong>generation trajectories</strong>, not aggregate accuracy</li>
+<li>Phase 2 proves recirculation <strong>decisively rewrites trajectories</strong>. That is precisely the substrate safety work needs</li>
+<li>Schedule-agnostic premise: cross-step 69–90% churn at scale · two-pass 18–30 verdict flips per 100 — Phase 3 can probe both without betting on one</li>
+<li>Phase 3, reframed: <em>“Do recirculation’s trajectory effects transfer to safety behavior?”</em> — refusal robustness, harm refusal under pressure, reasoning-integrity probes, each paired baseline-vs-recirc, plus a GSM8K utility holdout against regressions</li>
+<li>Settle the schedule question first; no blind 12B scale-up. Ask: <strong>25 GPU-h</strong> (Phase 2 cost ≈8–9 total)</li>
+</ul>
+</div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">23 / 26</span></div></div>
+</section>
+
+<section class="slide slide--content" data-index="23" data-colloquium-md="IyMgV2h5IGZ1bmQgdGhlIGNyb3NzLXN0ZXAgdHJhY2s/CgotICoqRXZpZGVuY2U6Kiogb25seSBjcm9zcy1zdGVwIGhhcyBhIG1lYXN1cmVkIHRyYWplY3RvcnkgZWZmZWN0ICphdCBzY2FsZSogKDY54oCTOTAlIGNodXJuKTsgdHdvLXN0YWNrIGhhcyBwYXBlciBwZXJwbGV4aXR5LCBubyBpbmRlcGVuZGVudCB0cmFqZWN0b3J5IGV2aWRlbmNlCi0gKipDb3N0OioqIG9uZSBmb3J3YXJkIHBlciBwb3NpdGlvbiB2cyB0d28g4oCUIGhhbHZlcyB0aGUgcmVjaXJjIGFybSBhdCBzYWZldHktYmVuY2htYXJrIHZvbHVtZXM7IHJ1bnMgaW4gcGxhaW4gSEYgKHR3by1zdGFjayBzZXJ2aW5nIG5lZWRzIGVuZ2luZSBzdXBwb3J0LCBSRkMgc3RpbGwgb3BlbikKLSAqKkFibGF0aW9uOioqIGJvdGggYXJtcyB0ZWxsIHVzIHdoZXRoZXIgc2FmZXR5IHRyYW5zZmVyIGlzIHNjaGVkdWxlLXNwZWNpZmljIG9yIGdlbmVyYWwg4oCUIE1vemVyLW9ubHkgdGhyb3dzIGF3YXkgdGhlIGNvbnRyb2wKLSAqKkRlcGxveWFiaWxpdHk6KiogYW4gaW5mZXJlbmNlLXRpbWUgc2FmZXR5IGludGVydmVudGlvbiBtdXN0IGJlIGNoZWFwIGVub3VnaCB0byBzaGlwOyBzaW5nbGUtcGFzcyBpcyBjbG9zZXIgdG8gdGhhdCBiYXIKCjxkaXYgY2xhc3M9ImNvbGxvcXVpdW0tZm9vdG5vdGUiPkNvbmNlZGVkOiBmb3IgbWF4aW11bSBjYXBhYmlsaXR5LCB0d28tc3RhY2sgaGFzIHRoZSBwYXBlcidzIGhlYWRsaW5lcyDigJQgYnV0IFBoYXNlIDMgaXMgYWJvdXQgdHJhamVjdG9yeSBlZmZlY3RzLCB3aGVyZSBjcm9zcy1zdGVwIGlzIHByb3ZlbiBhbmQgdHdvLXN0YWNrIGlzIGFzc3VtZWQuPC9kaXY+Cgo8IS0tIG5vdGVzOiBBbnRpY2lwYXRlICJ3aHkgbm90IGp1c3QgcnVuIE1vemVyJ3MgdmFyaWFudCBvbiBzYWZldHk/IiDigJQgZXZpZGVuY2UsIGNvc3QsIGFibGF0aW9uLCBkZXBsb3lhYmlsaXR5LCBpbiB0aGF0IG9yZGVyLiBDb25jZWRlIHRoZSBjYXBhYmlsaXR5IHBvaW50OyBQaGFzZSAzIGlzbid0IGFib3V0IGNhcGFiaWxpdHkuIC0tPg==">
+<h2>Why fund the cross-step track?</h2>
+<div class="slide-content"><ul>
+<li><strong>Evidence:</strong> only cross-step has a measured trajectory effect <em>at scale</em> (69–90% churn); two-stack has paper perplexity, no independent trajectory evidence</li>
+<li><strong>Cost:</strong> one forward per position vs two — halves the recirc arm at safety-benchmark volumes; runs in plain HF (two-stack serving needs engine support, RFC still open)</li>
+<li><strong>Ablation:</strong> both arms tell us whether safety transfer is schedule-specific or general — Mozer-only throws away the control</li>
+<li><strong>Deployability:</strong> an inference-time safety intervention must be cheap enough to ship; single-pass is closer to that bar</li>
+</ul>
+<div class="colloquium-footnote">Conceded: for maximum capability, two-stack has the paper's headlines — but Phase 3 is about trajectory effects, where cross-step is proven and two-stack is assumed.</div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">24 / 26</span></div></div>
+</section>
+
+<section class="slide slide--content" data-index="24" data-colloquium-md="IyMgQ29uY2x1c2lvbgoKLSBTaW5nbGUtY29uZmlnIGZ1bGwtc2NhbGUgY2hlY2sgKHBhcGVyJ3Mgc2V0dGluZ3MsIGJvdGggc2NhbGVzKTogbnVsbCB2ZXJkaWN0IOKAlCBpdCBydWxlcyBvdXQgYSBwb2ludCwgbm90IHRoZSBzdXJmYWNlCi0gVGhlICoqMTgtY2VsbCBzd2VlcCoqIG1hcHMgdGhhdCBzdXJmYWNlOiAxNiBvZiAxOCBiZWF0IGJhc2VsaW5lLCBzbW9vdGggdHVuYWJsZSByZXNwb25zZSwgczE4IGhvdCAvIHMxNuKGkmQ5IGNvbGQKLSBFdmVyeXRoaW5nIHJlZ2VuZXJhdGVzIGZyb20gY29tbWl0dGVkIGFydGlmYWN0czogZnJvemVuIHByb3RvY29sLCBwYWlyZWQgQ1NWcywgZXhlY3V0YWJsZSBub3RlYm9vaywgd2Fsa3Rocm91Z2ggdHJhY2UgKyBnZW5lcmF0b3JzOyBydW4gZGlycyBvbiBNb2RhbCArIFcmQiBgcmVjaXJjLWdzbThrYA==">
+<h2>Conclusion</h2>
+<div class="slide-content"><ul>
+<li>Single-config full-scale check (paper’s settings, both scales): null verdict — it rules out a point, not the surface</li>
+<li>The <strong>18-cell sweep</strong> maps that surface: 16 of 18 beat baseline, smooth tunable response, s18 hot / s16→d9 cold</li>
+<li>Everything regenerates from committed artifacts: frozen protocol, paired CSVs, executable notebook, walkthrough trace + generators; run dirs on Modal + W&amp;B <code>recirc-gsm8k</code></li>
+</ul>
+</div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">25 / 26</span></div></div>
+</section>
+
+<section class="slide slide--content" data-index="25">
+<h2>References</h2>
+<div class="slide-content colloquium-references-slide"><div class="colloquium-reference" id="colloquium-ref-kojima2022">Kojima, T., Gu, S., Reid, M., Matsuo, Y., and Iwasawa, Y.. &ldquo;<em>Large Language Models are Zero-Shot Reasoners</em>.&rdquo; <em>Advances in Neural Information Processing Systems</em>, 2022. <a href="https://arxiv.org/abs/2205.11916" class="colloquium-ref-url">[link]</a></div>
+<div class="colloquium-reference" id="colloquium-ref-mozer2026recirculation">Mozer, M., Siddiqui, S., Sawyer, C., Sanyal, A., and Liu, X.. &ldquo;<em>Recirculation</em>.&rdquo; <em>arXiv preprint arXiv:2608.17981</em>, 2026. <a href="https://arxiv.org/abs/2608.17981" class="colloquium-ref-url">[link]</a></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">26 / 26</span></div></div>
+</section>
+</div>
+
+<button class="colloquium-present" title="Present (F)">&#9654;</button>
+
+<button class="colloquium-picker-trigger" title="Open slide picker">
+    <span class="colloquium-picker-trigger-label">Slides</span>
+    <span class="colloquium-picker-trigger-count">1 / 26</span>
+</button>
+
+<div class="colloquium-progress">
+    <div class="colloquium-progress-bar" style="width: 0%"></div>
+</div>
+
+<script>
+/**
+ * Colloquium Presentation Engine
+ * 16:9 scaled canvas, keyboard/click/touch navigation, hash routing, fullscreen
+ * Slide picker + per-slide footer
+ */
+class ColloquiumPresentation {
+    constructor() {
+        this.deck = document.querySelector('.colloquium-deck');
+        this.slides = Array.from(document.querySelectorAll('.slide'));
+        this.currentIndex = 0;
+        this.totalSlides = this.slides.length;
+        this._iframeKeyboardRelayDocuments = new WeakSet();
+        this.slideNumberBuffer = '';
+        this.slideNumberTimer = null;
+        this.slideNumberCommitDelay = 700;
+
+        if (this._isEmbedded()) {
+            document.body.classList.add('colloquium-embedded');
+        }
+
+        // Fragment state: current revealed fragment index per slide (0 = none)
+        this.fragmentStates = this.slides.map(() => 0);
+        this.fragmentCounts = this.slides.map(
+            s => parseInt(s.getAttribute('data-fragment-count') || '0', 10)
+        );
+
+        // Reference dimensions (16:9)
+        this.width = 1280;
+        this.height = 720;
+
+        // Capture mode — hide UI chrome for headless screenshots
+        if (new URLSearchParams(location.search).has('capture')) {
+            document.body.classList.add('colloquium-capture');
+        }
+
+        if (this.totalSlides === 0) return;
+
+        this.deck.setAttribute('tabindex', '-1');
+        this.progressBar = document.querySelector('.colloquium-progress-bar');
+        this.pickerTrigger = document.querySelector('.colloquium-picker-trigger');
+        this.pickerTriggerCount = this.pickerTrigger
+            ? this.pickerTrigger.querySelector('.colloquium-picker-trigger-count')
+            : null;
+        this.pickerOpen = false;
+
+        this._scaleDeck();
+        window.addEventListener('resize', () => this._scaleDeck());
+
+        this._createPicker();
+        this._bindFooter();
+        this._bindPickerTrigger();
+        this._bindPresent();
+        this._bindKeyboard();
+        this._bindIframes();
+        this._bindClick();
+        this._bindTouch();
+        this._bindHashChange();
+
+        // Navigate to hash or first slide
+        const hash = parseInt(location.hash.replace('#', ''), 10);
+        if (hash >= 1 && hash <= this.totalSlides) {
+            this.goTo(hash - 1);
+        } else {
+            this.goTo(0);
+        }
+    }
+
+    _isEmbedded() {
+        try {
+            return window.self !== window.top;
+        } catch (_) {
+            return true;
+        }
+    }
+
+    /**
+     * Check each slide for content overflow and add a visual warning.
+     * Temporarily shows all slides to measure, then restores.
+     */
+    _checkOverflow() {
+        const origDisplay = this.slides.map(s => s.style.display);
+        this.slides.forEach(s => s.style.display = 'flex');
+
+        this.slides.forEach((slide, i) => {
+            if (slide.scrollHeight > slide.clientHeight + 2) {
+                const warn = document.createElement('div');
+                warn.className = 'colloquium-overflow-warn';
+                warn.title = `Slide ${i + 1} content overflows`;
+                slide.appendChild(warn);
+            }
+        });
+
+        this.slides.forEach((s, i) => s.style.display = origDisplay[i]);
+    }
+
+    /**
+     * Scale the 1280x720 deck to fit the viewport while maintaining 16:9 aspect ratio.
+     * Centers the deck with black letterbox/pillarbox bars.
+     */
+    _scaleDeck() {
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const scale = Math.min(vw / this.width, vh / this.height);
+
+        const scaledW = this.width * scale;
+        const scaledH = this.height * scale;
+        const offsetX = (vw - scaledW) / 2;
+        const offsetY = (vh - scaledH) / 2;
+
+        this.deck.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
+
+        if (window.colloquiumFitCaptionedFiguresIn) {
+            requestAnimationFrame(() => {
+                window.colloquiumFitCaptionedFiguresIn(this.slides[this.currentIndex]);
+            });
+        }
+    }
+
+    goTo(index, showAllFragments = false) {
+        if (index < 0 || index >= this.totalSlides) return;
+
+        // Cancel any pending numeric jump. The numeric commit path clears the
+        // buffer before calling goTo, so this is a no-op there; every other
+        // navigation path (click, touch, hash, picker, arrows) cancels a stale
+        // digit that would otherwise fire later and snap the deck unexpectedly.
+        this._clearSlideNumberBuffer();
+
+        this.slides[this.currentIndex].classList.remove('active');
+        this.currentIndex = index;
+        this.slides[this.currentIndex].classList.add('active');
+
+        // Set fragment state
+        if (showAllFragments) {
+            this.fragmentStates[index] = this.fragmentCounts[index];
+        } else {
+            this.fragmentStates[index] = 0;
+        }
+        this._updateFragments(index);
+
+        if (window.colloquiumFitDisplayMathIn) {
+            requestAnimationFrame(() => {
+                window.colloquiumFitDisplayMathIn(this.slides[this.currentIndex]);
+            });
+        }
+        if (window.colloquiumFitCaptionedFiguresIn) {
+            requestAnimationFrame(() => {
+                window.colloquiumFitCaptionedFiguresIn(this.slides[this.currentIndex]);
+            });
+        }
+
+        // Update hash
+        history.replaceState(null, '', '#' + (this.currentIndex + 1));
+
+        // Update progress bar
+        if (this.progressBar) {
+            const progress = this.totalSlides > 1
+                ? (this.currentIndex / (this.totalSlides - 1)) * 100
+                : 100;
+            this.progressBar.style.width = progress + '%';
+        }
+
+        this._updatePickerTrigger();
+    }
+
+    next() {
+        // Fragment steps bypass goTo, so cancel any pending numeric jump here
+        // too (click/swipe advancing a fragment must not let a stale digit fire).
+        this._clearSlideNumberBuffer();
+        const fc = this.fragmentCounts[this.currentIndex];
+        const fs = this.fragmentStates[this.currentIndex];
+        if (fc > 0 && fs < fc) {
+            this.fragmentStates[this.currentIndex] = fs + 1;
+            this._updateFragments(this.currentIndex);
+        } else {
+            this.goTo(this.currentIndex + 1);
+        }
+    }
+
+    prev() {
+        this._clearSlideNumberBuffer();
+        const fs = this.fragmentStates[this.currentIndex];
+        if (fs > 0) {
+            this.fragmentStates[this.currentIndex] = fs - 1;
+            this._updateFragments(this.currentIndex);
+        } else {
+            this.goTo(this.currentIndex - 1, true);
+        }
+    }
+
+    // Jump-style navigation lands with all fragments revealed: jumping means
+    // skimming or referencing finished content, not presenting the build-up.
+    // Only Right/Left (next/prev) step through fragments.
+    nextSlide() {
+        this.goTo(this.currentIndex + 1, true);
+    }
+
+    prevSlide() {
+        this.goTo(this.currentIndex - 1, true);
+    }
+
+    first() {
+        this.goTo(0);
+    }
+
+    last() {
+        this.goTo(this.totalSlides - 1, true);
+    }
+
+    // --- Numeric Slide Jump ---
+
+    _handleSlideNumberKey(e) {
+        if (e.metaKey || e.ctrlKey || e.altKey) return false;
+
+        if (/^\d$/.test(e.key)) {
+            e.preventDefault();
+            this._appendSlideNumberDigit(e.key);
+            return true;
+        }
+
+        if (!this.slideNumberBuffer) return false;
+
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            this._commitSlideNumberBuffer();
+            return true;
+        }
+
+        if (e.key === 'Backspace') {
+            e.preventDefault();
+            this._removeSlideNumberDigit();
+            return true;
+        }
+
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            this._clearSlideNumberBuffer();
+            return true;
+        }
+
+        this._clearSlideNumberBuffer();
+        return false;
+    }
+
+    _appendSlideNumberDigit(digit) {
+        this.slideNumberBuffer += digit;
+        clearTimeout(this.slideNumberTimer);
+
+        const maxDigits = String(this.totalSlides).length;
+        if (this.slideNumberBuffer.length >= maxDigits) {
+            this._commitSlideNumberBuffer();
+            return;
+        }
+
+        this.slideNumberTimer = setTimeout(() => {
+            this._commitSlideNumberBuffer();
+        }, this.slideNumberCommitDelay);
+    }
+
+    _removeSlideNumberDigit() {
+        this.slideNumberBuffer = this.slideNumberBuffer.slice(0, -1);
+        clearTimeout(this.slideNumberTimer);
+
+        if (this.slideNumberBuffer) {
+            this.slideNumberTimer = setTimeout(() => {
+                this._commitSlideNumberBuffer();
+            }, this.slideNumberCommitDelay);
+        }
+    }
+
+    _commitSlideNumberBuffer() {
+        if (!this.slideNumberBuffer) return;
+
+        const slideNumber = parseInt(this.slideNumberBuffer, 10);
+        this._clearSlideNumberBuffer();
+
+        if (slideNumber >= 1 && slideNumber <= this.totalSlides) {
+            if (this.pickerOpen) this._closePicker();
+            this.goTo(slideNumber - 1, true);
+        } else {
+            this._showToast('No slide ' + slideNumber);
+        }
+    }
+
+    _clearSlideNumberBuffer() {
+        this.slideNumberBuffer = '';
+        clearTimeout(this.slideNumberTimer);
+        this.slideNumberTimer = null;
+    }
+
+    // --- Fragment Management ---
+
+    _updateFragments(slideIndex) {
+        const slide = this.slides[slideIndex];
+        const currentStep = this.fragmentStates[slideIndex];
+        const fragments = slide.querySelectorAll('[data-fragment-index]');
+        fragments.forEach(el => {
+            const idx = parseInt(el.getAttribute('data-fragment-index'), 10);
+            el.classList.toggle('visible', idx <= currentStep);
+        });
+    }
+
+    // --- Slide Picker ---
+
+    _getSlideTitle(slide, i) {
+        const h1 = slide.querySelector('h1');
+        if (h1) return h1.textContent;
+        const h2 = slide.querySelector('h2');
+        if (h2) return h2.textContent;
+        const img = slide.querySelector('img[alt]');
+        if (img && img.alt) return img.alt;
+        const text = slide.textContent.trim();
+        if (text) return text.substring(0, 50) + (text.length > 50 ? '…' : '');
+        return 'Slide ' + (i + 1);
+    }
+
+    _createPicker() {
+        this.overlay = document.createElement('div');
+        this.overlay.className = 'colloquium-picker-overlay';
+
+        const picker = document.createElement('div');
+        picker.className = 'colloquium-picker';
+
+        this.pickerItems = [];
+
+        this.slides.forEach((slide, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'colloquium-picker-item';
+            btn.innerHTML =
+                '<span class="colloquium-picker-num">' + (i + 1) + '</span>' +
+                '<span class="colloquium-picker-title">' + this._getSlideTitle(slide, i) + '</span>';
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.goTo(i, true);
+                this._closePicker();
+            });
+            this.pickerItems.push(btn);
+            picker.appendChild(btn);
+        });
+
+        this.overlay.appendChild(picker);
+        document.body.appendChild(this.overlay);
+
+        // Close on click outside the picker card
+        this.overlay.addEventListener('click', (e) => {
+            if (e.target === this.overlay) {
+                this._closePicker();
+            }
+        });
+    }
+
+    _openPicker() {
+        // Opening the picker cancels a pending numeric jump — otherwise the
+        // stale timer fires mid-browse, closing the picker and jumping away.
+        this._clearSlideNumberBuffer();
+
+        // Highlight current slide
+        this.pickerItems.forEach((btn, i) => {
+            btn.classList.toggle('current', i === this.currentIndex);
+        });
+        this.overlay.classList.add('active');
+        this.pickerOpen = true;
+
+        // Scroll current item into view
+        const current = this.pickerItems[this.currentIndex];
+        if (current) {
+            current.scrollIntoView({ block: 'center' });
+        }
+    }
+
+    _closePicker() {
+        // Dismissing the picker also cancels a pending numeric jump (the
+        // commit path clears its buffer before closing, so this is a no-op
+        // there).
+        this._clearSlideNumberBuffer();
+        this.overlay.classList.remove('active');
+        this.pickerOpen = false;
+    }
+
+    _togglePicker() {
+        if (this.pickerOpen) {
+            this._closePicker();
+        } else {
+            this._openPicker();
+        }
+    }
+
+    _updatePickerTrigger() {
+        if (!this.pickerTriggerCount) return;
+        this.pickerTriggerCount.textContent = (this.currentIndex + 1) + ' / ' + this.totalSlides;
+    }
+
+    _bindFooter() {
+        // The entire right footer zone is the picker trigger.
+        document.querySelectorAll('.colloquium-footer-nav').forEach((target) => {
+            target.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this._togglePicker();
+            });
+        });
+    }
+
+    _bindPickerTrigger() {
+        if (!this.pickerTrigger) return;
+        this.pickerTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this._togglePicker();
+        });
+    }
+
+    _bindPresent() {
+        const btn = document.querySelector('.colloquium-present');
+        if (btn) {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this._toggleFullscreen();
+            });
+        }
+    }
+
+    // --- Navigation Bindings ---
+
+    _bindKeyboard() {
+        document.addEventListener('keydown', (e) => {
+            if (this._isTextInputTarget(e.target)) return;
+            this._handleNavigationKey(e);
+        });
+    }
+
+    _isTextInputTarget(target) {
+        if (!target || !target.tagName) return false;
+        if (target.isContentEditable) return true;
+        return ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+    }
+
+    _handleNavigationKey(e) {
+        if (this._handleSlideNumberKey(e)) return;
+
+        switch (e.key) {
+            // Left/Right (and Space/PageDown) step through fragments then
+            // slides — the familiar PowerPoint/Keynote "advance" axis.
+            case 'ArrowRight':
+            case ' ':
+            case 'PageDown':
+                e.preventDefault();
+                this.next();
+                break;
+            case 'ArrowLeft':
+            case 'PageUp':
+                e.preventDefault();
+                this.prev();
+                break;
+            // Up/Down jump whole slides, skipping fragments — a fast axis for
+            // moving past fragment-heavy slides.
+            case 'ArrowDown':
+                e.preventDefault();
+                this.nextSlide();
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                this.prevSlide();
+                break;
+            case 'Home':
+                e.preventDefault();
+                this.first();
+                break;
+            case 'End':
+                e.preventDefault();
+                this.last();
+                break;
+            case 'c':
+            case 'C':
+                // Plain 'c' copies the current slide's markdown source.
+                // Leave Cmd/Ctrl+C alone so the browser can copy selected text.
+                if (e.metaKey || e.ctrlKey || e.altKey) return;
+                e.preventDefault();
+                this._copyCurrentSlideMarkdown();
+                break;
+            case 'f':
+            case 'F':
+                e.preventDefault();
+                this._toggleFullscreen();
+                break;
+            case 'Escape':
+                if (this.pickerOpen) {
+                    this._closePicker();
+                } else if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                }
+                break;
+        }
+    }
+
+    _bindIframes() {
+        document.querySelectorAll('iframe.colloquium-iframe').forEach((iframe) => {
+            this._bindIframeKeyboardRelay(iframe);
+            iframe.addEventListener('load', () => this._bindIframeKeyboardRelay(iframe));
+            iframe.addEventListener('focus', () => this._recoverFocusFromIframe(iframe));
+        });
+    }
+
+    _bindIframeKeyboardRelay(iframe) {
+        if (iframe.dataset.colloquiumPreserveKeyboard === 'false') return false;
+
+        try {
+            const iframeDocument = iframe.contentWindow && iframe.contentWindow.document;
+            if (!iframeDocument) return false;
+            if (this._iframeKeyboardRelayDocuments.has(iframeDocument)) return true;
+
+            iframeDocument.addEventListener('keydown', (e) => {
+                if (this._isTextInputTarget(e.target)) return;
+                this._handleNavigationKey(e);
+            });
+            this._iframeKeyboardRelayDocuments.add(iframeDocument);
+            return true;
+        } catch (_) {
+            // Cross-origin frames cannot expose their keyboard events to the parent deck.
+            return false;
+        }
+    }
+
+    _recoverFocusFromIframe(iframe) {
+        if (iframe.dataset.colloquiumPreserveKeyboard === 'false') return;
+        if (this._bindIframeKeyboardRelay(iframe)) return;
+
+        setTimeout(() => {
+            if (document.activeElement === iframe) {
+                iframe.blur();
+                window.focus();
+                this.deck.focus({ preventScroll: true });
+            }
+        }, 0);
+    }
+
+    _bindClick() {
+        // Track the pointer-down position so we can tell a click from a drag.
+        // A drag (mouse moved between down and up) means the user was selecting
+        // text or otherwise interacting, not trying to advance the slide.
+        let downX = 0;
+        let downY = 0;
+        const DRAG_THRESHOLD = 8; // px of movement that counts as a drag, not a click
+        document.addEventListener('mousedown', (e) => {
+            downX = e.clientX;
+            downY = e.clientY;
+        });
+
+        document.addEventListener('click', (e) => {
+            // Handle citation links — navigate to the slide containing the target ref
+            const citeLink = e.target.closest('a.colloquium-cite');
+            if (citeLink) {
+                e.preventDefault();
+                e.stopPropagation();
+                const href = citeLink.getAttribute('href');
+                if (href && href.startsWith('#')) {
+                    const target = document.getElementById(href.slice(1));
+                    if (target) {
+                        const slide = target.closest('.slide');
+                        if (slide) {
+                            const idx = this.slides.indexOf(slide);
+                            if (idx >= 0) this.goTo(idx);
+                        }
+                    }
+                }
+                return;
+            }
+
+            // Ignore clicks on links, interactive elements, footer, and picker
+            if (e.target.closest('a, button, input, textarea, select, .colloquium-footer, .colloquium-picker-overlay, .colloquium-present, .colloquium-picker-trigger')) return;
+
+            // Don't navigate if the user is highlighting/copying text. A drag
+            // (pointer moved between down and up) or a live text selection both
+            // mean "select", not "next slide".
+            const dragDistance = Math.hypot(e.clientX - downX, e.clientY - downY);
+            if (dragDistance > DRAG_THRESHOLD) return;
+            // A multi-click (double/triple) is a word/paragraph selection gesture,
+            // not navigation. This catches the later clicks of a multi-click; the
+            // very first click can't be distinguished without deferring all
+            // navigation, which we avoid so slide clicks stay snappy.
+            if (e.detail > 1) return;
+            const selection = window.getSelection();
+            if (selection && !selection.isCollapsed && selection.toString().trim()) return;
+
+            const x = e.clientX / window.innerWidth;
+            if (x < 0.33) {
+                this.prev();
+            } else {
+                this.next();
+            }
+        });
+    }
+
+    _bindTouch() {
+        let startX = 0;
+        let startY = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        }, { passive: true });
+
+        document.addEventListener('touchend', (e) => {
+            const dx = e.changedTouches[0].clientX - startX;
+            const dy = e.changedTouches[0].clientY - startY;
+
+            // Only trigger on horizontal swipes (more horizontal than vertical, min 50px)
+            if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+                if (dx < 0) {
+                    this.next();
+                } else {
+                    this.prev();
+                }
+            }
+        }, { passive: true });
+    }
+
+    _bindHashChange() {
+        window.addEventListener('hashchange', () => {
+            const hash = parseInt(location.hash.replace('#', ''), 10);
+            if (hash >= 1 && hash <= this.totalSlides && hash - 1 !== this.currentIndex) {
+                this.goTo(hash - 1);
+            }
+        });
+    }
+
+    _toggleFullscreen() {
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+        } else {
+            document.documentElement.requestFullscreen().catch(() => {});
+        }
+    }
+
+    // --- Copy slide as markdown ---
+
+    _decodeMarkdown(b64) {
+        // base64 (UTF-8) → string, so unicode math/symbols round-trip cleanly.
+        const binary = atob(b64);
+        const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+        return new TextDecoder().decode(bytes);
+    }
+
+    _copyCurrentSlideMarkdown() {
+        const slide = this.slides[this.currentIndex];
+        const encoded = slide && slide.getAttribute('data-colloquium-md');
+        if (!encoded) {
+            this._showToast('No markdown source for this slide');
+            return;
+        }
+        let markdown;
+        try {
+            markdown = this._decodeMarkdown(encoded);
+        } catch (_) {
+            this._showToast('Could not read slide markdown');
+            return;
+        }
+        const done = () => this._showToast('Copied slide markdown');
+        const fail = () => this._showToast('Copy failed — clipboard blocked');
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(markdown).then(done, () => {
+                if (!this._copyViaTextarea(markdown)) fail();
+                else done();
+            });
+        } else if (this._copyViaTextarea(markdown)) {
+            done();
+        } else {
+            fail();
+        }
+    }
+
+    _copyViaTextarea(text) {
+        // Fallback for insecure contexts (file://, plain http) where the async
+        // Clipboard API is unavailable.
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.top = '-1000px';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        let ok = false;
+        try {
+            ok = document.execCommand('copy');
+        } catch (_) {
+            ok = false;
+        }
+        document.body.removeChild(ta);
+        return ok;
+    }
+
+    _showToast(message) {
+        if (!this._toast) {
+            this._toast = document.createElement('div');
+            this._toast.className = 'colloquium-toast';
+            document.body.appendChild(this._toast);
+        }
+        this._toast.textContent = message;
+        this._toast.classList.add('visible');
+        clearTimeout(this._toastTimer);
+        this._toastTimer = setTimeout(() => {
+            this._toast.classList.remove('visible');
+        }, 1500);
+    }
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    window.colloquium = new ColloquiumPresentation();
+});
+
+</script>
+
+<script>
+window.colloquiumFitDisplayMathIn = function(root) {
+    var scope = root || document;
+    scope.querySelectorAll(".katex-display").forEach(function(display) {
+        display.style.fontSize = "";
+        var katexNode = display.querySelector(".katex");
+        if (!katexNode) return;
+
+        var availableWidth = display.clientWidth;
+        var contentWidth = katexNode.scrollWidth;
+        if (!availableWidth || !contentWidth || contentWidth <= availableWidth) return;
+
+        var scale = availableWidth / contentWidth;
+        display.style.fontSize = (scale * 100) + "%";
+    });
+};
+
+window.colloquiumFitCaptionedFiguresIn = function(root) {
+    var scope = root || document;
+    var selector = [
+        ".slide-content > figure.colloquium-figure:first-child:last-child",
+        ".colloquium-grid > .col > figure.colloquium-figure:first-child:last-child",
+        ".colloquium-row > figure.colloquium-figure:first-child:last-child"
+    ].join(", ");
+
+    scope.querySelectorAll(selector).forEach(function(figure) {
+        var img = figure.querySelector("img");
+        var caption = figure.querySelector("figcaption");
+        if (!img || !caption) return;
+
+        var container = figure.parentElement;
+        if (!container) return;
+
+        figure.style.width = "";
+        img.style.width = "";
+        img.style.height = "";
+        img.style.maxWidth = "";
+        img.style.maxHeight = "";
+
+        var naturalWidth = img.naturalWidth || 0;
+        var naturalHeight = img.naturalHeight || 0;
+        if (!naturalWidth || !naturalHeight) {
+            img.addEventListener("load", function() {
+                window.colloquiumFitCaptionedFiguresIn(scope);
+            }, { once: true });
+            return;
+        }
+
+        var availableWidth = container.clientWidth;
+        var availableHeight = container.clientHeight;
+        if (!availableWidth || !availableHeight) return;
+
+        var scale = Math.min(
+            availableWidth / naturalWidth,
+            availableHeight / naturalHeight
+        );
+        if (!isFinite(scale) || scale <= 0) return;
+
+        var renderWidth = Math.max(1, Math.floor(naturalWidth * scale));
+        var renderHeight = Math.max(1, Math.floor(naturalHeight * scale));
+
+        figure.style.width = renderWidth + "px";
+        img.style.width = renderWidth + "px";
+        img.style.height = renderHeight + "px";
+        img.style.maxWidth = "none";
+        img.style.maxHeight = "none";
+    });
+};
+
+// Render KaTeX math elements and highlight code after deferred scripts load
+window.addEventListener("load", function() {
+    if (typeof katex !== "undefined") {
+        var mathEls = document.querySelectorAll(".math");
+        if (mathEls.length > 0) {
+            // Temporarily show all slides so KaTeX can measure container
+            // dimensions for delimiter sizing (e.g. tall parentheses)
+            var mathSlides = document.querySelectorAll(".slide");
+            var mathOrigDisplay = [];
+            var mathOrigVisibility = [];
+            mathSlides.forEach(function(s) {
+                mathOrigDisplay.push(s.style.display);
+                mathOrigVisibility.push(s.style.visibility);
+                s.style.display = "flex";
+                if (!s.classList.contains("active")) {
+                    s.style.visibility = "hidden";
+                }
+            });
+
+            mathEls.forEach(function(el) {
+                var displayMode = el.tagName === "DIV";
+                katex.render(el.textContent, el, {
+                    displayMode: displayMode,
+                    throwOnError: false
+                });
+            });
+            window.colloquiumFitDisplayMathIn(document);
+
+            // Restore original slide display and visibility
+            mathSlides.forEach(function(s, i) {
+                s.style.display = mathOrigDisplay[i];
+                s.style.visibility = mathOrigVisibility[i];
+            });
+        }
+
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(function() {
+                window.colloquiumFitDisplayMathIn(document);
+                window.colloquiumFitCaptionedFiguresIn(document);
+            });
+        }
+    }
+    if (typeof hljs !== "undefined") {
+        hljs.highlightAll();
+    }
+    window.colloquiumFitCaptionedFiguresIn(document);
+    // Initialize Chart.js charts — temporarily show all slides so canvases
+    // have dimensions, render charts, capture static print images, then restore.
+    if (typeof Chart !== "undefined") {
+        var chartCanvases = document.querySelectorAll("[data-chart-config]");
+        if (chartCanvases.length > 0) {
+            // Make all slides visible so Chart.js can measure canvas size
+            // Use visibility:hidden to avoid a visual flash
+            var slides = document.querySelectorAll(".slide");
+            var origDisplay = [];
+            slides.forEach(function(s) {
+                origDisplay.push(s.style.display);
+                s.style.display = "flex";
+                if (!s.classList.contains("active")) {
+                    s.style.visibility = "hidden";
+                }
+            });
+
+            chartCanvases.forEach(function(canvas) {
+                try {
+                    var config = JSON.parse(canvas.getAttribute("data-chart-config"));
+                    // Convert tick prefix/suffix strings into real callbacks
+                    var scales = config.options && config.options.scales;
+                    if (scales) {
+                        Object.keys(scales).forEach(function(axis) {
+                            var ticks = scales[axis].ticks;
+                            if (!ticks) return;
+                            var pre = ticks.prefix || "";
+                            var suf = ticks.suffix || "";
+                            if (pre || suf) {
+                                delete ticks.prefix;
+                                delete ticks.suffix;
+                                ticks.callback = function(v) { return pre + v + suf; };
+                            }
+                        });
+                    }
+                    new Chart(canvas, config);
+                } catch(e) {
+                    var slideEl = canvas.closest(".slide");
+                    var slideNum = slideEl ? (slideEl.getAttribute("data-index") || "?") : "?";
+                    var chartId = canvas.id || "unknown";
+                    console.error(
+                        "Colloquium: failed to render chart '" + chartId +
+                        "' on slide " + (parseInt(slideNum, 10) + 1) + ": " + e.message
+                    );
+                }
+            });
+
+            // After a frame, capture each chart as a static image for print,
+            // then always restore slide visibility (even if chart rendering failed).
+            requestAnimationFrame(function() {
+                chartCanvases.forEach(function(canvas) {
+                    try {
+                        var img = document.createElement("img");
+                        img.src = canvas.toDataURL("image/png");
+                        img.className = "colloquium-chart-print";
+                        canvas.parentNode.insertBefore(img, canvas.nextSibling);
+                    } catch(e) {}
+                });
+                // Restore original slide visibility
+                slides.forEach(function(s, i) {
+                    s.style.display = origDisplay[i];
+                    s.style.visibility = "";
+                });
+            });
+        }
+    }
+});
+</script>
+</body>
+</html>
