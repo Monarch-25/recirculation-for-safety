@@ -244,6 +244,17 @@ All cells beat the same-100 baseline; none dominates its cross-step twin. The sc
 
 ---
 
+## Cost model: serial prefill is the recurrence tax, paid by both
+
+<!-- notes: Pre-empt "isn't cross-step pricier?" — no: serial prefill is inherent to both readings; they differ in work per step. Paper's no-latency claim is parallelism, not work. -->
+
+- **Serial prefill is inherent to both** — step *t+1* needs step *t*'s deep state, so the paper states recirculation "cannot be parallelized, even when an entire input sequence is provided"
+- **Work per position differs:** cross-step ≈ **1×** (one full forward) · two-pass ≈ **1.5–2×** (full pass + upper-stack rerun + cache rewrite)
+- Paper's "no added latency" = the two stacks **batch** on parallel hardware — wall-clock hides the work; FLOPs are still ~2× (vLLM RFC: wavefront "reduces dispatch overhead, not mathematical work")
+- Our slowness is **engine-vs-eager** (compiled vLLM baseline vs Python-loop HF), not method-vs-method — at equal engineering, cross-step costs ≤ two-pass, never more
+
+---
+
 <!-- layout: section-break -->
 
 ## The bridge to Phase 3
