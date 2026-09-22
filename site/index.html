@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What if a model could hear itself think — one step too late? · Recirculation notebook</title>
+<meta name="description" content="An exacting research notebook on deep-to-shallow recirculation: inference-time recurrence, an empirical null on GSM8K, systematic trajectory churn, and the bridge to LLM safety.">
+<script>try{var t=localStorage.getItem("recirc-theme");if(!t)t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#tldr">skip to content</a>
+<div id="progress" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#top"><b>recirculation</b> · a research notebook</a>
+    <nav>
+      <a href="#appendix">reproduce</a>
+      <a href="#next">where next</a>
+      <button id="theme-toggle" class="theme-btn" type="button" aria-label="toggle light and dark mode">☾ dark</button>
+    </nav>
+  </div>
+</header>
+
+<div class="hero" id="top">
+  <div class="kicker">Inference-time recurrence <span class="dot">●</span> Gemma 3 · GSM8K · frozen weights</div>
+  <h1>What if a model could hear itself think — one step too late?</h1>
+  <p class="lede">Late understanding arriving early. That is the whole intuition behind <em>recirculation</em>:
+  take something a deep layer figured out on this step, and slip it to a shallow layer on the next one.
+  No retraining, no weight updates, no parameter drift — just a small, persistent loop in time.
+  We built the cleanest, bitwise-verified test of that mechanism we could, watched the headline scoreboard refuse
+  to move by even a tenth of a point, and then discovered that beneath the surface, the handwriting had changed almost everywhere.
+  7 out of 10 answers on 4B were completely rewritten, yet the final scores cancelled out to a standstill.
+  This notebook is that story, told pictures-first.</p>
+  <div class="meta">
+    <span>Status · Phase 2 complete, Phase 3 bridge ready</span>
+    <span>Date · <span class="mono">2026-09-22</span></span>
+    <span>Models · <code>gemma-3-1b-pt</code> <code>gemma-3-4b-pt</code></span>
+    <span>Scale · <span class="mono">n = 1319</span> paired, greedy</span>
+  </div>
+  <div class="vitals" role="list" aria-label="headline vitals">
+    <div class="vital" role="listitem">
+      <div class="k">1B accuracy</div>
+      <div class="v">0.0167 → 0.0144</div>
+      <div class="s">22/1319 → 19/1319 · Δ −0.0023 · McNemar p = 0.742</div>
+    </div>
+    <div class="vital" role="listitem">
+      <div class="k">4B accuracy</div>
+      <div class="v">0.2942 → 0.2775</div>
+      <div class="s">388/1319 → 366/1319 · Δ −0.0167 · McNemar p = 0.260</div>
+    </div>
+    <div class="vital" role="listitem">
+      <div class="k">Outputs rewritten</div>
+      <div class="v">69.3% / 90.4%</div>
+      <div class="s">4B: 914/1319 rewritten · 1B: 1192/1319 rewritten</div>
+    </div>
+    <div class="vital" role="listitem">
+      <div class="k">Cost to know this</div>
+      <div class="v">≈ 8.4 GPU-h</div>
+      <div class="s">A100-40GB metered · immutable manifests</div>
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+  <article>
+    <div class="tldr" id="tldr">
+      <div class="t">TL;DR — the shape before the numbers</div>
+      <p><strong>We tested the published fixed-recirculation configuration at full GSM8K scale (n = 1319 paired, greedy pass@1) on Gemma 3 1B and 4B, with all weights strictly frozen.</strong></p>
+      <p>Accuracy did not budge: 1B moved by −0.23% (p&nbsp;=&nbsp;0.742), 4B moved by −1.67% (p&nbsp;=&nbsp;0.260). The 95% Wilson confidence intervals overlap almost completely. But beneath the flat headline, reasoning trajectories underwent vigorous mutation: <strong>69.3% of outputs changed on 4B</strong> (163 answers rescued from wrong to right, 185 broken from right to wrong), and <strong>90.4% changed on 1B</strong>. The cancellation is almost perfectly symmetric.</p>
+      <p>Around the tested point, an 18-cell diagnostic sweep maps a smooth, responsive surface where 16 of 18 cells beat baseline, though none clear family-wise Bonferroni thresholds. Furthermore, two distinct implementations of recurrence (&ldquo;cross-step&rdquo; streaming versus &ldquo;two-pass&rdquo; rerun) behave identically within &plusmn;0.07.</p>
+      <p class="small">If safety lives in <em>how</em> a model writes — how it wavers, hedges, resists adversarial framing, or preserves reasoning integrity under pressure — then a flat accuracy score coupled with a comprehensive rewrite of trajectories is not a failed replication. It is a clean baseline and the empirical premise for Phase 3.</p>
+    </div>
+
+    <!-- Mobile-only collapsible table of contents -->
+    <details class="mobile-toc">
+      <summary>Table of Contents (Jump to Section)</summary>
+      <ol>
+        <li><a href="#feeling">01 · Start with a feeling</a></li>
+        <li><a href="#why">02 · Why this itch is worth scratching</a></li>
+        <li><a href="#plumbing">03 · A small piece of plumbing</a></li>
+        <li><a href="#scale">04 · A scale that can't lie to us</a></li>
+        <li><a href="#handwriting">05 · What we found at full scale</a></li>
+        <li><a href="#ground">06 · The neighborhood around the tested point</a></li>
+        <li><a href="#readings">07 · Two ways to read one sentence</a></li>
+        <li><a href="#next">08 · What we won't claim, and what's next</a></li>
+        <li><a href="#appendix">A · Appendix — reproduce everything</a></li>
+      </ol>
+    </details>
+
+    <!-- §01 FEELING -->
+    <section id="feeling">
+      <div class="eyebrow"><span class="n">01</span>Start with a feeling</div>
+      <h2><a href="#feeling">Understanding usually arrives late</a></h2>
+      <aside class="sidenote">Gwern's rule, borrowed: the margin is for second thoughts. Sidenotes carry quiet asides; the core argument never depends on them.</aside>
+      <p>Think about what happens when you hear a well-crafted joke. You listen to the premise line by line, interpreting each sentence on its ordinary, literal surface. Then the punchline lands. In a fraction of a second, your mind does not merely append a new piece of data; it rushes backward through everything you just heard. An innocent detail mentioned twenty seconds earlier suddenly takes on a second, subversive meaning. You mentally re-read the entire narrative with the ending already in hand.</p>
+      <p>Or consider working through a difficult mathematical proof. The first three lines seem arbitrary, almost unmotivated. Only on line ten, when two distant terms cancel neatly into zero, does the overarching strategy snap into focus. The immediate reflex is to glance back up at line one and think: <em>of course, that was why we defined it that way</em>.</p>
+      <p>Human comprehension is intrinsically non-linear. We hold ambiguities in suspense, arrive at late clarity, and instantaneously back-propagate that clarity to reframe our earliest interpretations. We hear our own conclusions, and let them alter how we understood the beginning.</p>
+      <p>Standard autoregressive transformers cannot do this. Information in a feed-forward transformer is strictly unidirectional across two dimensions: within each step, it flows upward from shallow layers to deep layers; across time, it flows forward from past tokens to future tokens. Once a shallow layer finishes computing its activations at token <span class="mono">t</span>, its state is frozen into the key-value cache. It never gets to know what the deep layers eventually figured out five milliseconds later.</p>
+      <p>The intuition behind recirculation is disarmingly simple: <strong>what if a deep layer could whisper what it just understood back to a shallow layer, in time for the next token?</strong></p>
+      <p>Not by retraining the network. Not by attaching adapter matrices, fine-tuning weights, or paying the tax of model surgery. Just a tiny, persistent feedback loop across time: take a slice of deep representation from step <span class="mono">t</span>, rescale its magnitude, and mix it into a shallow layer at step <span class="mono">t+1</span>. The network becomes, in a faint and controlled way, a dynamical system whose early reflexes are informed by its own late real-time thoughts.</p>
+      <blockquote>"Does deep-to-shallow transfer change safety behavior usefully — without turning into blanket refusal or losing reasoning integrity?" — the question this entire investigation funnels toward.</blockquote>
+    </section>
+
+    <!-- §02 WHY -->
+    <section id="why">
+      <div class="eyebrow"><span class="n">02</span>Why this itch is worth scratching</div>
+      <h2><a href="#why">Safety lives in trajectories, not in scores</a></h2>
+      <div class="legend" aria-label="shared color language">
+        <span class="chip"><span class="sw deep"></span>deep source · late knowledge (layer 18/11)</span>
+        <span class="chip"><span class="sw shallow"></span>shallow destination · early action (layer 9/4)</span>
+        <span class="chip"><span class="sw good"></span>rescued (wrong → right verdict)</span>
+        <span class="chip"><span class="sw bad"></span>regressed (right → wrong verdict)</span>
+      </div>
+
+      <p>Why did this idea earn months of disciplined engineering, bitwise invariants, and metered A100 hours rather than an afternoon hack? Because an inference-time feedback loop targets the exact layer of behavior where LLM safety is currently most constrained.</p>
+
+      <h3>The capability guardrail: why GSM8K had to come first</h3>
+      <p>Before testing whether recirculation can steer a model away from dangerous jailbreaks or toxic completions, we had to answer a prior, non-negotiable question: <em>does it break basic reasoning?</em></p>
+      <p>Safety evaluations are notoriously easy to game with blunt instruments. If you inject heavy penalties or crude refusal prefixes, safety metrics look immaculate while the model loses the ability to solve fourth-grade arithmetic. GSM8K was our capability guardrail. If an inference-time loop scrambled multi-step deductive chains, it would be useless as an alignment mechanism. We had to verify that the loop could operate stably inside complex reasoning before we could ever trust it on safety.</p>
+
+      <p>Four concrete reasons grounded this inquiry:</p>
+      <div class="qgrid">
+        <div class="q">
+          <div class="qk">It asks for nothing expensive</div>
+          <p><strong>Weights remain completely frozen.</strong> If an alignment intervention requires full fine-tuning, every base checkpoint release restarts the retraining tax; if an inference loop works, any deployed model inherits it for free.</p>
+        </div>
+        <div class="q">
+          <div class="qk">Safety is trajectory-shaped</div>
+          <p><strong>Refusal, hedging, and pressure-resistance are paths, not points.</strong> A model does not decide to refuse an exploit at token zero; it wavers, hedges, and either succumbs or resists mid-sentence. Path-rewriting is safety's native language.</p>
+        </div>
+        <div class="q">
+          <div class="qk">The alternative space is output-space</div>
+          <p><strong>Representation mixing versus logit steering.</strong> Methods like ALIGNBEAM penalize final token distributions at the end of the line. Recirculation intervenes inside the internal state. If both work, they could stack orthogonally.</p>
+        </div>
+        <div class="q">
+          <div class="qk">A null here is highly informative</div>
+          <p><strong>Decoupling capability from trajectory modulation.</strong> Had GSM8K jumped +20%, capability and alignment would remain tangled; because accuracy stayed flat while paths mutated, we have a clean testbed to probe safety transfer without capability confounds.</p>
+        </div>
+      </div>
+
+      <!-- Mount Point for Fig 0 Staircase -->
+      <div class="fig-mount" data-src="figures.html" data-fig="fig-0">
+        <div class="figure-block figure" id="fig-0-fallback">
+          <div class="fig-head"><span class="no">Fig 0</span> Research build path — Phase 1 harness to Phase 3 safety</div>
+          <p class="small" style="padding:1rem">Loading vector staircase diagram...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- §03 PLUMBING -->
+    <section id="plumbing">
+      <div class="eyebrow"><span class="n">03</span>The idea, drawn before it is derived</div>
+      <h2><a href="#plumbing">A small piece of plumbing</a></h2>
+
+      <p>Before touching the equations, take thirty seconds to explore the interactive loop below. It illustrates the exact mechanics that occur at every decoding step inside the transformer stack.</p>
+
+      <div class="demo">
+        <div class="d-head">
+          <span class="mono">interactive</span> · the loop, live · <span id="mix-lbl" class="mono">d′ = 0.15·f(s) + 1.00·d</span> · <span id="step-lbl" class="mono">t = 0</span>
+        </div>
+        <svg id="demo-svg" role="img" aria-label="Animated recirculation loop: deep state from one step mixes into shallow state of the next"></svg>
+        <div class="controls">
+          <label>whisper strength <input id="alpha" type="range" min="0" max="0.3" step="0.01" value="0.15"> <span id="alpha-val" class="val">α = 0.15</span></label>
+          <label>reading <select id="sched"><option value="cross">cross-step · streaming (1 pass)</option><option value="twopass">two-pass · rerun (2 passes)</option></select></label>
+          <label>mixing <select id="beta"><option value="nonconvex">nonconvex · β = 1.0</option><option value="convex">convex · β = 1−α</option></select></label>
+          <button id="play" type="button">▶ Play steps</button>
+        </div>
+      </div>
+
+      <h3>A guided tour of the controls</h3>
+      <p>Follow three simple steps to build the intuition:</p>
+      <ul class="tight">
+        <li><strong>First, drag α down to 0.00:</strong> Look at the equation readout: <span class="mono">d′ = 0.00·f(s) + 1.00·d</span>. The rust pulse is completely extinguished. The model behaves as the untouched feed-forward baseline.</li>
+        <li><strong>Next, push α to 0.15:</strong> This is the published setting for Gemma 3. A calibrated pulse of deep knowledge (layer 18 on 4B, layer 11 on 1B) now leaks forward in time, mixing directly into shallow layer 9.</li>
+        <li><strong>Finally, switch reading to &ldquo;two-pass&rdquo;:</strong> Notice the star label appear. Instead of leaking across consecutive tokens, the model pauses at step <span class="mono">t+1</span>, executes a draft pass to obtain deep state, rewinds, and re-executes the upper layers with the feedback already applied.</li>
+      </ul>
+
+      <h3>Two ways to read &ldquo;leak after each step&rdquo;</h3>
+      <p>The paper's informal phrasing (&ldquo;leak after each step&rdquo;) admits two distinct temporal synchronization models before any code is written:</p>
+      <p>Under <strong>cross-step recirculation</strong> (our primary scale build), the loop is a continuous pipeline: the deep state captured at token <span class="mono">t</span> is injected into the shallow layer as token <span class="mono">t+1</span> is processed. It requires exactly <em>one</em> forward pass per token, streaming naturally across prefill and decode.</p>
+      <p>Under <strong>two-pass recirculation</strong> (the literal schematic reading of Mozer et al., Fig.&nbsp;3c), the model pauses at every position: it runs a preliminary pass to read the deep layer, truncates its KV cache, mixes that fresh same-step source into the shallow layer, and re-runs the upper stack to produce the final logits. It eliminates temporal lag at the cost of nearly doubling the forward FLOPs.</p>
+
+      <h3>The 200× norm mismatch: why normalization makes or breaks the loop</h3>
+      <p>Look closely at the vector mechanics. When we instrumented Gemma 3 4B on a real GSM8K question (Appendix F), we measured an activation norm of <span class="mono">||s|| ≈ 25,371</span> at deep layer 18, whereas the incoming representation at shallow layer 9 had a norm of only <span class="mono">||d|| ≈ 124</span>.</p>
+      <p>If you naively added 15% of the deep state into the shallow state, the injected signal would have a norm of <span class="mono">0.15 × 25,371 ≈ 3,805</span> — over <strong>thirty times larger</strong> than the entire destination activation! The shallow representation would be completely obliterated, destroying all syntactic processing. This explains why the destination-L2 scaling function <span class="mono">f(s)</span> is load-bearing:</p>
+
+      <details open>
+        <summary>The mixing equation, with exact normalization</summary>
+        <div class="body">
+          <p>For deep source layer <span class="mono">s</span>, shallow destination <span class="mono">d</span>, at step <span class="mono">t</span>:</p>
+          <pre>d′ = α · f(s) + β · d
+where  f(s) = ( s / (||s||₂ + ε) ) · ||d||₂</pre>
+          <p>The scaling function strips the deep vector of its huge raw magnitude, normalizes it to unit length, and rescales it to match the exact Euclidean norm of the shallow layer. The whisper conveys the <em>orientation</em> of late semantic thoughts without overwhelming early reflexes. With <span class="mono">β = 1.0</span> (non-convex on 4B) or <span class="mono">β = 1 − α</span> (convex on 1B), the shallow state absorbs late direction safely.</p>
+        </div>
+      </details>
+    </section>
+
+    <!-- §04 SCALE -->
+    <section id="scale">
+      <div class="eyebrow"><span class="n">04</span>How we made sure not to fool ourselves</div>
+      <h2><a href="#scale">A scale that can't lie to us</a></h2>
+
+      <p>The least glamorous part of empirical science is the only part that prevents self-deception. When an intervention produces surprising results, the immediate risk is that the evaluation pipeline subtly shifted: that prompt formatting drifted, that parsing regexes missed trailing whitespace, or that batch padding leaked state across examples. To guarantee that every measured difference reflects true model dynamics, our evaluation protocol was frozen in code and guarded by automated bitwise invariants.</p>
+
+      <div class="twrap">
+        <table>
+          <caption>Frozen evaluation protocol (contract verbatim in <span class="mono">docs/phase2_gsm8k_protocol.md</span>)</caption>
+          <tr><th>Choice</th><th>Value</th><th>Why frozen</th></tr>
+          <tr><td>Prompting</td><td>Two-stage Kojima zero-shot, BOS-guarded</td><td>replicates published reasoning setting exact</td></tr>
+          <tr><td>Decoding</td><td>Greedy, seed 42, 256 + 32 tokens</td><td>pure pass@1, zero sampling temperature noise</td></tr>
+          <tr><td>Scoring</td><td>Parser v1.0 on stage-2 output, failures = 0</td><td>denominators never shrink; all 1319 counted</td></tr>
+          <tr><td>Statistics</td><td>McNemar paired test + Wilson 95% CIs</td><td>aggregate-only comparisons strictly forbidden</td></tr>
+          <tr><td>Acceptance Gate</td><td>recirc(α=0) ≡ baseline bitwise</td><td class="pos">passed: 122/122 unit tests green</td></tr>
+        </table>
+      </div>
+
+      <p>Before launching a single full-scale GPU run on Modal, the implementation had to pass a bitwise equality test: when recirculation is initialized with <span class="mono">α = 0.00</span>, the generated logits, token sequences, and final verdicts must match the un-instrumented Hugging Face baseline <strong>bit-for-bit</strong> across the entire vocabulary. Not approximately; not within floating-point tolerance; bitwise identical. If a single cache pointer or normalization denominator shifted a float by <span class="mono">1e-7</span>, the suite failed.</p>
+      <p>Every run emitted an immutable bundle: configuration manifest, environment dependencies, git commit hash, and per-example JSONL predictions containing full prompt and generated text, mirrored to Weights &amp; Biases (<span class="mono">recirc-gsm8k</span>). Paired comparisons regenerate directly from stored artifacts, never from memory.</p>
+
+      <details>
+        <summary>Pinned revisions and hardware budgets</summary>
+        <div class="body">
+          <p>Checkpoints: <span class="mono">google/gemma-3-1b-pt @ fcf18a2a…</span> and <span class="mono">google/gemma-3-4b-pt @ cc012e0a…</span> (weights dated 2025-03, strictly pre-dating the Mozer et al. preprint). Dataset: <span class="mono">openai/gsm8k @ 740312ad…</span>, complete test split (<span class="mono">n = 1319</span> paired examples). Code version <span class="mono">0.2.0</span>, schema 1.0. Total compute spent across Phase 2: <span class="mono">8.4 A100-hours</span>.</p>
+        </div>
+      </details>
+    </section>
+
+    <!-- §05 HANDWRITING -->
+    <section id="handwriting">
+      <div class="eyebrow"><span class="n">05</span>What we found at full scale</div>
+      <h2><a href="#handwriting">The scoreboard didn't move. The handwriting did.</a></h2>
+
+      <p>Slow down and follow the evidence in three distinct stages, like a detective inspecting a crime scene: first the scoreboard, then the transition dynamics, and finally the length distributions.</p>
+
+      <h3>Stage 1: The scoreboard refuses to budge</h3>
+      <p>Look at Figure A below. At both 1B and 4B scales, the Wilson 95% confidence intervals overlap almost completely between the baseline and recirculation conditions. There is no statistically detectable lift at the published points.</p>
+
+      <!-- Mount Point for Fig A -->
+      <div class="fig-mount" data-src="figures.html" data-fig="fig-A"></div>
+
+      <div class="twrap">
+        <table>
+          <caption>Full-scale paired results · cross-step schedule, paper configuration · n = 1319 each</caption>
+          <tr><th>Condition</th><th>Accuracy</th><th>Correct</th><th>Wilson 95% CI</th><th>Δ vs base</th><th>McNemar p</th></tr>
+          <tr><td>1B base</td><td class="mono">0.0167</td><td class="mono">22 / 1319</td><td>[0.0110, 0.0251]</td><td>—</td><td>—</td></tr>
+          <tr><td>1B + recirc</td><td class="mono">0.0144</td><td class="mono">19 / 1319</td><td>[0.0092, 0.0224]</td><td class="neg">−0.0023</td><td class="mono">0.742</td></tr>
+          <tr><td>4B base</td><td class="mono">0.2942</td><td class="mono">388 / 1319</td><td>[0.2702, 0.3193]</td><td>—</td><td>—</td></tr>
+          <tr><td>4B + recirc</td><td class="mono">0.2775</td><td class="mono">366 / 1319</td><td>[0.2540, 0.3023]</td><td class="neg">−0.0167</td><td class="mono">0.260</td></tr>
+        </table>
+      </div>
+
+      <h3>Stage 2: Beneath the scoreboard, massive symmetric churn</h3>
+      <p>Now forget the aggregate scoreboard and examine what happened to individual questions. In Figure B, the 1319 paired problems are separated into their transition paths. If recirculation were simply doing nothing, 100% of the answers would flow horizontally along the gray channels.</p>
+      <p>Instead, we observe violent internal churn: <strong>163 answers were rescued</strong> from wrong to right (green channel), while <strong>185 previously correct answers broke</strong> (clay channel). The net delta is <span class="mono">163 − 185 = −22</span> questions (<span class="mono">Δ −0.0167, p = 0.260</span>). Across the entire 4B test set, <strong>69.3% of outputs (914 / 1319)</strong> were textually rewritten. At 1B, <strong>90.4% of outputs (1192 / 1319)</strong> changed.</p>
+
+      <!-- Mount Point for Fig B -->
+      <div class="fig-mount" data-src="figures.html" data-fig="fig-B"></div>
+
+      <h3>Stage 3: Ruling out truncation artifacts</h3>
+      <p>A skeptic might reasonably wonder: did recirculation simply cause the model to ramble until it hit the 256-token generation cap, cutting off the final answer? Figure C tests that hypothesis directly.</p>
+      <p>The reasoning length distributions for baseline and recirculation are virtually indistinguishable. The average output length is 239 tokens on baseline versus 234 tokens under recirculation. A post-hoc analysis of the flip anatomy reveals that rescued outputs actually become <em>shorter</em> (mean 251 → 212 tokens) while broken outputs lengthen (mean 225 → 246 tokens). The verdict flips arise from genuine shifts in reasoning content, not from truncation artifacts.</p>
+
+      <!-- Mount Point for Fig C -->
+      <div class="fig-mount" data-src="figures.html" data-fig="fig-C"></div>
+
+      <h3>Naming the feeling of a null-with-churn</h3>
+      <p>There is an eerie, uncanny feeling in observing a system whose macroscopic scoreboard refuses to move while its internal monologue is completely rewritten. If you inspect the changed questions side-by-side, the model does not make subtle typographical edits; it invents entirely different solution strategies. On one problem, baseline attempts an awkward algebraic formula and fails; under recirculation, it writes out a lucid arithmetic breakdown and lands on the correct answer. On the next problem, the exact opposite occurs.</p>
+      <p>This is not the behavior of an inert intervention. An inert hack produces a churn rate of 0% and a p-value of 1.0. This is the unmistakable signature of a <strong>powerful trajectory mutator operating without directional alignment</strong>. It destabilizes and restructures the reasoning path without favoring accuracy.</p>
+    </section>
+
+    <!-- §06 GROUND -->
+    <section id="ground">
+      <div class="eyebrow"><span class="n">06</span>The neighborhood around the tested point</div>
+      <h2><a href="#ground">Around the point we tested, the ground is alive</a></h2>
+
+      <p>Imagine hiking a mountain ridge in a dense fog. You are dropped at a specific set of GPS coordinates published in a guide book. You check your altimeter and discover you haven't climbed an inch. Does that mean the entire mountain is an illusion? Or did you happen to land in a slight saddle between two peaks?</p>
+      <p>To find out, you don't immediately pack up and go home. You take ten paces north, ten paces south, fifteen paces east. You feel with your boots whether the terrain slopes upward into a ridge or drops into a ravine. That local exploration is what statisticians call a <strong>response surface</strong>.</p>
+
+      <h3>The 18-cell diagnostic sweep</h3>
+      <p>The full-scale runs in §05 tested exactly <em>one</em> configuration per scale: the single published point (<span class="mono">11→4, α=0.15</span> on 1B; <span class="mono">18→9, α=0.15</span> on 4B). To understand the neighborhood around that point, we executed an 18-cell diagnostic sweep on the first-100 GSM8K subset across four feedback strengths (<span class="mono">α ∈ {0.04, 0.07, 0.10, 0.15}</span>) and four source-destination pairs (<span class="mono">16→9, 18→9, 20→9, 18→7</span>).</p>
+
+      <!-- Mount Point for Fig D/G (Curves + Heatmap + Bonferroni Banner) -->
+      <div class="fig-mount" data-src="figures.html" data-fig="fig-D-G"></div>
+
+      <p>As shown in Figure D·G above, the local ground is distinctly alive:</p>
+      <ul class="tight">
+        <li><strong>16 of the 18 cells beat the same-100 baseline</strong> (<span class="mono">0.25</span>, or 25/100 correct).</li>
+        <li><strong>Destination layer 7 systematically beats destination layer 9</strong> across every tested source layer.</li>
+        <li><strong>The source 18 row is consistently the hottest</strong>, peaking at <span class="mono">0.38</span> (<span class="mono">Δ +0.13</span>, nominal <span class="mono">p = 0.012</span>) at <span class="mono">α = 0.10</span>.</li>
+        <li><strong>The published pair (<span class="mono">18→9</span>) exhibits a smooth local peak</strong> at <span class="mono">α = 0.07</span> (<span class="mono">0.34, Δ +0.09</span>) before tapering off at the published <span class="mono">α = 0.15</span> setting (<span class="mono">0.29</span>).</li>
+        <li><strong>Only one cell dips below baseline:</strong> <span class="mono">s16→d9</span> at <span class="mono">α = 0.10</span> drops to <span class="mono">0.24</span> (the lone cold cell, marked with dashed clay).</li>
+      </ul>
+
+      <h3>The Bonferroni caution: a cautionary tale about being fooled</h3>
+      <p>It is tempting to look at the <span class="mono">0.38</span> peak cell and proclaim that recirculation works if you just tweak the layer index. But this is precisely where researchers fool themselves.</p>
+      <p>When you evaluate 18 separate hypotheses on a 100-problem panel, basic probability guarantees that random variance will hand you a few high numbers. The top cell yields a nominal McNemar <span class="mono">p = 0.012</span>. In an isolated experiment, that looks enticing. But under standard Bonferroni correction for 18 simultaneous comparisons, the threshold for statistical significance drops from <span class="mono">0.05</span> down to <span class="mono">0.05 / 18 ≈ 0.0028</span>. The nominal <span class="mono">p = 0.012</span> does not survive.</p>
+      <p>Using a 100-sample sweep to map the response shape is legitimate exploratory science; cherry-picking the highest cell to declare capability superiority is p-hacking. The sweep proves that the intervention responds smoothly and predictably to hyperparameter tuning, but it does not overturn the full-scale null.</p>
+    </section>
+
+    <!-- §07 READINGS -->
+    <section id="readings">
+      <div class="eyebrow"><span class="n">07</span>One sentence, two implementations</div>
+      <h2><a href="#readings">Two ways to read one sentence</a></h2>
+
+      <p>When Mozer et al. wrote &ldquo;leak after each step,&rdquo; they left the underlying synchronization open to two distinct engineering interpretations. Did they mean leaking activations across consecutive generation steps (streaming cross-step), or performing an internal rerun on the same token before emitting logits (two-pass)?</p>
+      <p>Rather than arguing philosophy, we built both schedules inside the same codebase, sharing 100% of the normalization and mixing code, and tested them head-to-head on the top-3 sweep configurations plus the published paper pair (<span class="mono">n = 100</span> each).</p>
+
+      <div class="twrap">
+        <table>
+          <caption>Two-pass panel vs cross-step twins · n = 100 · baseline = 0.25</caption>
+          <tr><th>Configuration</th><th>Two-pass acc</th><th>Δ vs base</th><th>McNemar p (base)</th><th>Cross-step acc</th><th>Δ vs cross</th></tr>
+          <tr><td class="mono">a010_s18_d7</td><td class="mono">0.31</td><td class="pos">+0.06</td><td class="mono">0.239</td><td class="mono">0.38</td><td class="neg">−0.07</td></tr>
+          <tr><td class="mono">a004_s20_d9</td><td class="mono">0.35</td><td class="pos">+0.10</td><td class="mono">0.066</td><td class="mono">0.36</td><td class="neg">−0.01</td></tr>
+          <tr><td class="mono">a015_s20_d9</td><td class="mono">0.37</td><td class="pos">+0.12</td><td class="mono">0.045*</td><td class="mono">0.35</td><td class="pos">+0.02</td></tr>
+          <tr><td class="mono">a015_s18_d9 (paper)</td><td class="mono">0.33</td><td class="pos">+0.08</td><td class="mono">0.136</td><td class="mono">0.29</td><td class="pos">+0.04</td></tr>
+        </table>
+      </div>
+
+      <!-- Mount Point for Fig H4 -->
+      <div class="fig-mount" data-src="figures.html" data-fig="fig-H4"></div>
+
+      <p>The visual form of Figure H4 demonstrates <strong>schedule-indifference</strong>: across all four configurations, two-pass recirculation stays within <span class="mono">&plusmn;0.07</span> of its cross-step twin. Both schedules beat baseline by comparable amounts, both induce identical transition clouds, and neither systematically dominates the other. The schedule variant does not explain the gap between published claims and our at-scale findings.</p>
+
+      <details>
+        <summary>The cost model: why cross-step is the right vehicle for safety</summary>
+        <div class="body">
+          <p>Why does schedule-indifference matter? Because of compute economics. Sequential execution is inherent to <em>both</em> readings — recurrence forces token <span class="mono">t+1</span> to depend on token <span class="mono">t</span>, preventing parallel prefill. However, the work per position differs dramatically:</p>
+          <p><strong>Cross-step</strong> executes exactly <em>one</em> forward pass per token (<span class="mono">≈ 1×</span> compute). <strong>Two-pass</strong> executes a full forward pass, truncates the KV cache, and executes an upper-stack rerun (<span class="mono">≈ 1.5–2×</span> compute). Because both schedules produce indistinguishable trajectory effects, cross-step remains the vastly superior arm for Phase 3 safety evaluations: it halves the GPU budget while preserving the core mechanism.</p>
+        </div>
+      </details>
+    </section>
+
+    <!-- §08 NEXT -->
+    <section id="next">
+      <div class="eyebrow"><span class="n">08</span>What this leaves us with</div>
+      <h2><a href="#next">What we won't claim, and what we're curious about next</a></h2>
+
+      <p>Intellectual honesty requires drawing sharp boundaries between what the evidence proves and what remains unverified. A null accuracy result with 69–90% trajectory churn is neither a triumph nor an apology: it is an empirical finding that fixed recirculation profoundly alters generation paths while leaving average correctness untouched at these scales under this protocol.</p>
+
+      <div class="qgrid">
+        <div class="q">
+          <div class="qk">What we will NOT claim</div>
+          <p><strong>&ldquo;Recirculation improves reasoning.&rdquo;</strong> Absolutely not on this evidence. We will not carry the current configuration into safety work disguised as an &ldquo;improved&rdquo; reasoner.</p>
+        </div>
+        <div class="q">
+          <div class="qk">What we WILL carry forward</div>
+          <p><strong>The frozen harness, paired machinery, and the trajectory effect itself.</strong> Plus the two-pass arm as an active control. The infrastructure is battle-tested and cheap to run.</p>
+        </div>
+        <div class="q">
+          <div class="qk">Ask next · Refusal robustness</div>
+          <p><strong>Do trajectory shifts stabilize refusal under adversarial pressure?</strong> Test on HarmBench/AdvGLUE paired against baseline, with XSTest (benign) and GSM8K as utility guards.</p>
+        </div>
+        <div class="q">
+          <div class="qk">Ask next · Mechanism specificity</div>
+          <p><strong>Is safety steering schedule-specific or general?</strong> Keeping both cross-step and two-pass turns Phase 3 into an ablation study rather than a single bet.</p>
+        </div>
+      </div>
+
+      <h3>Falsifiable experiment sketches for Phase 3</h3>
+      <p>To avoid open-ended drifting, each future inquiry is structured with an explicit falsification criterion:</p>
+      <ul class="tight">
+        <li><strong>Experiment 1 (Refusal Robustness):</strong> Deploy fixed recirculation (<span class="mono">18→7</span> and <span class="mono">18→9</span> at <span class="mono">α = 0.10</span>) on 1,000 adversarial jailbreak prompts. <em>Falsification condition:</em> If recirculation reduces jailbreak success only by increasing false refusals on benign prompts (XSTest) or dropping GSM8K accuracy below 0.25, the hypothesis is falsified.</li>
+        <li><strong>Experiment 2 (Internal vs Output Steering):</strong> Compare recirculation head-to-head against logit steering (ALIGNBEAM) on identical checkpoints. <em>Falsification condition:</em> If representation mixing causes mode collapse or fails to provide additive protection when combined with output steering, deep recurrence is discarded.</li>
+        <li><strong>Experiment 3 (12B Pilot &amp; Pass@128):</strong> Deferred until Experiments 1 and 2 deliver positive evidence. Do not spend compute scaling up an unverified capability mechanism.</li>
+      </ul>
+
+      <h3>The personal closing</h3>
+      <blockquote>
+        What first drew us to recirculation was an elegant, intuitive conviction — that a model should be allowed to hear its own late thoughts in time to guide its next word.<br><br>
+        What we discovered at scale was far stranger: a mechanism that rewrites almost everything about <em>how</em> the model writes, yet leaves the scoreboard frozen in place. In capability research, a null that rewrites answers is a curious riddle. In AI safety, it is an opening. When models fail safety tests, they do not fail because they lack the capacity to solve problems; they fail because their trajectories slip into dangerous attractor basins. An inference-time loop that actively steers trajectories without requiring retraining is an asset worth testing with rigor. We now have the machine, the data, and the discipline to find out.
+      </blockquote>
+
+      <div class="pagenav">
+        <a href="#handwriting">← back to the evidence<span><b>The handwriting finding</b></span></a>
+        <a href="#appendix">reproduce everything →<span><b>Appendix: runs, data, citations</b></span></a>
+      </div>
+    </section>
+
+    <!-- §APPENDIX -->
+    <section id="appendix">
+      <div class="eyebrow"><span class="n">A</span>Appendix — reproduce everything</div>
+      <h2><a href="#appendix">Nothing here is hand-copied</a></h2>
+      <p class="small">Every number, delta, interval, and p-value in this notebook regenerates directly from frozen data files in <span class="mono">reports/data/</span> via <span class="mono">analysis/gsm8k_phase2.py</span>. Run directories carry <span class="mono">manifest.json · config.yaml · metrics.json · predictions.jsonl · environment.json · logs.txt</span>, mirrored to W&amp;B project <span class="mono">recirc-gsm8k</span>.</p>
+
+      <div class="twrap">
+        <table>
+          <caption>Complete run inventory (immutable; Modal volume + W&amp;B mirror)</caption>
+          <tr><th>Arm</th><th>Run ID</th><th>Backend</th><th>Wall time</th><th>Tokens/sec</th></tr>
+          <tr><td>1B base</td><td class="mono">run_20260921_213746_f0d8ab</td><td>vLLM</td><td class="mono">85 s</td><td class="mono">4,374</td></tr>
+          <tr><td>1B recirc (11→4, α=0.15)</td><td class="mono">run_20260921_213557_173592</td><td>HF serial</td><td class="mono">1,681 s</td><td class="mono">600</td></tr>
+          <tr><td>4B base</td><td class="mono">run_20260921_214339_11eb2e</td><td>vLLM</td><td class="mono">240 s</td><td class="mono">1,310</td></tr>
+          <tr><td>4B recirc (18→9, α=0.15)</td><td class="mono">run_20260921_213705_b30f77</td><td>HF serial</td><td class="mono">4,940 s</td><td class="mono">167</td></tr>
+        </table>
+      </div>
+
+      <pre># Regenerate all metrics, paired statistics, and figures locally:
+python analysis/gsm8k_phase2.py --data reports/data --figures reports/figures
+python scripts/compare_runs.py --baseline run_20260921_214339_11eb2e --treatment run_20260921_213705_b30f77 --output comparisons/pair_4b</pre>
+
+      <p class="small">Original matplotlib outputs preserved as provenance: <a href="figures/figA_accuracy.png">figA_accuracy.png</a>, <a href="figures/figB_transitions.png">figB_transitions.png</a>, <a href="figures/figC_lengths.png">figC_lengths.png</a>, <a href="figures/figD_alpha_sweep.png">figD_alpha_sweep.png</a>, <a href="figures/figG_layer_heatmap.png">figG_layer_heatmap.png</a>, <a href="figures/figH_schedules.png">figH_schedules.png</a>, <a href="figures/paper_looping_vs_recirc.png">paper_looping_vs_recirc.png</a> (Mozer et al., CC BY-NC-SA 4.0).</p>
+
+      <p class="small">Citations: Mozer et al., <em>Recirculation</em>, arXiv:2608.17981 (2026); Kojima et al., <em>Zero-Shot Reasoners</em>, NeurIPS 2022; Cobbe et al., <em>GSM8K</em>, arXiv:2110.14168 (2021); Gemma Team, <em>Gemma 3 Technical Report</em> (2025); Kwon et al., <em>PagedAttention (vLLM)</em>, SOSP 2023.</p>
+
+      <p class="small">Scientific records: <a href="https://github.com/Monarch-25/recirculation-for-safety/blob/main/reports/research_handover_recirculation.md">research_handover_recirculation.md</a> · formal report: <a href="https://github.com/Monarch-25/recirculation-for-safety/blob/main/reports/phase2_gsm8k_report.md">phase2_gsm8k_report.md</a>. Design doctrine: <a href="TASTE.md">TASTE.md</a>.</p>
+
+      <hr class="soft">
+      <p class="small">Classification: <strong>Independent replication, non-confirming.</strong> Zero external CDNs or webfonts used; completely local and offline-capable.</p>
+    </section>
+  </article>
+
+  <!-- Desktop Sticky Table of Contents -->
+  <aside class="toc" aria-label="contents">
+    <h4>Contents</h4>
+    <ol>
+      <li><a href="#feeling">01 · A feeling</a></li>
+      <li><a href="#why">02 · Why it matters</a></li>
+      <li><a href="#plumbing">03 · The plumbing</a></li>
+      <li><a href="#scale">04 · The scale</a></li>
+      <li><a href="#handwriting">05 · Scoreboard / handwriting</a></li>
+      <li><a href="#ground">06 · The neighborhood</a></li>
+      <li><a href="#readings">07 · Two readings</a></li>
+      <li><a href="#next">08 · What next</a></li>
+      <li><a href="#appendix">A · Reproduce</a></li>
+    </ol>
+    <div class="mode">Light / dark persists · progress bar up top · every heading linkable · fully local, zero external calls.</div>
+  </aside>
+</div>
+
+<footer class="site">
+  <div class="shell2">
+    <span>Recirculation research notebook · fully local offline build · numbers regenerate from <span class="mono">reports/data/</span> · paper figures CC BY-NC-SA 4.0 Mozer et al.</span>
+  </div>
+</footer>
+
+<button id="to-top" class="toplink" aria-label="back to top">↑</button>
+<script src="script.js"></script>
+</body>
+</html>
