@@ -309,7 +309,11 @@ Safety behavior — refusals, harmlessness under pressure, reasoning integrity �
 lives at the level of *generation trajectories*, not aggregate accuracy.
 Phase 2 proves recirculation decisively rewrites trajectories. That is the
 bridge: **even with null accuracy deltas, the safety question remains wide
-open and directly testable with exactly this machinery.**
+open and directly testable with exactly this machinery.** The trajectory
+premise is schedule-agnostic: cross-step rewrites 69–90% of full-scale
+outputs while two-pass moves 18–30 verdicts per 100 — so the safety
+question stands under either schedule, even though which schedule to
+carry forward still needs settling (§4.3).
 
 Concretely, we propose Phase 3 reframed as: *"Do recirculation's trajectory
 effects transfer to safety behavior?"* — refusal robustness, harm refusal

@@ -225,6 +225,8 @@ variant reproduces the effect, re-baseline safety work on it; if it
 also nulls, the research question pivots to *why outputs churn without
 accuracy movement* (the changed-question digests are the starting
 dataset for that analysis). Either way, the trajectory-level effect
-measured here — 69–90% of outputs rewritten — is precisely the
+measured here — 69–90% of outputs rewritten under cross-step, 18–30
+verdict flips per 100 under two-pass — is precisely the
 substrate Phase 3 safety work needs, since safety behavior lives at
-the level of generation trajectories, not aggregate accuracy.
+the level of generation trajectories, not aggregate accuracy, and the
+premise holds under either schedule.

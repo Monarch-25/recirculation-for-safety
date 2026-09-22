@@ -144,7 +144,7 @@ Phase 2 built the machine, proved it trustworthy, and returned an honest null: f
 
 ## 9. Recommendations
 
-1. **Approve Phase 3 reframed:** "Do recirculation's trajectory effects transfer to safety behavior?" — refusal robustness, harm refusal under pressure, reasoning-integrity probes, each paired baseline-vs-recirc with the existing machinery, plus a utility holdout (this GSM8K protocol verbatim) to detect capability regressions.
+1. **Approve Phase 3 reframed:** "Do recirculation's trajectory effects transfer to safety behavior?" — refusal robustness, harm refusal under pressure, reasoning-integrity probes, each paired baseline-vs-recirc with the existing machinery, plus a utility holdout (this GSM8K protocol verbatim) to detect capability regressions. The trajectory premise is schedule-agnostic — cross-step churn at scale, two-pass flips at n=100 — so Phase 3 can probe both schedules without betting the premise on one.
 2. **Settle the schedule question first (cheap):** readout-from-normal ablation + dev-split confirmation of one sweep cell, before any safety claim leans on a schedule.
 3. **Do not fund a blind scale-up** (12B full sweeps) until (2) resolves; the current evidence does not support "bigger will fix it."
 

@@ -246,6 +246,7 @@ A null with 69–90% output churn is not "nothing happened"
 
 - Safety behavior — refusals, harmlessness under pressure, reasoning integrity — lives at the level of **generation trajectories**, not aggregate accuracy
 - Phase 2 proves recirculation **decisively rewrites trajectories**. That is precisely the substrate safety work needs
+- Schedule-agnostic premise: cross-step 69–90% churn at scale · two-pass 18–30 verdict flips per 100 — Phase 3 can probe both without betting on one
 - Phase 3, reframed: *"Do recirculation's trajectory effects transfer to safety behavior?"* — refusal robustness, harm refusal under pressure, reasoning-integrity probes, each paired baseline-vs-recirc, plus a GSM8K utility holdout against regressions
 - Settle the schedule question first; no blind 12B scale-up. Ask: **25 GPU-h** (Phase 2 cost ≈8–9 total)
 
