@@ -75,6 +75,33 @@ pinned open weights (Gemma 3, 2025), paired binary statistics (McNemar, 1947;
 Wilson, 1927), and an lm-evaluation-harness cross-check method (Zheng et al.)
 held as future work.
 
+### 2.1 Prior art and novelty boundaries
+
+Four lines of prior work delimit what is and isn't claimed here. (1) The
+*term* "recirculation" predates all of this by decades: Hinton & McClelland
+(1987) introduced "Learning Representations by Recirculation," a
+weight-learning rule for encoder networks. Different mechanism entirely —
+no activation feedback, no frozen models — cited here so the word's history
+is on the record. (2) The *concept* of inference-time deep→shallow feedback
+on frozen transformers is Mozer et al. (2026), asserted above and not
+re-claimed. (3) The closest *trained* family is the Feedback Transformer
+(Fan et al., 2020), which feeds past high-level representations into future
+low-level computation via attention-memory surgery trained from scratch —
+same intuition, opposite regime (trained architecture vs frozen-model
+inference-time leak). (4) The community has independently converged on the
+two-stack reading: vLLM RFC #53401 implements normal-pass plus rerun-upper-stack
+with logits from the *normal* pass (a third readout variant alongside ours),
+and the paper's own v2 adds a PyTorch/HuggingFace replication of its Figure-5
+sweep (two-stack family, perplexity only — not GSM8K).
+
+What is ours, to our knowledge as of September 2026: the first
+implementation and evaluation of the *one-pass-per-step* (prose) reading;
+the first paired ablation of the two readings against each other (§3.3,
+§4.3); and the first independent full-scale GSM8K replication attempt with
+a frozen protocol, reporting a null with churn rather than a confirmation.
+No search surfaced any prior build or test of the one-pass variant — no
+repo, no replication, no blog.
+
 ## 3. Method
 
 ### 3.1 Harness and frozen protocol
@@ -233,11 +260,12 @@ content, not truncation artifacts.
 
 #### 4.1.1 Caveats on the n=1319 null (do not skip)
 
-1. **Our null is conditional on our frozen two-stage protocol.** The paper
-   does not publish its exact GSM8K prompting, generation budgets, or
-   answer-parsing code. We test a two-stage Kojima protocol (256-token
+1. **Our null is conditional on our frozen two-stage protocol.** The paper's
+   v2 specifies single-stage zero-shot CoT prompting on base models (parsed
+   from CoT output); we test a two-stage Kojima protocol (256-token
    reasoning, 32-token extraction, v1.0 parser on stage-2 output) — a
-   reasonable but not identical realization of "zero-shot CoT." A different
+   reasonable but not identical realization. Budgets and parsing code remain
+   unpublished. A different
    prompting/extraction choice is a live alternative explanation for the gap
    (§5), not a closed one.
 2. **The 1B scale is near floor** (22/1319 baseline correct). Floor effects
@@ -350,10 +378,13 @@ the substrate Phase 3 safety work needs.
 
 ## References
 
-- Mozer, Siddiqui, Sawyer, Sanyal, Liu. *Recirculation.* arXiv:2608.17981v2 (2026). [Paper figures reused in companion docs under CC BY-NC-SA 4.0 with attribution.]
+- Mozer, Siddiqui, Sawyer, Sanyal, Liu. *Recirculation.* arXiv:2608.17981v2 (2026). [Paper figures reused in companion docs under CC BY-NC-SA 4.0 with attribution. v2 adds a PyTorch/HF replication of its Figure-5 sweep and specifies zero-shot CoT prompting on base models for GSM8K — single-stage, parsed from CoT output, vs our two-stage protocol with a separate extraction pass.]
 - Kojima et al. *Large Language Models are Zero-Shot Reasoners.* NeurIPS 2022. (Prompting protocol.)
 - Cobbe et al. *Training Verifiers to Solve Math Word Problems.* arXiv:2110.14168 (2021). (GSM8K.)
 - Gemma Team. *Gemma 3 Technical Report.* (2025). (Checkpoints, gated.)
+- Hinton & McClelland. *Learning Representations by Recirculation.* NeurIPS 1987, pp. 358–366. (Term prior art; unrelated mechanism.)
+- Fan et al. *Addressing Some Limitations of Transformers with Feedback Memory.* arXiv:2002.09402 (2020). (Trained-family adjacent work.)
+- vLLM Project. RFC #53401: *Experimental Recirculation for causal decoders.* (Open RFC; independent two-stack convergence, normal-pass readout.)
 - Kwon et al. *Efficient Memory Management for Large Language Model Serving with PagedAttention.* SOSP 2023. (vLLM.)
 - McNemar (1947); Wilson (1927). (Paired/interval statistics.)
 

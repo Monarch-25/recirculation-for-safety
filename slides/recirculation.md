@@ -262,6 +262,19 @@ A null with 69–90% output churn is not "nothing happened"
 
 ---
 
+## Why fund the cross-step track?
+
+<!-- notes: Anticipate "why not just run Mozer's variant on safety?" — evidence, cost, ablation, deployability, in that order. Concede the capability point; Phase 3 isn't about capability. -->
+
+- **Evidence:** only cross-step has a measured trajectory effect *at scale* (69–90% churn); two-stack has paper perplexity, no independent trajectory evidence
+- **Cost:** one forward per position vs two — halves the recirc arm at safety-benchmark volumes; runs in plain HF (two-stack serving needs engine support, RFC still open)
+- **Ablation:** both arms tell us whether safety transfer is schedule-specific or general — Mozer-only throws away the control
+- **Deployability:** an inference-time safety intervention must be cheap enough to ship; single-pass is closer to that bar
+
+<div class="colloquium-footnote">Conceded: for maximum capability, two-stack has the paper's headlines — but Phase 3 is about trajectory effects, where cross-step is proven and two-stack is assumed.</div>
+
+---
+
 ## Conclusion
 
 - Single-config full-scale check (paper's settings, both scales): null verdict — it rules out a point, not the surface

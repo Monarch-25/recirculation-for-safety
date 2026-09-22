@@ -158,6 +158,23 @@ Phase 2 built the machine, proved it trustworthy, and returned an honest null: f
 2. **Settle the schedule question first (cheap):** readout-from-normal ablation + dev-split confirmation of one sweep cell, before any safety claim leans on a schedule.
 3. **Do not fund a blind scale-up** (12B full sweeps) until (2) resolves; the current evidence does not support "bigger will fix it."
 
+**Why the cross-step track — not just Mozer's variant applied to safety.**
+Four reasons, in the order a skeptic would attack them: (a) *Evidence.*
+Cross-step is the only variant with a measured behavioral effect at scale
+(69–90% churn); the two-stack reading has paper perplexity numbers but no
+independent full-scale trajectory evidence — betting Phase 3 on it means
+betting on the less-evidenced arm. (b) *Cost.* One forward per position vs
+two: at safety-benchmark volumes (thousands of adversarial prompts ×
+conditions), cross-step halves the recirc arm, and it runs in plain HF
+while two-stack serving needs engine support (vLLM RFC still open).
+(c) *Ablation value.* Keeping both arms tells us whether safety transfer
+is schedule-specific or general — running Mozer's variant alone throws
+away the control. (d) *Deployability.* An inference-time safety
+intervention must be cheap enough to ship; single-pass is closer to that
+bar. Counter-acknowledged: if the goal were maximum capability, the
+two-stack has the paper's headline numbers — but Phase 3 is about
+trajectory effects, where cross-step is proven and two-stack is assumed.
+
 ### 9.3 Compute budget
 
 Spent (A100-40GB, metered): ≈ 8–9 GPU-h total (smokes ≈0.5, full pairs ≈2, sweep + two-pass panel ≈5, heatmap + reruns ≈1).
