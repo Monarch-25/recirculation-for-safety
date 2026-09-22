@@ -125,6 +125,27 @@ The paper's prose and its Fig-3c formalization admit both readings — so we bui
 
 ---
 
+## Ours vs looping transformers
+
+- **Looping** = re-execute a block of layers on the *same* input (depth recurrence inside one forward pass)
+- **Ours: no layer is ever re-executed** — every block runs exactly once per position
+- Influence travels *across* positions instead: one stored vector + a KV cache written post-mix
+- Both schedules are pure recirculation — the paper's Figure-8 contrast applies to what we test; our null says nothing about looping
+
+---
+
+## Ours vs the paper's recirculation
+
+<div class="text-sm">
+
+1. **Schedule.** Prose reading → cross-step; figure reading → two-pass. Both built, alike within noise (§4.3) — but exact unrolling and the readout choice stay open.
+2. **Harness.** Paper unpublished (model SHAs, budgets, parsing) → ours frozen and printed, not guessed. Serial prefill + per-row masking; BOS guard per the v2 erratum.
+3. **Numerics.** JAX-vs-HF unaddressed by design; 1B ramp as published but provisional.
+
+</div>
+
+---
+
 ## Results: full pairs (n=1319) — null with massive churn
 
 ```chart

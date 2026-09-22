@@ -53,8 +53,11 @@ Mozer et al. propose inference-time recurrence for frozen transformers: after
 each step, leak a small amount of deep-layer activation down to a shallow
 layer, mixed as `d′ = α·f(s) + β·d` with destination-L2 rescaling, so the
 model acts as a dynamical system tracking belief state. They distinguish this
-sharply from *looping* (depth recurrence within the same step): their sweeps
-show recirculation helping broadly where looping mostly harms (their Figure 8,
+sharply from *looping*: looping re-executes a block of layers on the *same*
+input (depth recurrence within a single forward pass), whereas recirculation
+never re-executes anything — influence propagates *across* input positions
+instead. Their sweeps show recirculation helping broadly where looping mostly
+harms (their Figure 8,
 reproduced in our handover with attribution, CC BY-NC-SA 4.0). Reported
 headlines for the adaptive variant on Gemma3: −23% perplexity, +21% GSM8K
 accuracy. For *fixed* recirculation on GSM8K — our target — they report
@@ -164,6 +167,29 @@ bitwise identical to baseline, so any measured delta is pure intervention.
 | warm-up | position 0 | position 0 |
 | full-scale evidence | §4.1 (n=1319 × 2 scales) | — |
 | panel evidence | §4.3 baseline for comparison | §4.3 (n=100, 4 cells) |
+
+#### 3.3.4 Delimiting our implementation: vs looping, vs the paper
+
+**Vs looping transformers.** Neither schedule re-executes any layer: every
+block runs exactly once per position. All cross-position influence flows
+through one stored vector plus a KV cache whose upper-layer entries were
+written post-mix. Both schedules are therefore pure recirculation, and the
+paper's recirc-vs-looping contrast (their Figure 8) applies to the mechanism
+class we test — our null is not a statement about looping, which we never
+implement.
+
+**Vs the paper's recirculation.** Three deltas, all documented rather than
+guessed: (1) *Schedule.* Our cross-step schedule (one pass per position,
+deep@t → shallow@t+1) is the prose reading; our two-pass schedule (capture,
+truncate, rerun, logits-from-rerun) is the figure reading. §4.3 shows they
+behave alike within noise, but the exact unrolling and the readout choice
+remain open alternatives. (2) *Harness.* The paper does not publish model
+SHAs, generation budgets, or answer-parsing code; ours are frozen and printed
+(§3.1) instead of reconstructed. Serial one-token-per-forward prefill with
+per-row validity masking is our engineering choice (bitwise batch-invariant),
+as is asserting BOS at every window start per the paper's v2 erratum.
+(3) *Numerics.* The JAX-vs-HF framework difference is unaddressed by design;
+the 1B ramp schedule is reproduced as published but provisional.
 
 ### 3.4 Statistics
 
