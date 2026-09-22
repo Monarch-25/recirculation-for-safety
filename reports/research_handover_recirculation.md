@@ -89,7 +89,17 @@ Costs (A100-40GB): 1B pair ≈ 0.5 GPU-h; 4B pair ≈ 1.5 GPU-h; sweep + two-pas
 
 ## 6. Detailed findings
 
-### 6.1 Full-scale pairs: null with massive churn
+**Evidence map — which result came from which method:**
+
+| block | method (schedule) | n | configurations | headline |
+|---|---|---|---|---|
+| A. Full-scale pairs (§6.1) | cross-step (ours) | 1319 × 2 scales | paper's single published point per scale | null (p=0.74 / 0.26); 69–90% churn |
+| B. Diagnostic sweep (§6.2) | cross-step (ours) | 100 (first-100) | 18 cells: α × layers, β=1.0 | 16/18 beat base; best +0.13 (nominal) |
+| C. Schedule panel (§6.3) | two-pass (paper reading) vs cross-step twins | 100 | 4 cells (top-3 + paper) | two-pass beats base; ±0.07 vs twins |
+
+Talk track: paper params → null (A); sweep around them → live surface (B); paper's own reading → same story (C).
+
+### 6.1 Full-scale pairs (cross-step, paper config, n=1319): null with massive churn
 
 ![Figure A](figures/figA_accuracy.png)
 
@@ -101,7 +111,7 @@ surface in §6.2.) Transition matrices tell the real story:
 
 1B: 2/20/17/1280 (90.4% of outputs changed). 4B: 203/185/163/768 (69.3% changed). Flips are symmetric — the intervention moves verdicts vigorously in both directions and they cancel. Output-length profiles are near-identical across conditions (Fig C), so flips come from reasoning content, not truncation artifacts.
 
-### 6.2 Diagnostic sweep (4B, first-100, β=1.0)
+### 6.2 Diagnostic sweep (cross-step, 4B, first-100, β=1.0)
 
 ![Figure D](figures/figD_alpha_sweep.png)
 
@@ -113,7 +123,7 @@ surface in §6.2.) Transition matrices tell the real story:
 
 The complete 3×2 heatmap at α=0.10: s18 row hottest, s16→d9 the lone cold cell, destination-7 beats destination-9 at every source. Per-cell transitions (Fig F) all sit above the null diagonal but hug it.
 
-### 6.3 Two-pass schedule panel (n=100, top-3 sweep cells + paper config)
+### 6.3 Two-pass schedule panel (paper reading, n=100, top-3 sweep cells + paper config)
 
 | config | two-pass acc | Δ vs base | Δ vs cross-step |
 |---|---|---|---|
@@ -165,6 +175,65 @@ Projected Phase 3 (per safety benchmark of size N on 4B): baseline ≈ N×0.2s (
 - vLLM Project. RFC #53401: Experimental Recirculation for causal decoders. (Independent mechanical corroboration.)
 
 ## Appendices
+
+**G. Research-lead review: what a skeptical lead would still ask (2026-09-22).**
+Written as the review we would demand before funding Phase 3 — what is now
+answered, with new figures, and what still needs GPU or run access. Nothing
+below required a new model run; all figures regenerate from frozen
+`reports/data/` via `reports/figures/make_lead_review.py`.
+
+*Positive controls already in the bundle (the machine is not blind):*
+the harness detects the massive known scale effect (0.017 → 0.294) through
+the identical pipeline; recirc(α=0) ≡ baseline bitwise; batching is exact;
+reruns are identical; parse rates sit at ~1.0 in both arms. No direct
+external accuracy anchor exists for this exact protocol (custom two-stage
+zero-shot) — the scale effect and parse rates are the internal anchors,
+stated as such.
+
+*New evidence built for this review (Fig H set):*
+
+![Figure H-1](figures/figH_architecture.png)
+*H-1: harness + evidence flow. Green boxes are committed frozen
+derivatives — every number regenerates from the run dirs.*
+
+![Figure H-2](figures/figH_cost_breakdown.png)
+*H-2: cost. Blue bars are metered run walls (1B pair 0.49 h, 4B pair
+1.44 h); gray bars are W&B-reported estimates. Total ≈ 8.4 h, so the
+25 h Phase-3 ask is ~3× all of Phase 2 — the budget now has a denominator.*
+
+![Figure H-3](figures/figH_blocks.png)
+*H-3: the 4B null is uniform across the difficulty spectrum — per-100
+blocks show mixed signs with no consistent win region, i.e. no hidden
+subgroup effect averaging out. Block 1 quantifies the subset bias the
+sweep inherits (baseline 0.24 vs 0.30 rest).*
+
+![Figure H-4](figures/figH_schedules.png)
+*H-4: both schedules move verdicts both ways at similar magnitude on
+the same four cells — the visual form of schedule-indifference.*
+
+*Flip anatomy (4B paired derivatives, post-hoc descriptive, no test):*
+rescued outputs shorten under recirc (251 → 212 tokens mean, 262 → 208
+median) while regressed outputs lengthen (225 → 246, 260 → 288);
+unchanged examples are stable (239 → 234, medians 261 → 261). Flips
+co-occur with length shifts in opposite directions while aggregate
+profiles match — trajectory rewriting, not truncation. One crumb for
+Phase 3: stage-2 parse failures go 0 → 5 at 4B under recirc (Fisher
+≈ 0.06, hypothesis-generating only) — a reasoning-integrity signal
+worth a dedicated probe, not a claim.
+
+*Still open — needs GPU (costed, not commissioned):* full-scale α=0.07
+paper-pair confirmation (~1.5 h on 4B, dev-split first); HF-vs-vLLM full
+baseline parity (~1.5 h, closes the backend confound); two-pass at full
+scale (~3 h); readout-from-normal ablation first (cheap, n=100); 12B
+pilot / pass@128 / adaptive variant (explicitly out of scope).
+
+*Still open — needs run access, no GPU (Modal volume):* 2–3 qualitative
+side-by-side reasoning examples (the "show me one" test); full textual
+churn for two-pass cells; GPU-side determinism rerun.
+
+*Would NOT change the verdict:* re-running the n=1319 cross-step pair
+(deterministic under fixed seed modulo backend nondeterminism), or more
+n=100 cells without multiplicity control.
 
 **A. Run inventory.** All runs immutable on the Modal volume + mirrored to W&B `recirc-gsm8k`: 1B base `run_20260921_213746_f0d8ab`, 1B recirc `run_20260921_213557_173592`, 4B base `run_20260921_214339_11eb2e`, 4B recirc `run_20260921_213705_b30f77`, 18 sweep cells + 4 two-pass cells (see `sweep_4b.json`, gitignored; manifests canonical). Comparison bundles: `comparisons/` (regenerable via `scripts/compare_runs.py`).
 

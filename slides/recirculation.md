@@ -154,8 +154,18 @@ The paper's prose and its Fig-3c formalization admit both readings — so we bui
 
 ---
 
+## Evidence map: three blocks, two methods
+
+<!-- notes: Talk track: we started with the paper's suggested params and got a null — so we swept around them and found a live surface — then we checked the paper's own reading and it tells the same story. -->
+
+- **A · Full-scale pairs** — <span style="color:#1f77b4">cross-step (ours)</span>, n=1319 × 2 scales, paper's single point per scale → **null**, 69–90% churn
+- **B · Diagnostic sweep** — <span style="color:#1f77b4">cross-step (ours)</span>, n=100, 18 cells → **16/18 beat baseline**, best +0.13
+- **C · Schedule panel** — <span style="color:#2e7d32">two-pass (paper reading)</span> vs cross-step twins, n=100, 4 cells → **beats base, ±0.07 vs twins**
+
+---
+
 <!-- columns: 40/60 -->
-## Single-config full-scale check: null verdict, live trajectories
+## A · Single-config check (cross-step, n=1319): null verdict, live trajectories
 
 - Tested exactly **one (α, β, layer) point per scale** — the paper's published settings, not a tuned selection
 - 1B Δ −0.0023 (p=0.742) · 4B Δ −0.0167 (p=0.260); CIs overlap fully — verdict: null **at that point**
@@ -171,7 +181,7 @@ The paper's prose and its Fig-3c formalization admit both readings — so we bui
 ---
 
 <!-- class: figure-captions -->
-## What actually changed: reasoning trajectories rewritten
+## A · What changed (cross-step, n=1319): trajectories rewritten
 
 - Flips are **symmetric** — the intervention moves verdicts vigorously in both directions and they cancel
 - Output-length profiles near-identical: flips come from reasoning content, not truncation artifacts
@@ -202,7 +212,7 @@ Not one point — the surface around it
 ---
 
 <!-- class: figure-captions -->
-## Sweep (4B, first-100): 16 of 18 cells beat baseline
+## B · Sweep (cross-step, 4B, n=100): 16 of 18 cells beat baseline
 
 - Same-100 baseline **0.25**; best `a010_s18_d7` at **0.38** (+0.13, nominal p=0.012, Bonferroni-n.s.)
 - Paper pair peaks at α=0.07 here; destination-7 beats destination-9 at every source
@@ -215,13 +225,13 @@ Not one point — the surface around it
 
 <!-- class: figure-captions -->
 <!-- img-fill: true -->
-## Layer landscape at α=0.10: s18 hot, s16→d9 cold
+## B · Layer landscape (cross-step, α=0.10): s18 hot, s16→d9 cold
 
 ![Accuracy and delta heatmaps over source×destination](../reports/figures/figG_layer_heatmap.png)
 
 ---
 
-## Two-pass panel (n=100): schedule-indifference within noise
+## C · Two-pass panel (paper reading, n=100): same story
 
 | config | two-pass acc | Δ vs base | Δ vs cross-step |
 |---|---|---|---|

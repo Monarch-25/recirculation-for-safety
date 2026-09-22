@@ -203,7 +203,15 @@ exact on `example_id` (1319/1319, 100/100, zero orphans). All in
 
 ## 4. Results
 
-### 4.1 Full-scale single-config check (n=1319): null verdict, live trajectories — READ WITH §4.1.1
+**Evidence map — which result came from which method:**
+
+| block | method (schedule) | n | configurations | headline |
+|---|---|---|---|---|
+| A. Full-scale check (§4.1) | cross-step (ours) | 1319 × 2 scales | paper's single published point per scale | null (p=0.74 / 0.26); 69–90% churn |
+| B. Diagnostic sweep (§4.2) | cross-step (ours) | 100 (first-100) | 18 cells: α × layers, β=1.0 | 16/18 beat base; best +0.13 (nominal) |
+| C. Schedule panel (§4.3) | two-pass (paper reading) vs cross-step twins | 100 | 4 cells (top-3 + paper) | two-pass beats base; ±0.07 vs twins |
+
+### 4.1 Full-scale single-config check (cross-step, n=1319): null verdict, live trajectories — READ WITH §4.1.1
 
 These runs test exactly one (α, β, layer-pair) point per scale — the paper's
 published configuration. The null below rules out that point, not the
@@ -238,7 +246,7 @@ content, not truncation artifacts.
    baselines against serial-HF treatments. No pass@128, no adaptive variant,
    no 12B.
 
-### 4.2 Diagnostic sweep (4B, first-100, β=1.0): smooth, exploratory, n=100
+### 4.2 Diagnostic sweep (cross-step, 4B, first-100, β=1.0): smooth, exploratory, n=100
 
 18 cells (16 + 2 heatmap-completing runs): **16 of 18 beat the same-100
 baseline (0.25)**; top cell `a010_s18_d7` at 0.38 (+0.13, nominal p=0.012,
@@ -254,7 +262,7 @@ subset differs in difficulty, and 100 samples cannot resolve small effects
 after multiplicity control. It is reported as evidence of a smooth tunable
 response surface, **never as configuration selection** (no test-set tuning).
 
-### 4.3 Two-pass panel (n=100): schedule-indifference within noise
+### 4.3 Two-pass panel (paper reading, n=100): schedule-indifference within noise
 
 | config | two-pass acc | Δ vs base | Δ vs cross-step |
 |---|---|---|---|

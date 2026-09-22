@@ -32,6 +32,14 @@ Frozen contract: `docs/phase2_gsm8k_protocol.md` (do not modify).
   0-based blocks; cross-step serial schedule (deep@t → shallow@t+1).
 - Code: `evaluation_code_version 0.2.0`, schema 1.0.
 
+**Evidence map — which result came from which method:**
+
+| block | method (schedule) | n | configurations | headline |
+|---|---|---|---|---|
+| Full-scale pair (§4–§6) | cross-step (ours) | 1319 × 2 scales | paper's single published point per scale | null; 69–90% churn |
+| Layer/alpha sweep (§9) | cross-step (ours) | 100 (first-100) | 18 cells: α × layers, β=1.0 | 16/18 beat base (nominal) |
+| Two-pass panel (handover §6.3) | two-pass (paper reading) vs cross-step twins | 100 | 4 cells (top-3 + paper) | beats base; ±0.07 vs twins |
+
 ## 3. Baseline
 
 | model | accuracy | correct | 95% Wilson CI |
@@ -42,7 +50,7 @@ Frozen contract: `docs/phase2_gsm8k_protocol.md` (do not modify).
 Runs: `run_20260921_213746_f0d8ab` (1B, vLLM), `run_20260921_214339_11eb2e`
 (4B, vLLM). Clear scale effect in the base model itself (0.017 → 0.294).
 
-## 4. Recirculation
+## 4. Recirculation (cross-step, paper config)
 
 | model | accuracy | correct | 95% Wilson CI |
 |---|---|---|---|
@@ -112,7 +120,7 @@ per-example cost ~10× vs the first serial implementation; vLLM
 baselines are two orders of magnitude cheaper. Token totals match
 across conditions (≈540k/370k in/out at 1B), confirming protocol parity.
 
-## 9. Layer/alpha exploration
+## 9. Layer/alpha exploration (cross-step sweep)
 
 Diagnostic 4B sweep on the first-100 subset (alphas {0.04, 0.07, 0.10,
 0.15} × pairs {(18,9), (16,9), (20,9), (18,7)}, β=1.0, dest-L2, no
