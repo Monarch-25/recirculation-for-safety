@@ -138,6 +138,22 @@ Two-pass behaves like cross-step within noise (±0.07, all n.s.): all cells beat
 
 Serial prefill dominates recirc cost (paper §31 phenomenon, measured: 1063s/3101s prefill vs 617s/1837s decode). Batched loop + stage budgets + SDPA cut per-example cost ~10× vs the naive serial build. vLLM baselines run two orders of magnitude cheaper (4374/1310 tok/s vs 600/167).
 
+**Cost model, both schedules (addresses "isn't cross-step pricier?").**
+No — serial prefill is inherent to *both* readings, not a cross-step
+penalty: recurrence makes step t+1's shallow input depend on step t's deep
+state, so the paper states recirculation "cannot be parallelized, even when
+an entire input sequence is provided, such as during prefill." Given
+sequential steps, work per position is what differs: cross-step runs **one**
+full forward (≈1× a serial forward pass); two-pass runs one full pass **plus**
+an upper-stack rerun from the mixed boundary, with cache truncate + rewrite
+traffic (≈1.5–2×). The paper's "essentially no added latency" is a
+*parallelism* claim (the two stacks batch on modern hardware), not a work
+claim — total FLOPs are still ~2×, and the vLLM RFC notes its wavefront
+"reduces dispatch overhead, not mathematical work." Our implementation looks
+slow for engineering reasons (eager HF Python loop) while the baseline enjoys
+a compiled serving engine — engine-vs-eager, not method-vs-method. At equal
+engineering, cross-step costs less than or equal to two-pass, never more.
+
 ## 7. Discussion
 
 **Interpretation.** The honest reading is a null accuracy result with a decisive behavioral result. A null with 69–90% output churn is not "nothing happened" — it is evidence the intervention acts strongly on trajectories while leaving verdict means untouched (at these scales, under this protocol). That is *exactly* the regime where safety experiments are most informative: safety is trajectory-shaped (refusals, reasoning integrity), not accuracy-shaped.
