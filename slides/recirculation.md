@@ -25,7 +25,7 @@ title: Does deep-to-shallow representation recirculation improve LLM reasoning �
 tone: accent
 ```
 
-- **Phase 2 (this talk):** capability replication on GSM8K
+- **Phase 2 (this talk):** capability replication on GSM8K — headline is the sweep surface + rewritten trajectories, not the single-config null
 - **Phase 3 (next):** safety/security transfer — reframed around what Phase 2 actually proved
 - Scope today: fixed coefficients only · greedy pass@1 · GSM8K only · Gemma3 PT 1B/4B
 
@@ -64,6 +64,7 @@ tone: accent
 
 ---
 
+<!-- columns: 55/45 -->
 ## Method, step by step (1/3): shared mixing math
 
 Both schedules share one implementation behind a `schedule` parameter:
@@ -72,7 +73,10 @@ Both schedules share one implementation behind a `schedule` parameter:
 - Tested: **1B** 11→4, α=0.15/β=0.85 convex + ramp · **4B** 18→9, α=0.15/β=1.0, ramp off
 - Why rescaling is load-bearing is **measured, not asserted**: first mixed position — source norm **25,371** vs destination norm **124** (204×)
 
+|||
+
 <!-- class: figure-captions -->
+<!-- img-align: center -->
 
 ![One measured mixing event: norms, rescaled mixture, cosine 0.636](../reports/figures/xstep_2_step_detail.png)
 
@@ -119,9 +123,13 @@ content: |
 
 The paper's prose and its Fig-3c formalization admit both readings — so we built both. Without the cross-step arm, the two-pass panel could not isolate schedule effects at all.
 
-<!-- class: figure-captions -->
+---
 
-![Our implementation schematic: panel A cross-step, panel B two-pass](../reports/figures/schematic_recirculation_schedules.png)
+<!-- class: figure-captions -->
+<!-- img-fill: true -->
+## Schematic: the two schedules as implemented
+
+![Panel A cross-step, panel B two-pass](../reports/figures/schematic_recirculation_schedules.png)
 
 ---
 
@@ -146,50 +154,70 @@ The paper's prose and its Fig-3c formalization admit both readings — so we bui
 
 ---
 
-## Results: full pairs (n=1319) — null with massive churn
+<!-- columns: 40/60 -->
+## Single-config full-scale check: null verdict, live trajectories
 
-```chart
-type: bar
-height: 380
-data:
-  labels: ["1B base", "1B recirc", "4B base", "4B recirc"]
-  datasets:
-    - label: accuracy
-      data: [0.0167, 0.0144, 0.2942, 0.2775]
-```
+- Tested exactly **one (α, β, layer) point per scale** — the paper's published settings, not a tuned selection
+- 1B Δ −0.0023 (p=0.742) · 4B Δ −0.0167 (p=0.260); CIs overlap fully — verdict: null **at that point**
+- …but 90.4% / 69.3% of outputs changed textually — next slide
 
-- 1B: Δ −0.0023, p=0.742 · 4B: Δ −0.0167, p=0.260 — CIs overlap fully
-- Transitions (cc/cw/wc/ww): 1B **2/20/17/1280** (90.4% changed) · 4B **203/185/163/768** (69.3% changed)
-- Flips are **symmetric** — vigorous both directions, cancelling out; length profiles near-identical
+|||
 
 <!-- class: figure-captions -->
+<!-- img-align: center -->
 
 ![Baseline vs recirculation with Wilson 95% CIs](../reports/figures/figA_accuracy.png)
 
 ---
 
-## Caveats on the null — read before quoting it
+<!-- class: figure-captions -->
+## What actually changed: reasoning trajectories rewritten
+
+- Flips are **symmetric** — the intervention moves verdicts vigorously in both directions and they cancel
+- Output-length profiles near-identical: flips come from reasoning content, not truncation artifacts
+- A null mean with 69–90% churn is not "nothing happened" — it is trajectory-level action, the substrate safety cares about
+
+![Paired verdict transitions: symmetric flips both directions](../reports/figures/figB_transitions.png)
+
+---
+
+## Caveats — what the single-config null does and doesn't say
 
 <div class="text-lg">
 
-1. **Conditional on our frozen two-stage protocol.** The paper's exact prompting, budgets, and parsing are unpublished — this null covers our realization, not every prompting.
-2. **1B is near floor** (22/1319 baseline correct). 4B is the informative scale.
+1. **One published config per scale — not a tuned selection.** The n=1319 runs test the paper's point settings; the surface around them is the next two slides.
+2. **Conditional on our frozen two-stage protocol.** The paper's exact prompting, budgets, and parsing are unpublished — this null covers our realization, not every prompting. (1B additionally sits near floor: 22/1319 baseline correct.)
 3. **Single runs; backend asymmetry** (vLLM baselines vs serial-HF treatments). No pass@128, no adaptive variant, no 12B.
 
 </div>
 
 ---
 
-## Sweep (4B, first-100): smooth surface, exploratory only
+<!-- layout: section-break -->
 
-- 18 cells, β=1.0: **16 of 18 beat the same-100 baseline (0.25)**; best `a010_s18_d7` at 0.38 (+0.13, nominal p=0.012, Bonferroni-n.s.)
-- Paper pair peaks at α=0.07 here; destination-7 beats destination-9 at every source
+## The comprehensive study: an 18-cell sweep
 
-<div class="colloquium-footnote">Scope discipline: first-100 baseline (0.25) sits below full-test (0.2942) — the subset differs in difficulty. Smooth tunable response surface, never configuration selection.</div>
+Not one point — the surface around it
+
+---
 
 <!-- class: figure-captions -->
+## Sweep (4B, first-100): 16 of 18 cells beat baseline
+
+- Same-100 baseline **0.25**; best `a010_s18_d7` at **0.38** (+0.13, nominal p=0.012, Bonferroni-n.s.)
+- Paper pair peaks at α=0.07 here; destination-7 beats destination-9 at every source
+
+<div class="colloquium-footnote">First-100 subset (baseline 0.25 vs 0.2942 full-test): exploratory surface, never configuration selection.</div>
 
 ![4B alpha-response curves, diagnostic n=100](../reports/figures/figD_alpha_sweep.png)
+
+---
+
+<!-- class: figure-captions -->
+<!-- img-fill: true -->
+## Layer landscape at α=0.10: s18 hot, s16→d9 cold
+
+![Accuracy and delta heatmaps over source×destination](../reports/figures/figG_layer_heatmap.png)
 
 ---
 
@@ -225,16 +253,6 @@ A null with 69–90% output churn is not "nothing happened"
 
 ## Conclusion
 
-- Fixed training-free recirculation, implemented **two ways**, does not lift GSM8K accuracy on Gemma3 1B/4B under a frozen, fully traceable protocol
-- It **profoundly rewrites reasoning trajectories**, with a smooth tunable surface underneath — the paper's capability claim is not reproduced, but the trajectory effect is real and measured
+- Single-config full-scale check (paper's settings, both scales): null verdict — it rules out a point, not the surface
+- The **18-cell sweep** maps that surface: 16 of 18 beat baseline, smooth tunable response, s18 hot / s16→d9 cold
 - Everything regenerates from committed artifacts: frozen protocol, paired CSVs, executable notebook, walkthrough trace + generators; run dirs on Modal + W&B `recirc-gsm8k`
-
----
-
-<!-- after: references -->
-
-## Backup: transition matrices
-
-<!-- class: figure-captions -->
-
-![Paired verdict transitions: symmetric flips both directions](../reports/figures/figB_transitions.png)

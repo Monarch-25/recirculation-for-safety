@@ -14,7 +14,9 @@ We independently replicate the *fixed, training-free* recirculation
 intervention of Mozer et al. (arXiv:2608.17981v2) on GSM8K, implemented two
 ways behind one `schedule` parameter, and evaluated under a frozen,
 fully traceable protocol on Gemma3 1B and 4B pretrained checkpoints (full
-test set, n=1319, greedy pass@1). **Result: no accuracy improvement under
+test set, n=1319, greedy pass@1), testing exactly one (α, β, layer-pair) point
+per scale — the paper's published settings, not a tuned selection.
+**Result: no accuracy improvement under
 either schedule** — 1B: 0.0167 → 0.0144 (McNemar p=0.742); 4B: 0.2942 →
 0.2775 (p=0.260). What we do measure is **massive, symmetric rewriting of
 reasoning trajectories** (90.4% of 1B outputs and 69.3% of 4B outputs change
@@ -201,7 +203,11 @@ exact on `example_id` (1319/1319, 100/100, zero orphans). All in
 
 ## 4. Results
 
-### 4.1 Full-scale pairs (n=1319): null with massive churn — READ WITH §4.1.1
+### 4.1 Full-scale single-config check (n=1319): null verdict, live trajectories — READ WITH §4.1.1
+
+These runs test exactly one (α, β, layer-pair) point per scale — the paper's
+published configuration. The null below rules out that point, not the
+response surface around it (§4.2 maps the surface).
 
 | condition | acc | correct | 95% CI | Δ vs base | McNemar p |
 |---|---|---|---|---|---|
@@ -316,7 +322,8 @@ pilot.
 
 ## 7. Conclusion
 
-Fixed training-free recirculation, as implemented two ways, does not lift
+At the paper's single published configuration per scale, fixed training-free
+recirculation, as implemented two ways, does not lift
 GSM8K accuracy on Gemma3 1B/4B under a frozen, fully traceable protocol —
 while profoundly rewriting generation trajectories, with a smooth tunable
 response surface underneath. The paper's capability claim is therefore **not

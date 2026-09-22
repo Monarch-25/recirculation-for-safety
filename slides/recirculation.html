@@ -1806,21 +1806,21 @@ body:hover .colloquium-present {
 <h1>Recirculation for Reasoning: An Independent Replication</h1>
 <div class="slide-content"><p>Fixed, training-free deep→shallow feedback on GSM8K — implemented two ways, measured honestly</p>
 </div>
-<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">1 / 19</span></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">1 / 23</span></div></div>
 </section>
 
-<section class="slide slide--content" data-index="1" data-colloquium-md="IyMgUmVzZWFyY2ggcXVlc3Rpb24KCmBgYGJveAp0aXRsZTogRG9lcyBkZWVwLXRvLXNoYWxsb3cgcmVwcmVzZW50YXRpb24gcmVjaXJjdWxhdGlvbiBpbXByb3ZlIExMTSByZWFzb25pbmcg4oCUIGFuZCBkbyB0aGUgYmVuZWZpdHMgY2Fycnkgb3ZlciB0byBMTE0gc2FmZXR5Pwp0b25lOiBhY2NlbnQKYGBgCgotICoqUGhhc2UgMiAodGhpcyB0YWxrKToqKiBjYXBhYmlsaXR5IHJlcGxpY2F0aW9uIG9uIEdTTThLCi0gKipQaGFzZSAzIChuZXh0KToqKiBzYWZldHkvc2VjdXJpdHkgdHJhbnNmZXIg4oCUIHJlZnJhbWVkIGFyb3VuZCB3aGF0IFBoYXNlIDIgYWN0dWFsbHkgcHJvdmVkCi0gU2NvcGUgdG9kYXk6IGZpeGVkIGNvZWZmaWNpZW50cyBvbmx5IMK3IGdyZWVkeSBwYXNzQDEgwrcgR1NNOEsgb25seSDCtyBHZW1tYTMgUFQgMUIvNEI=">
+<section class="slide slide--content" data-index="1" data-colloquium-md="IyMgUmVzZWFyY2ggcXVlc3Rpb24KCmBgYGJveAp0aXRsZTogRG9lcyBkZWVwLXRvLXNoYWxsb3cgcmVwcmVzZW50YXRpb24gcmVjaXJjdWxhdGlvbiBpbXByb3ZlIExMTSByZWFzb25pbmcg4oCUIGFuZCBkbyB0aGUgYmVuZWZpdHMgY2Fycnkgb3ZlciB0byBMTE0gc2FmZXR5Pwp0b25lOiBhY2NlbnQKYGBgCgotICoqUGhhc2UgMiAodGhpcyB0YWxrKToqKiBjYXBhYmlsaXR5IHJlcGxpY2F0aW9uIG9uIEdTTThLIOKAlCBoZWFkbGluZSBpcyB0aGUgc3dlZXAgc3VyZmFjZSArIHJld3JpdHRlbiB0cmFqZWN0b3JpZXMsIG5vdCB0aGUgc2luZ2xlLWNvbmZpZyBudWxsCi0gKipQaGFzZSAzIChuZXh0KToqKiBzYWZldHkvc2VjdXJpdHkgdHJhbnNmZXIg4oCUIHJlZnJhbWVkIGFyb3VuZCB3aGF0IFBoYXNlIDIgYWN0dWFsbHkgcHJvdmVkCi0gU2NvcGUgdG9kYXk6IGZpeGVkIGNvZWZmaWNpZW50cyBvbmx5IMK3IGdyZWVkeSBwYXNzQDEgwrcgR1NNOEsgb25seSDCtyBHZW1tYTMgUFQgMUIvNEI=">
 <h2>Research question</h2>
 <div class="slide-content"><div class="colloquium-box colloquium-box--accent">
 <div class="colloquium-box-title">Does deep-to-shallow representation recirculation improve LLM reasoning — and do the benefits carry over to LLM safety?</div>
 </div>
 <ul>
-<li><strong>Phase 2 (this talk):</strong> capability replication on GSM8K</li>
+<li><strong>Phase 2 (this talk):</strong> capability replication on GSM8K — headline is the sweep surface + rewritten trajectories, not the single-config null</li>
 <li><strong>Phase 3 (next):</strong> safety/security transfer — reframed around what Phase 2 actually proved</li>
 <li>Scope today: fixed coefficients only · greedy pass@1 · GSM8K only · Gemma3 PT 1B/4B</li>
 </ul>
 </div>
-<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">2 / 19</span></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">2 / 23</span></div></div>
 </section>
 
 <section class="slide slide--content" data-index="2" data-colloquium-md="IyMgQmFja2dyb3VuZDogd2hhdCB0aGUgcGFwZXIgY2xhaW1zIFtAbW96ZXIyMDI2cmVjaXJjdWxhdGlvbl0KCi0gSW5mZXJlbmNlLXRpbWUgcmVjdXJyZW5jZSBmb3IgKipmcm96ZW4qKiB0cmFuc2Zvcm1lcnM6IGxlYWsgZGVlcC1sYXllciBhY3RpdmF0aW9uIGRvd24gdG8gYSBzaGFsbG93IGxheWVyIGVhY2ggc3RlcAotIE1peGluZyBydWxlOiAkZCcgPSBcYWxwaGEgXGNkb3QgZihzKSArIFxiZXRhIFxjZG90IGQkIHdpdGggZGVzdGluYXRpb24tTDIgcmVzY2FsaW5nCi0gKipSZWNpcmN1bGF0aW9uIOKJoCBsb29waW5nKiogKHNhbWUtc3RlcCBkZXB0aCByZWN1cnJlbmNlKSDigJQgdGhlaXIgc3dlZXBzIHNob3cgcmVjaXJjdWxhdGlvbiBoZWxwaW5nIGJyb2FkbHkgd2hlcmUgbG9vcGluZyBtb3N0bHkgaGFybXMKLSBSZXBvcnRlZDog4oiSMjMlIHBlcnBsZXhpdHksICsyMSUgR1NNOEsgKGFkYXB0aXZlLCBHZW1tYTMpOyBmaXhlZCB2YXJpYW50IGltcHJvdmVzIGdyZWVkeSBwYXNzQDEgYW5kIHBhc3NAMTI4IG9uIDRCIFBUIHdpdGggcGFpcnMgezEx4oaSNH0gLyB7MTjihpI5fSwgzrE9MC4xNQ==">
@@ -1832,7 +1832,7 @@ body:hover .colloquium-present {
 <li>Reported: −23% perplexity, +21% GSM8K (adaptive, Gemma3); fixed variant improves greedy pass@1 and pass@128 on 4B PT with pairs {11→4} / {18→9}, α=0.15</li>
 </ul>
 </div>
-<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">3 / 19</span></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">3 / 23</span></div></div>
 </section>
 
 <section class="slide slide--content" data-index="3" data-colloquium-md="IyMgSGFybmVzczogdHJ1c3QgYnkgY29uc3RydWN0aW9uCgotIFN0cmljdCBzZXBhcmF0aW9uOiBgVGFza2Agb3ducyBiZW5jaG1hcmsgc2VtYW50aWNzIMK3IGBNb2RlbEFkYXB0ZXJgIG93bnMgZ2VuZXJhdGlvbiDCtyBgRXZhbHVhdG9yYCBvcmNoZXN0cmF0ZXMKLSBCYXNlbGluZSBpcyBhICoqZmlyc3QtY2xhc3MgY29uZGl0aW9uKiogKGBpbnRlcnZlbnRpb246IHt0eXBlOiBub25lfWApIOKAlCBzd2FwcGluZyBpbiByZWNpcmN1bGF0aW9uIGNoYW5nZXMgbm8gZXZhbHVhdG9yLCB0YXNrLCBwcm9tcHQsIHBhcnNlciwgb3Igc2NvcmVyIGNvZGUKLSBFdmVyeSBydW4gZW1pdHMgYW4gaW1tdXRhYmxlIGRpcmVjdG9yeTogbWFuaWZlc3QsIGNvbmZpZywgbWV0cmljcywgcGVyLWV4YW1wbGUgSlNPTkwsIGVudmlyb25tZW50LCBsb2dzIOKAlCBwbHVzIFcmQiBtaXJyb3JpbmcKLSAqKkFjY2VwdGFuY2UgZ2F0ZXMsIGFsbCBncmVlbiBiZWZvcmUgYW55IEdQVSBjbGFpbToqKiDOsT0wIOKJoSBiYXNlbGluZSBiaXR3aXNlIMK3IHNyYz09ZHN0IHJlamVjdGVkIMK3IGJhdGNoLXNpemUgaW52YXJpYW5jZSDCtyBpZGVudGljYWwgcmVydW5z">
@@ -1844,7 +1844,7 @@ body:hover .colloquium-present {
 <li><strong>Acceptance gates, all green before any GPU claim:</strong> α=0 ≡ baseline bitwise · src==dst rejected · batch-size invariance · identical reruns</li>
 </ul>
 </div>
-<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">4 / 19</span></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">4 / 23</span></div></div>
 </section>
 
 <section class="slide slide--content cols-2" data-index="4" data-colloquium-md="PCEtLSBjbGFzczogY29scy0yIC0tPgoKIyMgRnJvemVuIHByb3RvY29sIChkby1ub3QtbW9kaWZ5KQoKLSBNb2RlbHM6IEdlbW1hMyBQVCwgd2VpZ2h0cyBkYXRlZCAyMDI1LTAzICgqKnByZS1wYXBlcioqKTsgMUIgcmV2IGBmY2YxOGEyYeKApmAsIDRCIHJldiBgY2MwMTJlMGHigKZgCi0gRGF0YXNldDogYG9wZW5haS9nc204a2AgdGVzdCwgKipuPTEzMTkqKiwgcmF3IG9yZGVyLCBzdGFibGUgaWRzCgp8fHwKCi0gUHJvbXB0aW5nOiB0d28tc3RhZ2UgS29qaW1hIFtAa29qaW1hMjAyMl0g4oCUIGBROiDigKYgQTogTGV0J3MgdGhpbmsgc3RlcCBieSBzdGVwLmAg4oaSIGV4dHJhY3Rpb24gcHJvbXB0OyByYXcgUFQgcHJvbXB0cywgQk9TLWd1YXJkZWQKLSBEZWNvZGluZzogZ3JlZWR5LCBzZWVkIDQyLCAyNTYgKyAzMiB0b2tlbnM7IHYxLjAgcGFyc2VyL3Njb3JlciBvbiBzdGFnZS0yIG91dHB1dCwgZmFpbHVyZXMgc2NvcmUgMAotIFN0YXRzOiBNY05lbWFyIGZsaXBzLCBXaWxzb24gOTUlIENJcywgQm9uZmVycm9uaSBvdmVyIHN3ZWVwIGNlbGxz">
@@ -1857,20 +1857,18 @@ body:hover .colloquium-present {
 <li>Decoding: greedy, seed 42, 256 + 32 tokens; v1.0 parser/scorer on stage-2 output, failures score 0</li>
 <li>Stats: McNemar flips, Wilson 95% CIs, Bonferroni over sweep cells</li>
 </ul></div></div>
-<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">5 / 19</span></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">5 / 23</span></div></div>
 </section>
 
-<section class="slide slide--content figure-captions" data-index="5" data-colloquium-md="PCEtLSBjbGFzczogZmlndXJlLWNhcHRpb25zIC0tPgoKIyMgTWV0aG9kLCBzdGVwIGJ5IHN0ZXAgKDEvMyk6IHNoYXJlZCBtaXhpbmcgbWF0aAoKQm90aCBzY2hlZHVsZXMgc2hhcmUgb25lIGltcGxlbWVudGF0aW9uIGJlaGluZCBhIGBzY2hlZHVsZWAgcGFyYW1ldGVyOgoKLSAkZCcgPSBcYWxwaGEgXGNkb3QgZihzKSArIFxiZXRhIFxjZG90IGQkLCBkZXN0aW5hdGlvbi1MMiByZXNjYWxpbmcgKGVwcy1zYWZlKSwgY29udmV4L25vbmNvbnZleCDOsiByZXNvbHZlZCDigJQgbmV2ZXIgaGFyZGNvZGVkCi0gVGVzdGVkOiAqKjFCKiogMTHihpI0LCDOsT0wLjE1L86yPTAuODUgY29udmV4ICsgcmFtcCDCtyAqKjRCKiogMTjihpI5LCDOsT0wLjE1L86yPTEuMCwgcmFtcCBvZmYKLSBXaHkgcmVzY2FsaW5nIGlzIGxvYWQtYmVhcmluZyBpcyAqKm1lYXN1cmVkLCBub3QgYXNzZXJ0ZWQqKjogZmlyc3QgbWl4ZWQgcG9zaXRpb24g4oCUIHNvdXJjZSBub3JtICoqMjUsMzcxKiogdnMgZGVzdGluYXRpb24gbm9ybSAqKjEyNCoqICgyMDTDlykKCgoKIVtPbmUgbWVhc3VyZWQgbWl4aW5nIGV2ZW50OiBub3JtcywgcmVzY2FsZWQgbWl4dHVyZSwgY29zaW5lIDAuNjM2XSguLi9yZXBvcnRzL2ZpZ3VyZXMveHN0ZXBfMl9zdGVwX2RldGFpbC5wbmcp">
+<section class="slide slide--content cols-55-45 figure-captions img-align-center" data-index="5" data-colloquium-md="PCEtLSBjbGFzczogY29scy01NS00NSBmaWd1cmUtY2FwdGlvbnMgaW1nLWFsaWduLWNlbnRlciAtLT4KCiMjIE1ldGhvZCwgc3RlcCBieSBzdGVwICgxLzMpOiBzaGFyZWQgbWl4aW5nIG1hdGgKCkJvdGggc2NoZWR1bGVzIHNoYXJlIG9uZSBpbXBsZW1lbnRhdGlvbiBiZWhpbmQgYSBgc2NoZWR1bGVgIHBhcmFtZXRlcjoKCi0gJGQnID0gXGFscGhhIFxjZG90IGYocykgKyBcYmV0YSBcY2RvdCBkJCwgZGVzdGluYXRpb24tTDIgcmVzY2FsaW5nIChlcHMtc2FmZSksIGNvbnZleC9ub25jb252ZXggzrIgcmVzb2x2ZWQg4oCUIG5ldmVyIGhhcmRjb2RlZAotIFRlc3RlZDogKioxQioqIDEx4oaSNCwgzrE9MC4xNS/Osj0wLjg1IGNvbnZleCArIHJhbXAgwrcgKio0QioqIDE44oaSOSwgzrE9MC4xNS/Osj0xLjAsIHJhbXAgb2ZmCi0gV2h5IHJlc2NhbGluZyBpcyBsb2FkLWJlYXJpbmcgaXMgKiptZWFzdXJlZCwgbm90IGFzc2VydGVkKio6IGZpcnN0IG1peGVkIHBvc2l0aW9uIOKAlCBzb3VyY2Ugbm9ybSAqKjI1LDM3MSoqIHZzIGRlc3RpbmF0aW9uIG5vcm0gKioxMjQqKiAoMjA0w5cpCgp8fHwKCgoKCiFbT25lIG1lYXN1cmVkIG1peGluZyBldmVudDogbm9ybXMsIHJlc2NhbGVkIG1peHR1cmUsIGNvc2luZSAwLjYzNl0oLi4vcmVwb3J0cy9maWd1cmVzL3hzdGVwXzJfc3RlcF9kZXRhaWwucG5nKQ==">
 <h2>Method, step by step (1/3): shared mixing math</h2>
-<div class="slide-content"><p>Both schedules share one implementation behind a <code>schedule</code> parameter:</p>
+<div class="slide-content colloquium-grid" style="grid-template-columns: minmax(0, 55fr) minmax(0, 45fr);"><div class="col"><p>Both schedules share one implementation behind a <code>schedule</code> parameter:</p>
 <ul>
 <li><span class="math inline">d' = \alpha \cdot f(s) + \beta \cdot d</span>, destination-L2 rescaling (eps-safe), convex/nonconvex β resolved — never hardcoded</li>
 <li>Tested: <strong>1B</strong> 11→4, α=0.15/β=0.85 convex + ramp · <strong>4B</strong> 18→9, α=0.15/β=1.0, ramp off</li>
 <li>Why rescaling is load-bearing is <strong>measured, not asserted</strong>: first mixed position — source norm <strong>25,371</strong> vs destination norm <strong>124</strong> (204×)</li>
-</ul>
-<figure class="colloquium-figure"><img src="../reports/figures/xstep_2_step_detail.png" alt="One measured mixing event: norms, rescaled mixture, cosine 0.636" /><figcaption class="colloquium-figure-caption">One measured mixing event: norms, rescaled mixture, cosine 0.636</figcaption></figure>
-</div>
-<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">6 / 19</span></div></div>
+</ul></div><div class="col"><figure class="colloquium-figure"><img src="../reports/figures/xstep_2_step_detail.png" alt="One measured mixing event: norms, rescaled mixture, cosine 0.636" /><figcaption class="colloquium-figure-caption">One measured mixing event: norms, rescaled mixture, cosine 0.636</figcaption></figure></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">6 / 23</span></div></div>
 </section>
 
 <section class="slide slide--content" data-index="6" data-colloquium-md="IyMgTWV0aG9kLCBzdGVwIGJ5IHN0ZXAgKDIvMyk6IHdhbGt0aHJvdWdoIEEg4oCUIGNyb3NzLXN0ZXAKCk9uZSBmb3J3YXJkIHBlciBpbnB1dCBwb3NpdGlvbjsgZGVzdGluYXRpb24gYXQgc3RlcCAqdCsxKiBtaXhlcyB0aGUgKipzdG9yZWQqKiBkZWVwIHNvdXJjZSBmcm9tIHN0ZXAgKnQqIChXZW5nIGJhYnlzaXR0aW5nIHF1ZXN0aW9uLCA0NSB0b2tlbnMpOgoKMS4gKipQb3NpdGlvbiAwIOKAlCB3YXJtLXVwLCBubyBtaXhpbmcuKiogTm8gcHJldmlvdXMgZGVlcCBzdGF0ZTsgYmxvY2stMTEgb3V0cHV0IGNhcHR1cmVkIGFuZCBzdG9yZWQKMi4gKipQb3NpdGlvbnMg4omlIDEg4oCUIG1peC4qKiBCbG9jayA0J3Mgb3V0cHV0IOKGkCAkMC4xNSBcY2RvdCBmKHMpICsgMC44NSBcY2RvdCBkJDsgYmxvY2tzIDXigJMzMSBydW4gb24gaXQsIHNvIHdyaXR0ZW4gS1YgZW50cmllcyBhbHJlYWR5IGNhcnJ5IHRoZSBpbmZsdWVuY2U7IGZyZXNoIGJsb2NrLTExIG91dHB1dCBvdmVyd3JpdGVzIHRoZSBzdG9yZQozLiAqKkRlY29kZSBydW5zIHRoZSBpZGVudGljYWwgbG9vcCoqIChwb3NpdGlvbnMgNDXigJM2OCk7IGNvc2luZSBzdGF5cyBpbiBhIDAuNTAx4oCTMC42OTMgYmFuZCB0aHJvdWdob3V0Cgo8ZGl2IGNsYXNzPSJjb2xsb3F1aXVtLWZvb3Rub3RlIj5GdWxsIHRyYWNlOiByZXBvcnRzL2FwcGVuZGl4X2Nyb3Nzc3RlcF93YWxrdGhyb3VnaC5tZCDCtyBmcm96ZW4gZGF0YS94c3RlcF90cmFjZS5qc29uIMK3IGFsbCBmdWxsLXNjYWxlIHJlc3VsdHMgdXNlIHRoaXMgc2NoZWR1bGUuPC9kaXY+">
@@ -1882,7 +1880,7 @@ body:hover .colloquium-present {
 <li><strong>Decode runs the identical loop</strong> (positions 45–68); cosine stays in a 0.501–0.693 band throughout</li>
 </ol>
 <div class="colloquium-footnote">Full trace: reports/appendix_crossstep_walkthrough.md · frozen data/xstep_trace.json · all full-scale results use this schedule.</div></div>
-<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">7 / 19</span></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">7 / 23</span></div></div>
 </section>
 
 <section class="slide slide--content" data-index="7" data-colloquium-md="IyMgTWV0aG9kLCBzdGVwIGJ5IHN0ZXAgKDMvMyk6IHdhbGt0aHJvdWdoIEIg4oCUIHR3by1wYXNzICh0aGUgcGFwZXItZmlndXJlIHJlYWRpbmcpCgpQZXIgaW5wdXQgcG9zaXRpb24sICoqdHdvKiogZm9yd2FyZHM6CgoxLiBBIG5vcm1hbCBmdWxsIHBhc3MgKipjYXB0dXJlcyoqIHRoZSBzb3VyY2U7IHRoZSBjYWNoZSBpcyAqKnRydW5jYXRlZCoqCjIuIFRoZSBzYW1lIHRva2VuIGlzICoqcmVydW4qKiB3aXRoIHRoZSBzYW1lLXN0ZXAgc291cmNlIG1peGVkIGF0IHRoZSBib3VuZGFyeTsgdGhlIHJlcnVuIG92ZXJ3cml0ZXMgdXBwZXItbGF5ZXIgS1YgYW5kIHN1cHBsaWVzIHRoZSBsb2dpdHMKMy4gQ29zdCB+MsOXIGNvbXB1dGU7IHdhcm0tdXAgYXQgcG9zaXRpb24gMCBvbmx5OyBhdCDOsT0wIGJpdHdpc2UgaWRlbnRpY2FsIHRvIGJhc2VsaW5lCgpgYGBib3gKdGl0bGU6IERvY3VtZW50ZWQgY2hvaWNlLCBub3QgYSB0aGVvcmVtCnRvbmU6IHN1cmZhY2UKY29udGVudDogfAogIExvZ2l0cyBjb21lIGZyb20gdGhlIHJlcnVuLiBBIHJlYWRvdXQtZnJvbS1ub3JtYWwgYWJsYXRpb24gaXMgY2hlYXAgZnV0dXJlIHdvcmsg4oCUIGhlbGQgb3Blbiwgbm90IGFzc3VtZWQuCmBgYA==">
@@ -1898,10 +1896,10 @@ body:hover .colloquium-present {
 <div class="colloquium-box-content"><p>Logits come from the rerun. A readout-from-normal ablation is cheap future work — held open, not assumed.</p></div>
 </div>
 </div>
-<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">8 / 19</span></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">8 / 23</span></div></div>
 </section>
 
-<section class="slide slide--content figure-captions" data-index="8" data-colloquium-md="PCEtLSBjbGFzczogZmlndXJlLWNhcHRpb25zIC0tPgoKIyMgVGhlIHR3byByZWFkaW5ncywgY29tcGFyZWQKCnwgfCBjcm9zcy1zdGVwIChBKSB8IHR3by1wYXNzIChCKSB8CnwtLS18LS0tfC0tLXwKfCBzb3VyY2UgY2FwdHVyZSB8IHByZXZpb3VzIHBvc2l0aW9uIHwgc2FtZSBwb3NpdGlvbiwgZmlyc3QgcGFzcyB8CnwgZm9yd2FyZHMgLyBwb3NpdGlvbiB8IDEgfCAyICh+MsOXIGNvbXB1dGUpIHwKfCBsb2dpdHMgZnJvbSB8IHRoZSBzaW5nbGUgbWl4ZWQgcGFzcyB8IHRoZSBtaXhlZCByZXJ1biB8CnwgZnVsbC1zY2FsZSBldmlkZW5jZSB8IG49MTMxOSDDlyAyIHNjYWxlcyB8IOKAlCB8CnwgcGFuZWwgZXZpZGVuY2UgfCBjb21wYXJpc29uIGJhc2VsaW5lIHwgbj0xMDAsIDQgY2VsbHMgfAoKVGhlIHBhcGVyJ3MgcHJvc2UgYW5kIGl0cyBGaWctM2MgZm9ybWFsaXphdGlvbiBhZG1pdCBib3RoIHJlYWRpbmdzIOKAlCBzbyB3ZSBidWlsdCBib3RoLiBXaXRob3V0IHRoZSBjcm9zcy1zdGVwIGFybSwgdGhlIHR3by1wYXNzIHBhbmVsIGNvdWxkIG5vdCBpc29sYXRlIHNjaGVkdWxlIGVmZmVjdHMgYXQgYWxsLgoKCgohW091ciBpbXBsZW1lbnRhdGlvbiBzY2hlbWF0aWM6IHBhbmVsIEEgY3Jvc3Mtc3RlcCwgcGFuZWwgQiB0d28tcGFzc10oLi4vcmVwb3J0cy9maWd1cmVzL3NjaGVtYXRpY19yZWNpcmN1bGF0aW9uX3NjaGVkdWxlcy5wbmcp">
+<section class="slide slide--content" data-index="8" data-colloquium-md="IyMgVGhlIHR3byByZWFkaW5ncywgY29tcGFyZWQKCnwgfCBjcm9zcy1zdGVwIChBKSB8IHR3by1wYXNzIChCKSB8CnwtLS18LS0tfC0tLXwKfCBzb3VyY2UgY2FwdHVyZSB8IHByZXZpb3VzIHBvc2l0aW9uIHwgc2FtZSBwb3NpdGlvbiwgZmlyc3QgcGFzcyB8CnwgZm9yd2FyZHMgLyBwb3NpdGlvbiB8IDEgfCAyICh+MsOXIGNvbXB1dGUpIHwKfCBsb2dpdHMgZnJvbSB8IHRoZSBzaW5nbGUgbWl4ZWQgcGFzcyB8IHRoZSBtaXhlZCByZXJ1biB8CnwgZnVsbC1zY2FsZSBldmlkZW5jZSB8IG49MTMxOSDDlyAyIHNjYWxlcyB8IOKAlCB8CnwgcGFuZWwgZXZpZGVuY2UgfCBjb21wYXJpc29uIGJhc2VsaW5lIHwgbj0xMDAsIDQgY2VsbHMgfAoKVGhlIHBhcGVyJ3MgcHJvc2UgYW5kIGl0cyBGaWctM2MgZm9ybWFsaXphdGlvbiBhZG1pdCBib3RoIHJlYWRpbmdzIOKAlCBzbyB3ZSBidWlsdCBib3RoLiBXaXRob3V0IHRoZSBjcm9zcy1zdGVwIGFybSwgdGhlIHR3by1wYXNzIHBhbmVsIGNvdWxkIG5vdCBpc29sYXRlIHNjaGVkdWxlIGVmZmVjdHMgYXQgYWxsLg==">
 <h2>The two readings, compared</h2>
 <div class="slide-content"><table>
 <thead>
@@ -1940,12 +1938,18 @@ body:hover .colloquium-present {
 </tbody>
 </table>
 <p>The paper’s prose and its Fig-3c formalization admit both readings — so we built both. Without the cross-step arm, the two-pass panel could not isolate schedule effects at all.</p>
-<figure class="colloquium-figure"><img src="../reports/figures/schematic_recirculation_schedules.png" alt="Our implementation schematic: panel A cross-step, panel B two-pass" /><figcaption class="colloquium-figure-caption">Our implementation schematic: panel A cross-step, panel B two-pass</figcaption></figure>
 </div>
-<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">9 / 19</span></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">9 / 23</span></div></div>
 </section>
 
-<section class="slide slide--content" data-index="9" data-colloquium-md="IyMgT3VycyB2cyBsb29waW5nIHRyYW5zZm9ybWVycwoKLSAqKkxvb3BpbmcqKiA9IHJlLWV4ZWN1dGUgYSBibG9jayBvZiBsYXllcnMgb24gdGhlICpzYW1lKiBpbnB1dCAoZGVwdGggcmVjdXJyZW5jZSBpbnNpZGUgb25lIGZvcndhcmQgcGFzcykKLSAqKk91cnM6IG5vIGxheWVyIGlzIGV2ZXIgcmUtZXhlY3V0ZWQqKiDigJQgZXZlcnkgYmxvY2sgcnVucyBleGFjdGx5IG9uY2UgcGVyIHBvc2l0aW9uCi0gSW5mbHVlbmNlIHRyYXZlbHMgKmFjcm9zcyogcG9zaXRpb25zIGluc3RlYWQ6IG9uZSBzdG9yZWQgdmVjdG9yICsgYSBLViBjYWNoZSB3cml0dGVuIHBvc3QtbWl4Ci0gQm90aCBzY2hlZHVsZXMgYXJlIHB1cmUgcmVjaXJjdWxhdGlvbiDigJQgdGhlIHBhcGVyJ3MgRmlndXJlLTggY29udHJhc3QgYXBwbGllcyB0byB3aGF0IHdlIHRlc3Q7IG91ciBudWxsIHNheXMgbm90aGluZyBhYm91dCBsb29waW5n">
+<section class="slide slide--content figure-captions img-fill" data-index="9" data-colloquium-md="PCEtLSBjbGFzczogZmlndXJlLWNhcHRpb25zIGltZy1maWxsIC0tPgoKIyMgU2NoZW1hdGljOiB0aGUgdHdvIHNjaGVkdWxlcyBhcyBpbXBsZW1lbnRlZAoKIVtQYW5lbCBBIGNyb3NzLXN0ZXAsIHBhbmVsIEIgdHdvLXBhc3NdKC4uL3JlcG9ydHMvZmlndXJlcy9zY2hlbWF0aWNfcmVjaXJjdWxhdGlvbl9zY2hlZHVsZXMucG5nKQ==">
+<h2>Schematic: the two schedules as implemented</h2>
+<div class="slide-content"><figure class="colloquium-figure"><img src="../reports/figures/schematic_recirculation_schedules.png" alt="Panel A cross-step, panel B two-pass" /><figcaption class="colloquium-figure-caption">Panel A cross-step, panel B two-pass</figcaption></figure>
+</div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">10 / 23</span></div></div>
+</section>
+
+<section class="slide slide--content" data-index="10" data-colloquium-md="IyMgT3VycyB2cyBsb29waW5nIHRyYW5zZm9ybWVycwoKLSAqKkxvb3BpbmcqKiA9IHJlLWV4ZWN1dGUgYSBibG9jayBvZiBsYXllcnMgb24gdGhlICpzYW1lKiBpbnB1dCAoZGVwdGggcmVjdXJyZW5jZSBpbnNpZGUgb25lIGZvcndhcmQgcGFzcykKLSAqKk91cnM6IG5vIGxheWVyIGlzIGV2ZXIgcmUtZXhlY3V0ZWQqKiDigJQgZXZlcnkgYmxvY2sgcnVucyBleGFjdGx5IG9uY2UgcGVyIHBvc2l0aW9uCi0gSW5mbHVlbmNlIHRyYXZlbHMgKmFjcm9zcyogcG9zaXRpb25zIGluc3RlYWQ6IG9uZSBzdG9yZWQgdmVjdG9yICsgYSBLViBjYWNoZSB3cml0dGVuIHBvc3QtbWl4Ci0gQm90aCBzY2hlZHVsZXMgYXJlIHB1cmUgcmVjaXJjdWxhdGlvbiDigJQgdGhlIHBhcGVyJ3MgRmlndXJlLTggY29udHJhc3QgYXBwbGllcyB0byB3aGF0IHdlIHRlc3Q7IG91ciBudWxsIHNheXMgbm90aGluZyBhYm91dCBsb29waW5n">
 <h2>Ours vs looping transformers</h2>
 <div class="slide-content"><ul>
 <li><strong>Looping</strong> = re-execute a block of layers on the <em>same</em> input (depth recurrence inside one forward pass)</li>
@@ -1954,10 +1958,10 @@ body:hover .colloquium-present {
 <li>Both schedules are pure recirculation — the paper’s Figure-8 contrast applies to what we test; our null says nothing about looping</li>
 </ul>
 </div>
-<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">10 / 19</span></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">11 / 23</span></div></div>
 </section>
 
-<section class="slide slide--content" data-index="10" data-colloquium-md="IyMgT3VycyB2cyB0aGUgcGFwZXIncyByZWNpcmN1bGF0aW9uCgo8ZGl2IGNsYXNzPSJ0ZXh0LXNtIj4KCjEuICoqU2NoZWR1bGUuKiogUHJvc2UgcmVhZGluZyDihpIgY3Jvc3Mtc3RlcDsgZmlndXJlIHJlYWRpbmcg4oaSIHR3by1wYXNzLiBCb3RoIGJ1aWx0LCBhbGlrZSB3aXRoaW4gbm9pc2UgKMKnNC4zKSDigJQgYnV0IGV4YWN0IHVucm9sbGluZyBhbmQgdGhlIHJlYWRvdXQgY2hvaWNlIHN0YXkgb3Blbi4KMi4gKipIYXJuZXNzLioqIFBhcGVyIHVucHVibGlzaGVkIChtb2RlbCBTSEFzLCBidWRnZXRzLCBwYXJzaW5nKSDihpIgb3VycyBmcm96ZW4gYW5kIHByaW50ZWQsIG5vdCBndWVzc2VkLiBTZXJpYWwgcHJlZmlsbCArIHBlci1yb3cgbWFza2luZzsgQk9TIGd1YXJkIHBlciB0aGUgdjIgZXJyYXR1bS4KMy4gKipOdW1lcmljcy4qKiBKQVgtdnMtSEYgdW5hZGRyZXNzZWQgYnkgZGVzaWduOyAxQiByYW1wIGFzIHB1Ymxpc2hlZCBidXQgcHJvdmlzaW9uYWwuCgo8L2Rpdj4=">
+<section class="slide slide--content" data-index="11" data-colloquium-md="IyMgT3VycyB2cyB0aGUgcGFwZXIncyByZWNpcmN1bGF0aW9uCgo8ZGl2IGNsYXNzPSJ0ZXh0LXNtIj4KCjEuICoqU2NoZWR1bGUuKiogUHJvc2UgcmVhZGluZyDihpIgY3Jvc3Mtc3RlcDsgZmlndXJlIHJlYWRpbmcg4oaSIHR3by1wYXNzLiBCb3RoIGJ1aWx0LCBhbGlrZSB3aXRoaW4gbm9pc2UgKMKnNC4zKSDigJQgYnV0IGV4YWN0IHVucm9sbGluZyBhbmQgdGhlIHJlYWRvdXQgY2hvaWNlIHN0YXkgb3Blbi4KMi4gKipIYXJuZXNzLioqIFBhcGVyIHVucHVibGlzaGVkIChtb2RlbCBTSEFzLCBidWRnZXRzLCBwYXJzaW5nKSDihpIgb3VycyBmcm96ZW4gYW5kIHByaW50ZWQsIG5vdCBndWVzc2VkLiBTZXJpYWwgcHJlZmlsbCArIHBlci1yb3cgbWFza2luZzsgQk9TIGd1YXJkIHBlciB0aGUgdjIgZXJyYXR1bS4KMy4gKipOdW1lcmljcy4qKiBKQVgtdnMtSEYgdW5hZGRyZXNzZWQgYnkgZGVzaWduOyAxQiByYW1wIGFzIHB1Ymxpc2hlZCBidXQgcHJvdmlzaW9uYWwuCgo8L2Rpdj4=">
 <h2>Ours vs the paper’s recirculation</h2>
 <div class="slide-content"><div class="text-sm">
 <ol>
@@ -1966,47 +1970,70 @@ body:hover .colloquium-present {
 <li><strong>Numerics.</strong> JAX-vs-HF unaddressed by design; 1B ramp as published but provisional.</li>
 </ol>
 </div></div>
-<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">11 / 19</span></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">12 / 23</span></div></div>
 </section>
 
-<section class="slide slide--content figure-captions" data-index="11" data-colloquium-md="PCEtLSBjbGFzczogZmlndXJlLWNhcHRpb25zIC0tPgoKIyMgUmVzdWx0czogZnVsbCBwYWlycyAobj0xMzE5KSDigJQgbnVsbCB3aXRoIG1hc3NpdmUgY2h1cm4KCmBgYGNoYXJ0CnR5cGU6IGJhcgpoZWlnaHQ6IDM4MApkYXRhOgogIGxhYmVsczogWyIxQiBiYXNlIiwgIjFCIHJlY2lyYyIsICI0QiBiYXNlIiwgIjRCIHJlY2lyYyJdCiAgZGF0YXNldHM6CiAgICAtIGxhYmVsOiBhY2N1cmFjeQogICAgICBkYXRhOiBbMC4wMTY3LCAwLjAxNDQsIDAuMjk0MiwgMC4yNzc1XQpgYGAKCi0gMUI6IM6UIOKIkjAuMDAyMywgcD0wLjc0MiDCtyA0QjogzpQg4oiSMC4wMTY3LCBwPTAuMjYwIOKAlCBDSXMgb3ZlcmxhcCBmdWxseQotIFRyYW5zaXRpb25zIChjYy9jdy93Yy93dyk6IDFCICoqMi8yMC8xNy8xMjgwKiogKDkwLjQlIGNoYW5nZWQpIMK3IDRCICoqMjAzLzE4NS8xNjMvNzY4KiogKDY5LjMlIGNoYW5nZWQpCi0gRmxpcHMgYXJlICoqc3ltbWV0cmljKiog4oCUIHZpZ29yb3VzIGJvdGggZGlyZWN0aW9ucywgY2FuY2VsbGluZyBvdXQ7IGxlbmd0aCBwcm9maWxlcyBuZWFyLWlkZW50aWNhbAoKCgohW0Jhc2VsaW5lIHZzIHJlY2lyY3VsYXRpb24gd2l0aCBXaWxzb24gOTUlIENJc10oLi4vcmVwb3J0cy9maWd1cmVzL2ZpZ0FfYWNjdXJhY3kucG5nKQ==">
-<h2>Results: full pairs (n=1319) — null with massive churn</h2>
-<div class="slide-content"><div class="colloquium-chart-container"><canvas id="colloquium-chart-1" data-chart-config='{"type": "bar", "data": {"labels": ["1B base", "1B recirc", "4B base", "4B recirc"], "datasets": [{"label": "accuracy", "data": [0.0167, 0.0144, 0.2942, 0.2775], "borderColor": "#0f3460", "backgroundColor": "#0f3460cc"}]}, "options": {"responsive": true, "maintainAspectRatio": false, "animation": false, "devicePixelRatio": 3, "plugins": {"legend": {"display": false}, "title": {"display": false, "text": "", "font": {"size": 16}}}}}'></canvas></div>
-<ul>
-<li>1B: Δ −0.0023, p=0.742 · 4B: Δ −0.0167, p=0.260 — CIs overlap fully</li>
-<li>Transitions (cc/cw/wc/ww): 1B <strong>2/20/17/1280</strong> (90.4% changed) · 4B <strong>203/185/163/768</strong> (69.3% changed)</li>
-<li>Flips are <strong>symmetric</strong> — vigorous both directions, cancelling out; length profiles near-identical</li>
+<section class="slide slide--content cols-40-60 figure-captions img-align-center" data-index="12" data-colloquium-md="PCEtLSBjbGFzczogY29scy00MC02MCBmaWd1cmUtY2FwdGlvbnMgaW1nLWFsaWduLWNlbnRlciAtLT4KCiMjIFNpbmdsZS1jb25maWcgZnVsbC1zY2FsZSBjaGVjazogbnVsbCB2ZXJkaWN0LCBsaXZlIHRyYWplY3RvcmllcwoKLSBUZXN0ZWQgZXhhY3RseSAqKm9uZSAozrEsIM6yLCBsYXllcikgcG9pbnQgcGVyIHNjYWxlKiog4oCUIHRoZSBwYXBlcidzIHB1Ymxpc2hlZCBzZXR0aW5ncywgbm90IGEgdHVuZWQgc2VsZWN0aW9uCi0gMUIgzpQg4oiSMC4wMDIzIChwPTAuNzQyKSDCtyA0QiDOlCDiiJIwLjAxNjcgKHA9MC4yNjApOyBDSXMgb3ZlcmxhcCBmdWxseSDigJQgdmVyZGljdDogbnVsbCAqKmF0IHRoYXQgcG9pbnQqKgotIOKApmJ1dCA5MC40JSAvIDY5LjMlIG9mIG91dHB1dHMgY2hhbmdlZCB0ZXh0dWFsbHkg4oCUIG5leHQgc2xpZGUKCnx8fAoKCgoKIVtCYXNlbGluZSB2cyByZWNpcmN1bGF0aW9uIHdpdGggV2lsc29uIDk1JSBDSXNdKC4uL3JlcG9ydHMvZmlndXJlcy9maWdBX2FjY3VyYWN5LnBuZyk=">
+<h2>Single-config full-scale check: null verdict, live trajectories</h2>
+<div class="slide-content colloquium-grid" style="grid-template-columns: minmax(0, 40fr) minmax(0, 60fr);"><div class="col"><ul>
+<li>Tested exactly <strong>one (α, β, layer) point per scale</strong> — the paper’s published settings, not a tuned selection</li>
+<li>1B Δ −0.0023 (p=0.742) · 4B Δ −0.0167 (p=0.260); CIs overlap fully — verdict: null <strong>at that point</strong></li>
+<li>…but 90.4% / 69.3% of outputs changed textually — next slide</li>
+</ul></div><div class="col"><figure class="colloquium-figure"><img src="../reports/figures/figA_accuracy.png" alt="Baseline vs recirculation with Wilson 95% CIs" /><figcaption class="colloquium-figure-caption">Baseline vs recirculation with Wilson 95% CIs</figcaption></figure></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">13 / 23</span></div></div>
+</section>
+
+<section class="slide slide--content figure-captions" data-index="13" data-colloquium-md="PCEtLSBjbGFzczogZmlndXJlLWNhcHRpb25zIC0tPgoKIyMgV2hhdCBhY3R1YWxseSBjaGFuZ2VkOiByZWFzb25pbmcgdHJhamVjdG9yaWVzIHJld3JpdHRlbgoKLSBGbGlwcyBhcmUgKipzeW1tZXRyaWMqKiDigJQgdGhlIGludGVydmVudGlvbiBtb3ZlcyB2ZXJkaWN0cyB2aWdvcm91c2x5IGluIGJvdGggZGlyZWN0aW9ucyBhbmQgdGhleSBjYW5jZWwKLSBPdXRwdXQtbGVuZ3RoIHByb2ZpbGVzIG5lYXItaWRlbnRpY2FsOiBmbGlwcyBjb21lIGZyb20gcmVhc29uaW5nIGNvbnRlbnQsIG5vdCB0cnVuY2F0aW9uIGFydGlmYWN0cwotIEEgbnVsbCBtZWFuIHdpdGggNjnigJM5MCUgY2h1cm4gaXMgbm90ICJub3RoaW5nIGhhcHBlbmVkIiDigJQgaXQgaXMgdHJhamVjdG9yeS1sZXZlbCBhY3Rpb24sIHRoZSBzdWJzdHJhdGUgc2FmZXR5IGNhcmVzIGFib3V0CgohW1BhaXJlZCB2ZXJkaWN0IHRyYW5zaXRpb25zOiBzeW1tZXRyaWMgZmxpcHMgYm90aCBkaXJlY3Rpb25zXSguLi9yZXBvcnRzL2ZpZ3VyZXMvZmlnQl90cmFuc2l0aW9ucy5wbmcp">
+<h2>What actually changed: reasoning trajectories rewritten</h2>
+<div class="slide-content"><ul>
+<li>Flips are <strong>symmetric</strong> — the intervention moves verdicts vigorously in both directions and they cancel</li>
+<li>Output-length profiles near-identical: flips come from reasoning content, not truncation artifacts</li>
+<li>A null mean with 69–90% churn is not “nothing happened” — it is trajectory-level action, the substrate safety cares about</li>
 </ul>
-<figure class="colloquium-figure"><img src="../reports/figures/figA_accuracy.png" alt="Baseline vs recirculation with Wilson 95% CIs" /><figcaption class="colloquium-figure-caption">Baseline vs recirculation with Wilson 95% CIs</figcaption></figure>
+<figure class="colloquium-figure"><img src="../reports/figures/figB_transitions.png" alt="Paired verdict transitions: symmetric flips both directions" /><figcaption class="colloquium-figure-caption">Paired verdict transitions: symmetric flips both directions</figcaption></figure>
 </div>
-<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">12 / 19</span></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">14 / 23</span></div></div>
 </section>
 
-<section class="slide slide--content" data-index="12" data-colloquium-md="IyMgQ2F2ZWF0cyBvbiB0aGUgbnVsbCDigJQgcmVhZCBiZWZvcmUgcXVvdGluZyBpdAoKPGRpdiBjbGFzcz0idGV4dC1sZyI+CgoxLiAqKkNvbmRpdGlvbmFsIG9uIG91ciBmcm96ZW4gdHdvLXN0YWdlIHByb3RvY29sLioqIFRoZSBwYXBlcidzIGV4YWN0IHByb21wdGluZywgYnVkZ2V0cywgYW5kIHBhcnNpbmcgYXJlIHVucHVibGlzaGVkIOKAlCB0aGlzIG51bGwgY292ZXJzIG91ciByZWFsaXphdGlvbiwgbm90IGV2ZXJ5IHByb21wdGluZy4KMi4gKioxQiBpcyBuZWFyIGZsb29yKiogKDIyLzEzMTkgYmFzZWxpbmUgY29ycmVjdCkuIDRCIGlzIHRoZSBpbmZvcm1hdGl2ZSBzY2FsZS4KMy4gKipTaW5nbGUgcnVuczsgYmFja2VuZCBhc3ltbWV0cnkqKiAodkxMTSBiYXNlbGluZXMgdnMgc2VyaWFsLUhGIHRyZWF0bWVudHMpLiBObyBwYXNzQDEyOCwgbm8gYWRhcHRpdmUgdmFyaWFudCwgbm8gMTJCLgoKPC9kaXY+">
-<h2>Caveats on the null — read before quoting it</h2>
+<section class="slide slide--content" data-index="14" data-colloquium-md="IyMgQ2F2ZWF0cyDigJQgd2hhdCB0aGUgc2luZ2xlLWNvbmZpZyBudWxsIGRvZXMgYW5kIGRvZXNuJ3Qgc2F5Cgo8ZGl2IGNsYXNzPSJ0ZXh0LWxnIj4KCjEuICoqT25lIHB1Ymxpc2hlZCBjb25maWcgcGVyIHNjYWxlIOKAlCBub3QgYSB0dW5lZCBzZWxlY3Rpb24uKiogVGhlIG49MTMxOSBydW5zIHRlc3QgdGhlIHBhcGVyJ3MgcG9pbnQgc2V0dGluZ3M7IHRoZSBzdXJmYWNlIGFyb3VuZCB0aGVtIGlzIHRoZSBuZXh0IHR3byBzbGlkZXMuCjIuICoqQ29uZGl0aW9uYWwgb24gb3VyIGZyb3plbiB0d28tc3RhZ2UgcHJvdG9jb2wuKiogVGhlIHBhcGVyJ3MgZXhhY3QgcHJvbXB0aW5nLCBidWRnZXRzLCBhbmQgcGFyc2luZyBhcmUgdW5wdWJsaXNoZWQg4oCUIHRoaXMgbnVsbCBjb3ZlcnMgb3VyIHJlYWxpemF0aW9uLCBub3QgZXZlcnkgcHJvbXB0aW5nLiAoMUIgYWRkaXRpb25hbGx5IHNpdHMgbmVhciBmbG9vcjogMjIvMTMxOSBiYXNlbGluZSBjb3JyZWN0LikKMy4gKipTaW5nbGUgcnVuczsgYmFja2VuZCBhc3ltbWV0cnkqKiAodkxMTSBiYXNlbGluZXMgdnMgc2VyaWFsLUhGIHRyZWF0bWVudHMpLiBObyBwYXNzQDEyOCwgbm8gYWRhcHRpdmUgdmFyaWFudCwgbm8gMTJCLgoKPC9kaXY+">
+<h2>Caveats — what the single-config null does and doesn’t say</h2>
 <div class="slide-content"><div class="text-lg">
 <ol>
-<li><strong>Conditional on our frozen two-stage protocol.</strong> The paper’s exact prompting, budgets, and parsing are unpublished — this null covers our realization, not every prompting.</li>
-<li><strong>1B is near floor</strong> (22/1319 baseline correct). 4B is the informative scale.</li>
+<li><strong>One published config per scale — not a tuned selection.</strong> The n=1319 runs test the paper’s point settings; the surface around them is the next two slides.</li>
+<li><strong>Conditional on our frozen two-stage protocol.</strong> The paper’s exact prompting, budgets, and parsing are unpublished — this null covers our realization, not every prompting. (1B additionally sits near floor: 22/1319 baseline correct.)</li>
 <li><strong>Single runs; backend asymmetry</strong> (vLLM baselines vs serial-HF treatments). No pass@128, no adaptive variant, no 12B.</li>
 </ol>
 </div></div>
-<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">13 / 19</span></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">15 / 23</span></div></div>
 </section>
 
-<section class="slide slide--content figure-captions" data-index="13" data-colloquium-md="PCEtLSBjbGFzczogZmlndXJlLWNhcHRpb25zIC0tPgoKIyMgU3dlZXAgKDRCLCBmaXJzdC0xMDApOiBzbW9vdGggc3VyZmFjZSwgZXhwbG9yYXRvcnkgb25seQoKLSAxOCBjZWxscywgzrI9MS4wOiAqKjE2IG9mIDE4IGJlYXQgdGhlIHNhbWUtMTAwIGJhc2VsaW5lICgwLjI1KSoqOyBiZXN0IGBhMDEwX3MxOF9kN2AgYXQgMC4zOCAoKzAuMTMsIG5vbWluYWwgcD0wLjAxMiwgQm9uZmVycm9uaS1uLnMuKQotIFBhcGVyIHBhaXIgcGVha3MgYXQgzrE9MC4wNyBoZXJlOyBkZXN0aW5hdGlvbi03IGJlYXRzIGRlc3RpbmF0aW9uLTkgYXQgZXZlcnkgc291cmNlCgo8ZGl2IGNsYXNzPSJjb2xsb3F1aXVtLWZvb3Rub3RlIj5TY29wZSBkaXNjaXBsaW5lOiBmaXJzdC0xMDAgYmFzZWxpbmUgKDAuMjUpIHNpdHMgYmVsb3cgZnVsbC10ZXN0ICgwLjI5NDIpIOKAlCB0aGUgc3Vic2V0IGRpZmZlcnMgaW4gZGlmZmljdWx0eS4gU21vb3RoIHR1bmFibGUgcmVzcG9uc2Ugc3VyZmFjZSwgbmV2ZXIgY29uZmlndXJhdGlvbiBzZWxlY3Rpb24uPC9kaXY+CgoKCiFbNEIgYWxwaGEtcmVzcG9uc2UgY3VydmVzLCBkaWFnbm9zdGljIG49MTAwXSguLi9yZXBvcnRzL2ZpZ3VyZXMvZmlnRF9hbHBoYV9zd2VlcC5wbmcp">
-<h2>Sweep (4B, first-100): smooth surface, exploratory only</h2>
+<section class="slide slide--section-break" data-index="15" data-colloquium-md="PCEtLSBsYXlvdXQ6IHNlY3Rpb24tYnJlYWsgLS0+CgojIyBUaGUgY29tcHJlaGVuc2l2ZSBzdHVkeTogYW4gMTgtY2VsbCBzd2VlcAoKTm90IG9uZSBwb2ludCDigJQgdGhlIHN1cmZhY2UgYXJvdW5kIGl0">
+<h2>The comprehensive study: an 18-cell sweep</h2>
+<div class="slide-content"><p>Not one point — the surface around it</p>
+</div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">16 / 23</span></div></div>
+</section>
+
+<section class="slide slide--content figure-captions" data-index="16" data-colloquium-md="PCEtLSBjbGFzczogZmlndXJlLWNhcHRpb25zIC0tPgoKIyMgU3dlZXAgKDRCLCBmaXJzdC0xMDApOiAxNiBvZiAxOCBjZWxscyBiZWF0IGJhc2VsaW5lCgotIFNhbWUtMTAwIGJhc2VsaW5lICoqMC4yNSoqOyBiZXN0IGBhMDEwX3MxOF9kN2AgYXQgKiowLjM4KiogKCswLjEzLCBub21pbmFsIHA9MC4wMTIsIEJvbmZlcnJvbmktbi5zLikKLSBQYXBlciBwYWlyIHBlYWtzIGF0IM6xPTAuMDcgaGVyZTsgZGVzdGluYXRpb24tNyBiZWF0cyBkZXN0aW5hdGlvbi05IGF0IGV2ZXJ5IHNvdXJjZQoKPGRpdiBjbGFzcz0iY29sbG9xdWl1bS1mb290bm90ZSI+Rmlyc3QtMTAwIHN1YnNldCAoYmFzZWxpbmUgMC4yNSB2cyAwLjI5NDIgZnVsbC10ZXN0KTogZXhwbG9yYXRvcnkgc3VyZmFjZSwgbmV2ZXIgY29uZmlndXJhdGlvbiBzZWxlY3Rpb24uPC9kaXY+CgohWzRCIGFscGhhLXJlc3BvbnNlIGN1cnZlcywgZGlhZ25vc3RpYyBuPTEwMF0oLi4vcmVwb3J0cy9maWd1cmVzL2ZpZ0RfYWxwaGFfc3dlZXAucG5nKQ==">
+<h2>Sweep (4B, first-100): 16 of 18 cells beat baseline</h2>
 <div class="slide-content"><ul>
-<li>18 cells, β=1.0: <strong>16 of 18 beat the same-100 baseline (0.25)</strong>; best <code>a010_s18_d7</code> at 0.38 (+0.13, nominal p=0.012, Bonferroni-n.s.)</li>
+<li>Same-100 baseline <strong>0.25</strong>; best <code>a010_s18_d7</code> at <strong>0.38</strong> (+0.13, nominal p=0.012, Bonferroni-n.s.)</li>
 <li>Paper pair peaks at α=0.07 here; destination-7 beats destination-9 at every source</li>
 </ul>
-<div class="colloquium-footnote">Scope discipline: first-100 baseline (0.25) sits below full-test (0.2942) — the subset differs in difficulty. Smooth tunable response surface, never configuration selection.</div>
+<div class="colloquium-footnote">First-100 subset (baseline 0.25 vs 0.2942 full-test): exploratory surface, never configuration selection.</div>
 <figure class="colloquium-figure"><img src="../reports/figures/figD_alpha_sweep.png" alt="4B alpha-response curves, diagnostic n=100" /><figcaption class="colloquium-figure-caption">4B alpha-response curves, diagnostic n=100</figcaption></figure>
 </div>
-<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">14 / 19</span></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">17 / 23</span></div></div>
 </section>
 
-<section class="slide slide--content" data-index="14" data-colloquium-md="IyMgVHdvLXBhc3MgcGFuZWwgKG49MTAwKTogc2NoZWR1bGUtaW5kaWZmZXJlbmNlIHdpdGhpbiBub2lzZQoKfCBjb25maWcgfCB0d28tcGFzcyBhY2MgfCDOlCB2cyBiYXNlIHwgzpQgdnMgY3Jvc3Mtc3RlcCB8CnwtLS18LS0tfC0tLXwtLS18CnwgYTAxMF9zMThfZDcgfCAwLjMxIHwgKzAuMDYgfCDiiJIwLjA3IHwKfCBhMDA0X3MyMF9kOSB8IDAuMzUgfCArMC4xMCB8IOKIkjAuMDEgfAp8IGEwMTVfczIwX2Q5IHwgMC4zNyB8ICswLjEyIHwgKzAuMDIgfAp8IGEwMTVfczE4X2Q5IChwYXBlcikgfCAwLjMzIHwgKzAuMDggfCArMC4wNCB8CgpBbGwgY2VsbHMgYmVhdCB0aGUgc2FtZS0xMDAgYmFzZWxpbmU7IG5vbmUgZG9taW5hdGVzIGl0cyBjcm9zcy1zdGVwIHR3aW4uIFRoZSBzY2hlZHVsZSB2YXJpYW50IGRvZXMgbm90IG9idmlvdXNseSBleHBsYWluIHRoZSBwYXBlciBnYXAg4oCUIHJlYWRvdXQgY2hvaWNlIGFuZCBleGFjdCB1bnJvbGxpbmcgcmVtYWluIG9wZW4u">
+<section class="slide slide--content figure-captions img-fill" data-index="17" data-colloquium-md="PCEtLSBjbGFzczogZmlndXJlLWNhcHRpb25zIGltZy1maWxsIC0tPgoKIyMgTGF5ZXIgbGFuZHNjYXBlIGF0IM6xPTAuMTA6IHMxOCBob3QsIHMxNuKGkmQ5IGNvbGQKCiFbQWNjdXJhY3kgYW5kIGRlbHRhIGhlYXRtYXBzIG92ZXIgc291cmNlw5dkZXN0aW5hdGlvbl0oLi4vcmVwb3J0cy9maWd1cmVzL2ZpZ0dfbGF5ZXJfaGVhdG1hcC5wbmcp">
+<h2>Layer landscape at α=0.10: s18 hot, s16→d9 cold</h2>
+<div class="slide-content"><figure class="colloquium-figure"><img src="../reports/figures/figG_layer_heatmap.png" alt="Accuracy and delta heatmaps over source×destination" /><figcaption class="colloquium-figure-caption">Accuracy and delta heatmaps over source×destination</figcaption></figure>
+</div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">18 / 23</span></div></div>
+</section>
+
+<section class="slide slide--content" data-index="18" data-colloquium-md="IyMgVHdvLXBhc3MgcGFuZWwgKG49MTAwKTogc2NoZWR1bGUtaW5kaWZmZXJlbmNlIHdpdGhpbiBub2lzZQoKfCBjb25maWcgfCB0d28tcGFzcyBhY2MgfCDOlCB2cyBiYXNlIHwgzpQgdnMgY3Jvc3Mtc3RlcCB8CnwtLS18LS0tfC0tLXwtLS18CnwgYTAxMF9zMThfZDcgfCAwLjMxIHwgKzAuMDYgfCDiiJIwLjA3IHwKfCBhMDA0X3MyMF9kOSB8IDAuMzUgfCArMC4xMCB8IOKIkjAuMDEgfAp8IGEwMTVfczIwX2Q5IHwgMC4zNyB8ICswLjEyIHwgKzAuMDIgfAp8IGEwMTVfczE4X2Q5IChwYXBlcikgfCAwLjMzIHwgKzAuMDggfCArMC4wNCB8CgpBbGwgY2VsbHMgYmVhdCB0aGUgc2FtZS0xMDAgYmFzZWxpbmU7IG5vbmUgZG9taW5hdGVzIGl0cyBjcm9zcy1zdGVwIHR3aW4uIFRoZSBzY2hlZHVsZSB2YXJpYW50IGRvZXMgbm90IG9idmlvdXNseSBleHBsYWluIHRoZSBwYXBlciBnYXAg4oCUIHJlYWRvdXQgY2hvaWNlIGFuZCBleGFjdCB1bnJvbGxpbmcgcmVtYWluIG9wZW4u">
 <h2>Two-pass panel (n=100): schedule-indifference within noise</h2>
 <div class="slide-content"><table>
 <thead>
@@ -2046,17 +2073,17 @@ body:hover .colloquium-present {
 </table>
 <p>All cells beat the same-100 baseline; none dominates its cross-step twin. The schedule variant does not obviously explain the paper gap — readout choice and exact unrolling remain open.</p>
 </div>
-<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">15 / 19</span></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">19 / 23</span></div></div>
 </section>
 
-<section class="slide slide--section-break" data-index="15" data-colloquium-md="PCEtLSBsYXlvdXQ6IHNlY3Rpb24tYnJlYWsgLS0+CgojIyBUaGUgYnJpZGdlIHRvIFBoYXNlIDMKCkEgbnVsbCB3aXRoIDY54oCTOTAlIG91dHB1dCBjaHVybiBpcyBub3QgIm5vdGhpbmcgaGFwcGVuZWQi">
+<section class="slide slide--section-break" data-index="19" data-colloquium-md="PCEtLSBsYXlvdXQ6IHNlY3Rpb24tYnJlYWsgLS0+CgojIyBUaGUgYnJpZGdlIHRvIFBoYXNlIDMKCkEgbnVsbCB3aXRoIDY54oCTOTAlIG91dHB1dCBjaHVybiBpcyBub3QgIm5vdGhpbmcgaGFwcGVuZWQi">
 <h2>The bridge to Phase 3</h2>
 <div class="slide-content"><p>A null with 69–90% output churn is not “nothing happened”</p>
 </div>
-<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">16 / 19</span></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">20 / 23</span></div></div>
 </section>
 
-<section class="slide slide--content" data-index="16" data-colloquium-md="IyMgSW1wbGljYXRpb246IHNhZmV0eSBsaXZlcyBpbiB0cmFqZWN0b3JpZXMKCi0gU2FmZXR5IGJlaGF2aW9yIOKAlCByZWZ1c2FscywgaGFybWxlc3NuZXNzIHVuZGVyIHByZXNzdXJlLCByZWFzb25pbmcgaW50ZWdyaXR5IOKAlCBsaXZlcyBhdCB0aGUgbGV2ZWwgb2YgKipnZW5lcmF0aW9uIHRyYWplY3RvcmllcyoqLCBub3QgYWdncmVnYXRlIGFjY3VyYWN5Ci0gUGhhc2UgMiBwcm92ZXMgcmVjaXJjdWxhdGlvbiAqKmRlY2lzaXZlbHkgcmV3cml0ZXMgdHJhamVjdG9yaWVzKiouIFRoYXQgaXMgcHJlY2lzZWx5IHRoZSBzdWJzdHJhdGUgc2FmZXR5IHdvcmsgbmVlZHMKLSBQaGFzZSAzLCByZWZyYW1lZDogKiJEbyByZWNpcmN1bGF0aW9uJ3MgdHJhamVjdG9yeSBlZmZlY3RzIHRyYW5zZmVyIHRvIHNhZmV0eSBiZWhhdmlvcj8iKiDigJQgcmVmdXNhbCByb2J1c3RuZXNzLCBoYXJtIHJlZnVzYWwgdW5kZXIgcHJlc3N1cmUsIHJlYXNvbmluZy1pbnRlZ3JpdHkgcHJvYmVzLCBlYWNoIHBhaXJlZCBiYXNlbGluZS12cy1yZWNpcmMsIHBsdXMgYSBHU004SyB1dGlsaXR5IGhvbGRvdXQgYWdhaW5zdCByZWdyZXNzaW9ucwotIFNldHRsZSB0aGUgc2NoZWR1bGUgcXVlc3Rpb24gZmlyc3Q7IG5vIGJsaW5kIDEyQiBzY2FsZS11cC4gQXNrOiAqKjI1IEdQVS1oKiogKFBoYXNlIDIgY29zdCDiiYg44oCTOSB0b3RhbCk=">
+<section class="slide slide--content" data-index="20" data-colloquium-md="IyMgSW1wbGljYXRpb246IHNhZmV0eSBsaXZlcyBpbiB0cmFqZWN0b3JpZXMKCi0gU2FmZXR5IGJlaGF2aW9yIOKAlCByZWZ1c2FscywgaGFybWxlc3NuZXNzIHVuZGVyIHByZXNzdXJlLCByZWFzb25pbmcgaW50ZWdyaXR5IOKAlCBsaXZlcyBhdCB0aGUgbGV2ZWwgb2YgKipnZW5lcmF0aW9uIHRyYWplY3RvcmllcyoqLCBub3QgYWdncmVnYXRlIGFjY3VyYWN5Ci0gUGhhc2UgMiBwcm92ZXMgcmVjaXJjdWxhdGlvbiAqKmRlY2lzaXZlbHkgcmV3cml0ZXMgdHJhamVjdG9yaWVzKiouIFRoYXQgaXMgcHJlY2lzZWx5IHRoZSBzdWJzdHJhdGUgc2FmZXR5IHdvcmsgbmVlZHMKLSBQaGFzZSAzLCByZWZyYW1lZDogKiJEbyByZWNpcmN1bGF0aW9uJ3MgdHJhamVjdG9yeSBlZmZlY3RzIHRyYW5zZmVyIHRvIHNhZmV0eSBiZWhhdmlvcj8iKiDigJQgcmVmdXNhbCByb2J1c3RuZXNzLCBoYXJtIHJlZnVzYWwgdW5kZXIgcHJlc3N1cmUsIHJlYXNvbmluZy1pbnRlZ3JpdHkgcHJvYmVzLCBlYWNoIHBhaXJlZCBiYXNlbGluZS12cy1yZWNpcmMsIHBsdXMgYSBHU004SyB1dGlsaXR5IGhvbGRvdXQgYWdhaW5zdCByZWdyZXNzaW9ucwotIFNldHRsZSB0aGUgc2NoZWR1bGUgcXVlc3Rpb24gZmlyc3Q7IG5vIGJsaW5kIDEyQiBzY2FsZS11cC4gQXNrOiAqKjI1IEdQVS1oKiogKFBoYXNlIDIgY29zdCDiiYg44oCTOSB0b3RhbCk=">
 <h2>Implication: safety lives in trajectories</h2>
 <div class="slide-content"><ul>
 <li>Safety behavior — refusals, harmlessness under pressure, reasoning integrity — lives at the level of <strong>generation trajectories</strong>, not aggregate accuracy</li>
@@ -2065,32 +2092,25 @@ body:hover .colloquium-present {
 <li>Settle the schedule question first; no blind 12B scale-up. Ask: <strong>25 GPU-h</strong> (Phase 2 cost ≈8–9 total)</li>
 </ul>
 </div>
-<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">17 / 19</span></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">21 / 23</span></div></div>
 </section>
 
-<section class="slide slide--content" data-index="17" data-colloquium-md="IyMgQ29uY2x1c2lvbgoKLSBGaXhlZCB0cmFpbmluZy1mcmVlIHJlY2lyY3VsYXRpb24sIGltcGxlbWVudGVkICoqdHdvIHdheXMqKiwgZG9lcyBub3QgbGlmdCBHU004SyBhY2N1cmFjeSBvbiBHZW1tYTMgMUIvNEIgdW5kZXIgYSBmcm96ZW4sIGZ1bGx5IHRyYWNlYWJsZSBwcm90b2NvbAotIEl0ICoqcHJvZm91bmRseSByZXdyaXRlcyByZWFzb25pbmcgdHJhamVjdG9yaWVzKiosIHdpdGggYSBzbW9vdGggdHVuYWJsZSBzdXJmYWNlIHVuZGVybmVhdGgg4oCUIHRoZSBwYXBlcidzIGNhcGFiaWxpdHkgY2xhaW0gaXMgbm90IHJlcHJvZHVjZWQsIGJ1dCB0aGUgdHJhamVjdG9yeSBlZmZlY3QgaXMgcmVhbCBhbmQgbWVhc3VyZWQKLSBFdmVyeXRoaW5nIHJlZ2VuZXJhdGVzIGZyb20gY29tbWl0dGVkIGFydGlmYWN0czogZnJvemVuIHByb3RvY29sLCBwYWlyZWQgQ1NWcywgZXhlY3V0YWJsZSBub3RlYm9vaywgd2Fsa3Rocm91Z2ggdHJhY2UgKyBnZW5lcmF0b3JzOyBydW4gZGlycyBvbiBNb2RhbCArIFcmQiBgcmVjaXJjLWdzbThrYA==">
+<section class="slide slide--content" data-index="21" data-colloquium-md="IyMgQ29uY2x1c2lvbgoKLSBTaW5nbGUtY29uZmlnIGZ1bGwtc2NhbGUgY2hlY2sgKHBhcGVyJ3Mgc2V0dGluZ3MsIGJvdGggc2NhbGVzKTogbnVsbCB2ZXJkaWN0IOKAlCBpdCBydWxlcyBvdXQgYSBwb2ludCwgbm90IHRoZSBzdXJmYWNlCi0gVGhlICoqMTgtY2VsbCBzd2VlcCoqIG1hcHMgdGhhdCBzdXJmYWNlOiAxNiBvZiAxOCBiZWF0IGJhc2VsaW5lLCBzbW9vdGggdHVuYWJsZSByZXNwb25zZSwgczE4IGhvdCAvIHMxNuKGkmQ5IGNvbGQKLSBFdmVyeXRoaW5nIHJlZ2VuZXJhdGVzIGZyb20gY29tbWl0dGVkIGFydGlmYWN0czogZnJvemVuIHByb3RvY29sLCBwYWlyZWQgQ1NWcywgZXhlY3V0YWJsZSBub3RlYm9vaywgd2Fsa3Rocm91Z2ggdHJhY2UgKyBnZW5lcmF0b3JzOyBydW4gZGlycyBvbiBNb2RhbCArIFcmQiBgcmVjaXJjLWdzbThrYA==">
 <h2>Conclusion</h2>
 <div class="slide-content"><ul>
-<li>Fixed training-free recirculation, implemented <strong>two ways</strong>, does not lift GSM8K accuracy on Gemma3 1B/4B under a frozen, fully traceable protocol</li>
-<li>It <strong>profoundly rewrites reasoning trajectories</strong>, with a smooth tunable surface underneath — the paper’s capability claim is not reproduced, but the trajectory effect is real and measured</li>
+<li>Single-config full-scale check (paper’s settings, both scales): null verdict — it rules out a point, not the surface</li>
+<li>The <strong>18-cell sweep</strong> maps that surface: 16 of 18 beat baseline, smooth tunable response, s18 hot / s16→d9 cold</li>
 <li>Everything regenerates from committed artifacts: frozen protocol, paired CSVs, executable notebook, walkthrough trace + generators; run dirs on Modal + W&amp;B <code>recirc-gsm8k</code></li>
 </ul>
 </div>
-<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">18 / 19</span></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">22 / 23</span></div></div>
 </section>
 
-<section class="slide slide--content" data-index="18">
+<section class="slide slide--content" data-index="22">
 <h2>References</h2>
 <div class="slide-content colloquium-references-slide"><div class="colloquium-reference" id="colloquium-ref-kojima2022">Kojima, T., Gu, S., Reid, M., Matsuo, Y., and Iwasawa, Y.. &ldquo;<em>Large Language Models are Zero-Shot Reasoners</em>.&rdquo; <em>Advances in Neural Information Processing Systems</em>, 2022. <a href="https://arxiv.org/abs/2205.11916" class="colloquium-ref-url">[link]</a></div>
 <div class="colloquium-reference" id="colloquium-ref-mozer2026recirculation">Mozer, M., Siddiqui, S., Sawyer, C., Sanyal, A., and Liu, X.. &ldquo;<em>Recirculation</em>.&rdquo; <em>arXiv preprint arXiv:2608.17981</em>, 2026. <a href="https://arxiv.org/abs/2608.17981" class="colloquium-ref-url">[link]</a></div></div>
-<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">19 / 19</span></div></div>
-</section>
-
-<section class="slide slide--content figure-captions" data-index="19" data-colloquium-md="PCEtLSBjbGFzczogZmlndXJlLWNhcHRpb25zIC0tPgoKIyMgQmFja3VwOiB0cmFuc2l0aW9uIG1hdHJpY2VzCgohW1BhaXJlZCB2ZXJkaWN0IHRyYW5zaXRpb25zOiBzeW1tZXRyaWMgZmxpcHMgYm90aCBkaXJlY3Rpb25zXSguLi9yZXBvcnRzL2ZpZ3VyZXMvZmlnQl90cmFuc2l0aW9ucy5wbmcp">
-<h2>Backup: transition matrices</h2>
-<div class="slide-content"><figure class="colloquium-figure"><img src="../reports/figures/figB_transitions.png" alt="Paired verdict transitions: symmetric flips both directions" /><figcaption class="colloquium-figure-caption">Paired verdict transitions: symmetric flips both directions</figcaption></figure>
-</div>
-<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">20 / 19</span></div></div>
+<div class="colloquium-footer"><div class="colloquium-footer-left"></div><div class="colloquium-footer-center">Fixed training-free recirculation · GSM8K · Gemma3 1B/4B</div><div class="colloquium-footer-right colloquium-footer-nav"><span class="colloquium-counter">23 / 23</span></div></div>
 </section>
 </div>
 
@@ -2098,7 +2118,7 @@ body:hover .colloquium-present {
 
 <button class="colloquium-picker-trigger" title="Open slide picker">
     <span class="colloquium-picker-trigger-label">Slides</span>
-    <span class="colloquium-picker-trigger-count">1 / 19</span>
+    <span class="colloquium-picker-trigger-count">1 / 23</span>
 </button>
 
 <div class="colloquium-progress">
