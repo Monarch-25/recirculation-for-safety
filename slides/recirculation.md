@@ -181,11 +181,16 @@ The paper's prose and its Fig-3c formalization admit both readings — so we bui
 ---
 
 <!-- class: figure-captions -->
+<!-- columns: 45/55 -->
 ## A · What changed (cross-step, n=1319): trajectories rewritten
 
 - Flips are **symmetric** — the intervention moves verdicts vigorously in both directions and they cancel
 - Output-length profiles near-identical: flips come from reasoning content, not truncation artifacts
-- A null mean with 69–90% churn is not "nothing happened" — it is trajectory-level action, the substrate safety cares about
+- A null mean with 69–90% churn is not "nothing happened" — trajectory-level action, the substrate safety cares about
+
+|||
+
+<!-- img-align: center -->
 
 ![Paired verdict transitions: symmetric flips both directions](../reports/figures/figB_transitions.png)
 
@@ -212,12 +217,17 @@ Not one point — the surface around it
 ---
 
 <!-- class: figure-captions -->
+<!-- columns: 40/60 -->
 ## B · Sweep (cross-step, 4B, n=100): 16 of 18 cells beat baseline
 
 - Same-100 baseline **0.25**; best `a010_s18_d7` at **0.38** (+0.13, nominal p=0.012, Bonferroni-n.s.)
 - Paper pair peaks at α=0.07 here; destination-7 beats destination-9 at every source
 
 <div class="colloquium-footnote">First-100 subset (baseline 0.25 vs 0.2942 full-test): exploratory surface, never configuration selection.</div>
+
+|||
+
+<!-- img-align: center -->
 
 ![4B alpha-response curves, diagnostic n=100](../reports/figures/figD_alpha_sweep.png)
 
