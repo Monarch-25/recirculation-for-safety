@@ -65,6 +65,10 @@ manifest (`model.intervention`, incl. `effective_beta`).
 Both deltas are slightly negative and both statistically
 indistinguishable from zero (§6). There is no measured improvement to
 explain; the effect under our protocol is null with massive churn.
+Single-config scope: these runs test exactly one (α, β, layer-pair)
+point per scale — the paper's published settings, not a tuned
+selection. The null below rules out that point, not the response
+surface around it (§9 maps the surface).
 
 ## 6. Paired transitions
 
@@ -75,7 +79,11 @@ explain; the effect under our protocol is null with massive churn.
 | 1B | 2 | 20 | 17 | 1280 | 0.742 |
 | 4B | 203 | 185 | 163 | 768 | 0.260 |
 
-Δ-accuracy = (wc − cw)/N matches the absolute deltas above. Per-changed-example
+Δ-accuracy = (wc − cw)/N matches the absolute deltas above. Flips are
+symmetric — vigorous in both directions, cancelling out — and
+output-length profiles are near-identical across conditions (Fig C),
+so flips come from reasoning content, not truncation artifacts.
+Per-changed-example
 records (question, reference, both answers and outputs) are tracked in
 `comparisons/changed_questions_{1b,4b}.md`.
 
@@ -83,7 +91,8 @@ records (question, reference, both answers and outputs) are tracked in
 
 - Invariants (local, bitwise): recirc(α=0) ≡ HF baseline; `none` ≡
   recirc(α=0); src==dst rejected at load; batch-size invariance;
-  twice-identical reruns. Suite: 112+ passed.
+   twice-identical reruns. Suite: 122 passed, 1 skipped (11
+   model/vLLM-gated deselected).
 - Token coverage 1.00 and stable example IDs on all four GPU runs;
   paired joins are exact (1319/1319 common, zero orphans).
 - Not yet done: GPU-side determinism rerun, lm-harness cross-check.
@@ -124,6 +133,8 @@ configuration selection — the official configuration stays the paper's
 | a007_s20_d9 | 0.33 | +0.08 | 16 | 8 | 0.153 |
 | a007_s18_d7 | 0.33 | +0.08 | 13 | 5 | 0.099 |
 | a010_s18_d9 | 0.33 | +0.08 | 16 | 8 | 0.153 |
+| a010_s16_d7 | 0.33 | +0.08 | 16 | 8 | 0.153 |
+| a010_s20_d7 | 0.33 | +0.08 | 14 | 6 | 0.118 |
 | a004_s16_d9 | 0.32 | +0.07 | 14 | 7 | 0.190 |
 | a015_s16_d9 | 0.31 | +0.06 | 18 | 12 | 0.361 |
 | a004_s18_d9 | 0.30 | +0.05 | 10 | 5 | 0.302 |
@@ -133,8 +144,10 @@ configuration selection — the official configuration stays the paper's
 | a007_s16_d9 | 0.25 | +0.00 | 10 | 10 | 0.823 |
 | a010_s16_d9 | 0.24 | −0.01 | 10 | 11 | 1.000 |
 
-Reading: 16 of 18 cells beat the same-100 baseline; the surface is
-smooth, not spiky; s16→d9 is consistently weakest; the paper pair
+Reading: 16 of 18 cells beat the same-100 baseline (one tie at 0.25,
+one cell below); the surface is
+smooth, not spiky; s16→d9 holds the lone sub-baseline cell (0.24 at
+α=0.10); the paper pair
 peaks at α=0.07 on this subset. Honest limits: n=100 noise is large
 (top nominal p=0.012 is Bonferroni-n.s. across 18 cells), the subset
 differs in difficulty from the full test, and subset peeking must not
@@ -154,8 +167,12 @@ Every cell sits above the null diagonal — no configuration regresses
 more than it rescues on this subset — but the cloud hugs the diagonal
 rather than breaking away from it: consistent small positive churn,
 not a standout winner. The paper cell (blue, 15/11) sits mid-cloud.
-A full layer heatmap remains future work — 4 pairs are too sparse
-for one.
+
+![Figure G](figures/figG_layer_heatmap.png)
+
+Figure G completes the 3×2 heatmap at α=0.10: the s18 row is hottest,
+s16→d9 is the lone cold cell, and destination-7 beats destination-9
+at every source.
 
 ## 10. Reproduction assessment
 
@@ -166,7 +183,8 @@ qualitative replication infrastructure with a null result).
 The implementation is verified correct against every checkable
 invariant (mechanics, determinism, batching, metadata), yet the
 reported GSM8K improvement does not appear under our protocol at
-n=1319. The diagnostic sweep (§9) shows the intervention is
+n=1319 — at the paper's single published configuration per scale.
+The diagnostic sweep (§9) shows the intervention is
 *capable* of positive paired deltas on a 100-subset (16/18 cells
 positive), which sharpens rather than resolves the question: the
 response surface exists, but the paper's configuration at full scale
@@ -190,6 +208,10 @@ does not lift accuracy. We do not force agreement by tuning.
    the paper's exact schedule is in an appendix we approximated.
 7. **Backends.** vLLM baselines vs HF-serial treatments (documented
    parity assumption; greedy short outputs minimize the risk).
+8. **Single-point scope.** Full-scale runs test one published
+   (α, β, layer) point per scale; the surrounding surface is mapped
+   only on the n=100 subset, so a nearby at-scale optimum is
+   untested, not ruled out.
 
 ## 12. Recommendation for Phase 3
 
@@ -202,4 +224,7 @@ settled (one way or the other) before any safety claim. If the two-pass
 variant reproduces the effect, re-baseline safety work on it; if it
 also nulls, the research question pivots to *why outputs churn without
 accuracy movement* (the changed-question digests are the starting
-dataset for that analysis).
+dataset for that analysis). Either way, the trajectory-level effect
+measured here — 69–90% of outputs rewritten — is precisely the
+substrate Phase 3 safety work needs, since safety behavior lives at
+the level of generation trajectories, not aggregate accuracy.

@@ -30,7 +30,7 @@ Everything here regenerates from `data/`; nothing is hand-copied.
 | `figures/paper_looping_vs_recirc.png` | paper Fig 8, recirc-vs-looping (CC BY-NC-SA 4.0, attributed) |
 | `figures/paper_hyperparm_sweep.png` | paper Fig 5, 1B sweep landscape (CC BY-NC-SA 4.0, attributed) |
 
-A full layer heatmap remains future work (the grid is too sparse for one).
+| `figures/figG_layer_heatmap.png` | accuracy + delta heatmaps (α=0.10, 3×2) |
 
 ## Reproduce
 

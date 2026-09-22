@@ -24,7 +24,7 @@
 
 ## 1. Executive summary
 
-**Bottom line:** we built a trustworthy, fully reproducible harness, implemented fixed training-free recirculation two different ways, ran it at full GSM8K scale on Gemma3 1B and 4B, and **measured no accuracy improvement under either schedule** (1B: 0.0167→0.0144, p=0.74; 4B: 0.2942→0.2775, p=0.26). What we *did* measure is massive, systematic rewriting of reasoning trajectories (69–90% of outputs changed), a smooth tunable response surface on a diagnostic sweep, and a complete, cheap-to-reuse experimental machine.
+**Bottom line:** we built a trustworthy, fully reproducible harness, implemented fixed training-free recirculation two different ways, ran it at full GSM8K scale on Gemma3 1B and 4B at the paper's single published configuration per scale, and **measured no accuracy improvement under either schedule** (1B: 0.0167→0.0144, p=0.74; 4B: 0.2942→0.2775, p=0.26). What we *did* measure is massive, systematic rewriting of reasoning trajectories (69–90% of outputs changed), a smooth tunable response surface on a diagnostic sweep, and a complete, cheap-to-reuse experimental machine. The null rules out that point, not the surface around it.
 
 **Recommendation:** approve Phase 3 (safety) reframed around the proven effect — *trajectory rewriting* — not around unproven capability gains. The safety question ("does recirculation change safety behavior?") is testable with exactly this machinery, and trajectory-level change is precisely what safety cares about. Do not approve any claim of the form "recirculation improves reasoning" on this evidence. Budget ask: §9.3.
 
@@ -93,7 +93,9 @@ Costs (A100-40GB): 1B pair ≈ 0.5 GPU-h; 4B pair ≈ 1.5 GPU-h; sweep + two-pas
 
 ![Figure A](figures/figA_accuracy.png)
 
-CIs overlap fully at both scales. Transition matrices tell the real story:
+CIs overlap fully at both scales. (Single-config scope: one published
+(α, β, layer) point per scale — the null rules out that point, not the
+surface in §6.2.) Transition matrices tell the real story:
 
 ![Figure B](figures/figB_transitions.png)
 
@@ -103,7 +105,7 @@ CIs overlap fully at both scales. Transition matrices tell the real story:
 
 ![Figure D](figures/figD_alpha_sweep.png)
 
-16→18 cells (two heatmap-completing runs added): 16 of 18 beat the same-100 baseline (0.25); top a010_s18_d7 at 0.38 (+0.13, nominal p=0.012, Bonferroni-n.s.); s16→d9 weakest at every alpha; paper pair peaks at α=0.07 here.
+16→18 cells (two heatmap-completing runs added): 16 of 18 beat the same-100 baseline (0.25); top a010_s18_d7 at 0.38 (+0.13, nominal p=0.012, Bonferroni-n.s.); s16→d9 holds the lone sub-baseline cell (0.24 at α=0.10); paper pair peaks at α=0.07 here.
 
 ![Figure E](figures/figE_sweep_deltas.png)
 
@@ -132,7 +134,7 @@ Serial prefill dominates recirc cost (paper §31 phenomenon, measured: 1063s/310
 
 **On the "stale" cross-step work.** It was not wasted, three ways: (1) the plan mandated that reading and the alternative was genuinely ambiguous in the paper; (2) every line of infrastructure (harness, invariants, comparisons, tracking, sweep machinery) is schedule-agnostic and reused verbatim by two-pass; (3) scientifically, cross-step is now the *ablation arm* — without it, the two-pass panel (§6.3) could not isolate schedule effects at all. A null ablation is data.
 
-**Alternative explanations for the paper gap** (ranked): (1) schedule semantics — narrowed but not closed by §6.3 (readout choice and exact unrolling remain); (2) unpublished paper details (max tokens, answer parsing, harness); (3) JAX-vs-HF numerics; (4) statistical noise at full scale for small true effects; (5) model-revision drift — unlikely (pre-paper weights). NOT supported as explanations: wrong layers/alpha/beta/norm (all verbatim), broken implementation (invariants hold bitwise), insufficient scale coverage (1B+4B full sets).
+**Alternative explanations for the paper gap** (ranked): (1) single-point selection — full scale tests one published point per scale while the surrounding surface is mapped only at n=100, so a nearby at-scale optimum is untested, not ruled out; (2) schedule semantics — narrowed but not closed by §6.3 (readout choice and exact unrolling remain); (3) unpublished paper details (max tokens, answer parsing, harness); (4) JAX-vs-HF numerics; (5) statistical noise at full scale for small true effects; (6) model-revision drift — unlikely (pre-paper weights). NOT supported as explanations: wrong layers/alpha/beta/norm (all verbatim), broken implementation (invariants hold bitwise), insufficient scale coverage (1B+4B full sets).
 
 **Limitations / threats.** No pass@128; no adaptive variant; no 12B; single-run (not repeated) full pairs; vLLM-vs-HF backend asymmetry between baseline and treatment arms; lm-evaluation-harness cross-check still open; first-100 sweep subset differs in difficulty from full test; GPU-side determinism rerun pending.
 

@@ -288,9 +288,13 @@ while leaving verdict means untouched (at these scales, under this protocol).
 
 **Alternative explanations for the paper gap, ranked:** (1) prompting/parsing
 differences — open, since the paper's exact GSM8K harness is unpublished
-(§4.1.1); (2) schedule semantics — narrowed but not closed by §4.3 (readout
-choice, exact unrolling); (3) JAX-vs-HF numerics; (4) statistical noise at
-full scale for small true effects; (5) model-revision drift — unlikely
+(§4.1.1); (2) single-point selection — full scale covers one
+published point per scale while the surrounding surface is mapped only at
+n=100, so a nearby at-scale optimum is untested, not ruled out; (3) schedule
+semantics — narrowed but not closed by §4.3 (readout
+choice, exact unrolling); (4) JAX-vs-HF
+numerics; (5) statistical noise at
+full scale for small true effects; (6) model-revision drift — unlikely
 (pre-paper weights). NOT supported: wrong layers/alpha/beta/norm (all
 verbatim), broken implementation (invariants hold bitwise), insufficient scale
 coverage (1B+4B full sets).
