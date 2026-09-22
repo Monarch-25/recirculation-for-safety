@@ -17,7 +17,8 @@ research narrative, then come back for the machinery below.
 
 ## Live presentation
 
-- 🎬 **Slides (GitHub Pages):** https://monarch-25.github.io/recirculation-for-safety/slides/recirculation.html — 26-slide methodology deck (rebuild: `conda run -n torch colloquium build slides/recirculation.md`)
+- 🌐 **Interactive site:** https://monarch-25.github.io/recirculation-for-safety/ — research notebook microsite (source: `site/`, deployed via `gh-pages`; re-sync after edits with `git subtree push --prefix site origin gh-pages`)
+- 🎬 **Slides:** https://monarch-25.github.io/recirculation-for-safety/slides/recirculation.html — 26-slide methodology deck, also in-repo at `slides/` (rebuild: `conda run -n torch colloquium build slides/recirculation.md`) — note: the live site root now serves the notebook, not the slides
 - 📄 **Paper draft:** [`reports/paper_draft_recirculation.md`](reports/paper_draft_recirculation.md) · **Lead handover:** [`reports/research_handover_recirculation.md`](reports/research_handover_recirculation.md)
 
 ## Contents
