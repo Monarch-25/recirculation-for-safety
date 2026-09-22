@@ -13,7 +13,9 @@ generation internals live in the ``ModelAdapter``.
 from __future__ import annotations
 
 import datetime
+import json
 import logging
+import os
 import sys
 import time
 from pathlib import Path
@@ -300,11 +302,18 @@ class Evaluator:
         run_id: str | None = None,
         command: str | None = None,
         log_file: Path | None = None,
+        resume_from: str | Path | None = None,
     ) -> EvaluationResult:
         """Run full evaluation, write artifacts, return the result.
 
         Ordering guarantee: ``records[i]`` corresponds to the i-th
         loaded example regardless of ``batch_size``.
+
+        ``resume_from`` points at a previous run dir holding
+        ``reasoning_partial.jsonl``; stage-0 generation is skipped and the
+        stored reasoning reused (validated against example ids). Stage-0
+        timing stays unknown (never fabricated); token counts restore
+        from the stored lines.
         """
         if config.runtime.batch_size <= 0:
             raise ValueError("batch_size must be > 0")
@@ -330,12 +339,14 @@ class Evaluator:
                 task=task, model=model, config=config,
                 run_id=run_id, timestamp=timestamp,
                 command=command, run_dir=run_dir,
+                resume_from=resume_from,
             )
         finally:
             root_logger.removeHandler(file_handler)
             file_handler.close()
 
-    def _run(self, *, task, model, config, run_id, timestamp, command, run_dir):
+    def _run(self, *, task, model, config, run_id, timestamp, command,
+               run_dir, resume_from=None):
         log.info("run started: %s", run_id)
         log.info("resolved model: %s", model.model_id)
         log.info("resolved task: %s v%s", task.name, task.version)
@@ -369,29 +380,68 @@ class Evaluator:
         batch_size = config.runtime.batch_size
 
         def _generate_batched(prompt_list: list[str], stage: int,
-                              label: str) -> list[str]:
+                              label: str, stream_path: Path | None = None,
+                              example_ids: list[str] | None = None,
+                              ) -> list[str]:
             gen_cfg = (config.generation.for_extraction() if stage == 1
                        else config.generation)
             outputs: list[str] = [""] * len(prompt_list)
             n_batches = (len(prompt_list) + batch_size - 1) // batch_size
-            for b, (start, batch_prompts) in enumerate(
-                _chunked_with_start(prompt_list, batch_size)
-            ):
-                log.info("%s batch %d/%d (size %d)", label,
-                         b + 1, n_batches, len(batch_prompts))
-                chunk = model.generate(batch_prompts, gen_cfg)
-                if len(chunk) != len(batch_prompts):
-                    raise RuntimeError(
-                        f"Model adapter returned {len(chunk)} outputs for "
-                        f"{len(batch_prompts)} prompts ({label} {b})"
-                    )
-                for j, out in enumerate(chunk):
-                    outputs[start + j] = out
-                tracker.consume(model, batch_prompts, start, stage, b)
+            stream_fh = None
+            if stream_path is not None:
+                if example_ids is None or len(example_ids) != len(prompt_list):
+                    raise ValueError("streaming requires per-prompt example_ids")
+                stream_fh = open(stream_path, "a")
+            try:
+                for b, (start, batch_prompts) in enumerate(
+                    _chunked_with_start(prompt_list, batch_size)
+                ):
+                    log.info("%s batch %d/%d (size %d)", label,
+                             b + 1, n_batches, len(batch_prompts))
+                    chunk = model.generate(batch_prompts, gen_cfg)
+                    if len(chunk) != len(batch_prompts):
+                        raise RuntimeError(
+                            f"Model adapter returned {len(chunk)} outputs for "
+                            f"{len(batch_prompts)} prompts ({label} {b})"
+                        )
+                    for j, out in enumerate(chunk):
+                        outputs[start + j] = out
+                    tracker.consume(model, batch_prompts, start, stage, b)
+                    if stream_fh is not None:
+                        for j, out in enumerate(chunk):
+                            i = start + j
+                            stream_fh.write(json.dumps({
+                                "index": i,
+                                "example_id": example_ids[i],
+                                "stage": stage,
+                                "output": out,
+                                "in_tokens": tracker.in_tokens[i],
+                                "out_tokens": tracker.out_tokens[i],
+                            }) + "\n")
+                        stream_fh.flush()
+                        os.fsync(stream_fh.fileno())
+            finally:
+                if stream_fh is not None:
+                    stream_fh.close()
             return outputs
 
         # Stage 1: reasoning (or the full response for single-stage).
-        reasoning = _generate_batched(prompts, 0, "generation")
+        example_ids = [ex.example_id for ex in examples]
+        if resume_from is not None:
+            reasoning, tok_in, tok_out = _load_resume_reasoning(
+                resume_from, example_ids)
+            tracker.in_tokens = tok_in
+            tracker.out_tokens = tok_out
+            # Stage-0 timing unknown on a resumed run (never fabricated).
+            tracker.prefill_known = False
+            tracker.gen_known = False
+            log.info("resumed stage 0 from %s (%d examples)",
+                     resume_from, len(reasoning))
+        else:
+            reasoning = _generate_batched(
+                prompts, 0, "generation",
+                stream_path=run_dir / "reasoning_partial.jsonl",
+                example_ids=example_ids)
 
         # Stage 2 (optional): answer extraction. Tasks without
         # build_extraction_prompt, or returning all-None, stay
@@ -481,6 +531,8 @@ class Evaluator:
             performance=performance,
             extraction_hash=extraction_hash,
         )
+        if resume_from is not None:
+            manifest["resumed_from"] = str(resume_from)
 
         # -- artifacts --------------------------------------------------
         io.write_json(run_dir / "manifest.json", manifest)
@@ -506,6 +558,37 @@ class Evaluator:
             run_id=run_id, records=records, metrics=metrics,
             manifest=manifest, run_dir=str(run_dir),
         )
+
+
+def _load_resume_reasoning(
+    resume_from: str | Path, example_ids: list[str],
+) -> tuple[list[str], list[int | None], list[int | None]]:
+    """Load stage-0 reasoning stored by an interrupted run.
+
+    Fails closed: wrong count, id mismatch, or non-stage-0 lines raise.
+    """
+    path = Path(resume_from) / "reasoning_partial.jsonl"
+    if not path.exists():
+        raise ValueError(f"no reasoning_partial.jsonl in {resume_from}")
+    rows = io.read_jsonl(path)
+    if len(rows) != len(example_ids):
+        raise ValueError(
+            f"resume partial has {len(rows)} lines for "
+            f"{len(example_ids)} examples")
+    outputs: list[str] = [""] * len(example_ids)
+    tok_in: list[int | None] = [None] * len(example_ids)
+    tok_out: list[int | None] = [None] * len(example_ids)
+    for row in rows:
+        if row.get("stage") != 0:
+            raise ValueError("resume partial holds non-stage-0 lines")
+        i = row.get("index")
+        if (not isinstance(i, int) or not 0 <= i < len(example_ids)
+                or row.get("example_id") != example_ids[i]):
+            raise ValueError("resume partial misaligned with examples")
+        outputs[i] = row.get("output", "")
+        tok_in[i] = row.get("in_tokens")
+        tok_out[i] = row.get("out_tokens")
+    return outputs, tok_in, tok_out
 
 
 def _chunked_with_start(seq: list[str], batch_size: int):

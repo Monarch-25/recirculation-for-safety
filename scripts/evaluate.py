@@ -160,6 +160,9 @@ def main(argv=None) -> int:
                         help="Override runtime.batch_size")
     parser.add_argument("--device", type=str, default=None,
                         help="Override model.device (auto|cpu|mps|cuda)")
+    parser.add_argument("--resume-from", type=str, default=None,
+                        help="Resume stage 0 from a previous run dir holding "
+                             "reasoning_partial.jsonl")
     parser.add_argument("--dry-run", action="store_true",
                         help="Validate config/env without generation")
     args = parser.parse_args(argv)
@@ -197,6 +200,7 @@ def main(argv=None) -> int:
     result = evaluator.evaluate(
         task=task, model=model, config=config,
         command=" ".join(sys.argv),
+        resume_from=args.resume_from,
     )
     m = result.metrics
     print("-" * 60)

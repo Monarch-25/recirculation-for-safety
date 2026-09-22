@@ -57,13 +57,16 @@ image = (
     secrets=[modal.Secret.from_name(HF_SECRET),
              modal.Secret.from_name(WANDB_SECRET)],
 )
-def run_eval(config: str, limit: int | None, batch_size: int | None) -> str:
+def run_eval(config: str, limit: int | None, batch_size: int | None,
+             resume_from: str | None = None) -> str:
     """Execute scripts/evaluate.py on the GPU worker; results persist."""
     cmd = [sys.executable, "scripts/evaluate.py", "--config", config]
     if limit is not None:
         cmd += ["--limit", str(limit)]
     if batch_size is not None:
         cmd += ["--batch-size", str(batch_size)]
+    if resume_from is not None:
+        cmd += ["--resume-from", resume_from]
     proc = subprocess.run(cmd, capture_output=True, text=True,
                           cwd="/root/recirc")
     print(proc.stdout)
@@ -116,7 +119,8 @@ def run_trace(model: str, source: int, dest: int, alpha: float, beta: float,
 
 @app.local_entrypoint()
 def main(config: str, limit: int | None = None,
-         batch_size: int | None = None) -> None:
-    run_dir = run_eval.remote(config, limit, batch_size)
+         batch_size: int | None = None,
+         resume_from: str | None = None) -> None:
+    run_dir = run_eval.remote(config, limit, batch_size, resume_from)
     print(f"Done. {run_dir}")
     print("Sync back with: modal volume get recirc-results <run-path> ./results/")
