@@ -135,9 +135,10 @@ is unchanged for instruct models; this section freezes the PT variant.
   destination_layer` enforced at config load (identity rejected).
   Semantics: mix at boundary `d`, rerun layers `d+1..N`, upper KV
   overwritten (corroborated by the public vLLM Recirculation RFC).
-- **Ramping (1B, provisional):** linear ramp of alpha over the first
-  `ramp_tokens` (default 10, RFC-following). The exact paper schedule is
-  TBD; whatever is used is recorded in `manifest.model.intervention`.
+- **Ramping (1B, paper-exact):** α_t = min(t/10, 1)·α over 0-based
+  absolute positions (App. B.3) — position 0 mixes nothing (warm-up),
+  full strength from position 10. Recorded in
+  `manifest.model.intervention`.
 - **Pinned vs floating configs:** `configs/*_pinned.yaml` are official
   (pinned model/tokenizer/dataset revisions). Unpinned twins are for
   iteration. In both cases the manifest sha is the canonical record.

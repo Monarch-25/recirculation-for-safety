@@ -63,11 +63,57 @@ def recirc_on(baseline):
         MODEL, **_common_kwargs(), **_recirc_kwargs(baseline, 0.15))
 
 
+@pytest.fixture(scope="module")
+def recirc_none(baseline):
+    from eval_harness.models.recirculation import RecirculationModelAdapter
+    return RecirculationModelAdapter(
+        MODEL, **_common_kwargs(), intervention={"type": "none"})
+
+
+@pytest.fixture(scope="module")
+def recirc_twopass0(baseline):
+    from eval_harness.models.recirculation import RecirculationModelAdapter
+    n = len(baseline.model.model.layers)
+    dest, src = 4, min(11, n - 1)
+    assert src > dest
+    return RecirculationModelAdapter(
+        MODEL, **_common_kwargs(),
+        intervention={"type": "recirculation", "source_layer": src,
+                      "destination_layer": dest, "alpha": 0.0,
+                      "mixture": {"mode": "convex"},
+                      "normalization": {"type": "destination_l2"},
+                      "ramping": {"enabled": False},
+                      "schedule": "two_pass"})
+
+
 def test_alpha_zero_matches_baseline(recirc_alpha0, baseline):
     """P2 §23: recirculation(alpha=0) must reproduce baseline outputs."""
     got = recirc_alpha0.generate(PROMPTS, _gen())
     want = baseline.generate(PROMPTS, _gen())
     assert got == want
+
+
+def test_none_matches_alpha_zero(recirc_none, recirc_alpha0):
+    """P2 §25: intervention=none ≡ recirculation with alpha=0."""
+    assert (recirc_none.generate(PROMPTS, _gen())
+            == recirc_alpha0.generate(PROMPTS, _gen()))
+
+
+def test_twopass_alpha_zero_matches_baseline(recirc_twopass0, baseline):
+    """Two-pass schedule with alpha=0 must also reproduce the baseline.
+
+    The rerun path is then an exact identity (mix returns the boundary
+    unchanged, cache rewrite is value-identical), so any mismatch would
+    implicate the two-pass plumbing rather than the mixing math.
+    """
+    assert (recirc_twopass0.generate(PROMPTS, _gen())
+            == baseline.generate(PROMPTS, _gen()))
+
+
+def test_twopass_determinism_twice(recirc_twopass0):
+    first = recirc_twopass0.generate(PROMPTS, _gen())
+    second = recirc_twopass0.generate(PROMPTS, _gen())
+    assert first == second
 
 
 def test_determinism_twice_identical(recirc_on):

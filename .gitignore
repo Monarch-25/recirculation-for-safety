@@ -5,6 +5,13 @@ results/*/
 !results/.gitkeep
 .hf_cache/
 *.egg-info/
+# Generated sweep configs + run tracking — reproducible from base
+# configs + the sweep command; manifests are the canonical record.
+configs/generated/
+configs/generated_heatmap/
+configs/generated_twopass/
+sweep_runs.json
+sweep_4b.json
 # Run outputs — never commit (reproducible from code + configs).
 comparisons/
 wandb/

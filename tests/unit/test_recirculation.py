@@ -60,8 +60,11 @@ def test_mix_alpha_zero_is_identity():
 
 
 def test_ramp_factor():
-    assert ramp_factor(0, 10) == pytest.approx(0.1)
-    assert ramp_factor(9, 10) == pytest.approx(1.0)
+    # Paper App. B.3: factor = min(t/10, 1); t=0 mixes nothing.
+    assert ramp_factor(0, 10) == pytest.approx(0.0)
+    assert ramp_factor(1, 10) == pytest.approx(0.1)
+    assert ramp_factor(9, 10) == pytest.approx(0.9)
+    assert ramp_factor(10, 10) == pytest.approx(1.0)
     assert ramp_factor(500, 10) == pytest.approx(1.0)
     assert ramp_factor(3, 0) == pytest.approx(1.0)
     assert ramp_factor(3, -1) == pytest.approx(1.0)
@@ -111,6 +114,45 @@ def test_normalize_intervention_shapes():
     assert normalize_intervention(typed)["source_layer"] == 11
     with pytest.raises(TypeError):
         normalize_intervention("recirculation")
+
+
+class _FakeCache:
+    def __init__(self, layers=3, batch=2, kv=4, dim=8):
+        import torch
+        self.key_cache = [torch.randn(batch, kv, 5, dim)
+                          for _ in range(layers)]
+        self.value_cache = [torch.randn(batch, kv, 5, dim)
+                            for _ in range(layers)]
+
+
+def test_truncate_cache_keeps_prefix():
+    from eval_harness.models.recirculation import RecirculationModelAdapter
+    cache = _FakeCache()
+    RecirculationModelAdapter._truncate_cache(cache, 3)
+    for stack in (cache.key_cache, cache.value_cache):
+        for t in stack:
+            assert t.shape[2] == 3
+
+
+def test_truncate_cache_prefers_native_crop():
+    from eval_harness.models.recirculation import RecirculationModelAdapter
+
+    class NativeCache:
+        def __init__(self):
+            self.cropped_to = None
+
+        def crop(self, length):
+            self.cropped_to = length
+
+    cache = NativeCache()
+    RecirculationModelAdapter._truncate_cache(cache, 4)
+    assert cache.cropped_to == 4
+
+
+def test_truncate_cache_rejects_foreign_caches():
+    from eval_harness.models.recirculation import RecirculationModelAdapter
+    with pytest.raises(TypeError, match="croppable KV cache"):
+        RecirculationModelAdapter._truncate_cache(object(), 2)
 
 
 class _NS:

@@ -1,8 +1,7 @@
 # Phase 2 — Gemma3 1B PT + fixed Recirculation (HF backend, pinned).
 # Paper pair 11 -> 4, alpha 0.15, convex (beta = 0.85), destination-L2.
-# Ramping enabled (provisional: linear ramp over first 10 tokens,
-# following the vLLM RFC default; paper App. B.3 specifies ramping for
-# 1B but the exact schedule is TBD — recorded in the manifest).
+  # Paper App. B.3: ramping for 1B, alpha_t = min(t/10, 1) * alpha
+  # over 0-based positions (position 0 mixes nothing = warm-up).
 # NOTE: no RecirculationModelAdapter exists yet; this config validates
 # (typed InterventionConfig) but cannot execute until the adapter lands.
 model:

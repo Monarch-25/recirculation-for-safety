@@ -154,3 +154,25 @@ def test_intervention_nested_shapes_and_beta_modes():
 def test_bad_recirc_configs_raise(bad):
     with pytest.raises(ValueError, match="intervention"):
         InterventionConfig.from_dict(bad)
+
+
+def test_schedule_defaults_cross_step():
+    cfg = InterventionConfig.from_dict(
+        {"type": "recirculation", "source_layer": 11,
+         "destination_layer": 4})
+    assert cfg.schedule == "cross_step"
+
+
+def test_schedule_two_pass_round_trip():
+    cfg = InterventionConfig.from_dict(
+        {"type": "recirculation", "source_layer": 11,
+         "destination_layer": 4, "schedule": "two_pass"})
+    assert cfg.schedule == "two_pass"
+    assert InterventionConfig.from_dict(cfg.to_dict()) == cfg
+
+
+def test_bad_schedule_raises():
+    with pytest.raises(ValueError, match="schedule"):
+        InterventionConfig.from_dict(
+            {"type": "recirculation", "source_layer": 11,
+             "destination_layer": 4, "schedule": "looping"})

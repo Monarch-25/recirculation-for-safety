@@ -1,0 +1,130 @@
+{
+  "pair_1b": {
+    "baseline": {
+      "metrics": {
+        "accuracy": 0.016679302501895376,
+        "num_correct": 22,
+        "num_examples": 1319,
+        "num_parse_failures": 1,
+        "parse_rate": 0.9992418498862775
+      },
+      "model": "google/gemma-3-1b-pt",
+      "model_revision": "fcf18a2a879aab110ca39f8bffbccd5d49d8eb29",
+      "performance": {
+        "generation_seconds": 84.96650519499991,
+        "input_tokens": 541160,
+        "output_tokens": 371660,
+        "peak_memory_bytes": null,
+        "prefill_seconds": null,
+        "token_stats_complete": true,
+        "tokens_per_second": 4374.194268047539,
+        "wall_clock_seconds": 85.169944203
+      },
+      "run_dir": "20260921_213746_f0d8ab"
+    },
+    "treatment": {
+      "intervention": {
+        "alpha": 0.15,
+        "beta": null,
+        "destination_layer": 4,
+        "effective_beta": 0.85,
+        "mixture": {
+          "mode": "convex"
+        },
+        "normalization": {
+          "type": "destination_l2"
+        },
+        "ramping": {
+          "enabled": true,
+          "tokens": 10
+        },
+        "source_layer": 11,
+        "type": "recirculation"
+      },
+      "metrics": {
+        "accuracy": 0.014404852160727824,
+        "num_correct": 19,
+        "num_examples": 1319,
+        "num_parse_failures": 2,
+        "parse_rate": 0.9984836997725549
+      },
+      "model": "google/gemma-3-1b-pt",
+      "model_revision": "fcf18a2a879aab110ca39f8bffbccd5d49d8eb29",
+      "performance": {
+        "generation_seconds": 616.6996627249998,
+        "input_tokens": 540825,
+        "output_tokens": 370232,
+        "peak_memory_bytes": 2296945152,
+        "prefill_seconds": 1062.9726064529993,
+        "token_stats_complete": true,
+        "tokens_per_second": 600.344093531789,
+        "wall_clock_seconds": 1681.061342396
+      },
+      "run_dir": "20260921_213557_173592"
+    }
+  },
+  "pair_4b": {
+    "baseline": {
+      "metrics": {
+        "accuracy": 0.2941622441243366,
+        "num_correct": 388,
+        "num_examples": 1319,
+        "num_parse_failures": 0,
+        "parse_rate": 1.0
+      },
+      "model": "google/gemma-3-4b-pt",
+      "model_revision": "cc012e0a6d0787b4adcc0fa2c4da74402494554d",
+      "performance": {
+        "generation_seconds": 239.90824070700074,
+        "input_tokens": 499500,
+        "output_tokens": 314335,
+        "peak_memory_bytes": null,
+        "prefill_seconds": null,
+        "token_stats_complete": true,
+        "tokens_per_second": 1310.2301074513587,
+        "wall_clock_seconds": 240.25638060799997
+      },
+      "run_dir": "20260921_214339_11eb2e"
+    },
+    "treatment": {
+      "intervention": {
+        "alpha": 0.15,
+        "beta": 1.0,
+        "destination_layer": 9,
+        "effective_beta": 1.0,
+        "mixture": {
+          "mode": "nonconvex"
+        },
+        "normalization": {
+          "type": "destination_l2"
+        },
+        "ramping": {
+          "enabled": false,
+          "tokens": 0
+        },
+        "source_layer": 18,
+        "type": "recirculation"
+      },
+      "metrics": {
+        "accuracy": 0.27748294162244125,
+        "num_correct": 366,
+        "num_examples": 1319,
+        "num_parse_failures": 5,
+        "parse_rate": 0.9962092494313874
+      },
+      "model": "google/gemma-3-4b-pt",
+      "model_revision": "cc012e0a6d0787b4adcc0fa2c4da74402494554d",
+      "performance": {
+        "generation_seconds": 1837.4070618990006,
+        "input_tokens": 491403,
+        "output_tokens": 306850,
+        "peak_memory_bytes": 9814830080,
+        "prefill_seconds": 3100.5943710320025,
+        "token_stats_complete": true,
+        "tokens_per_second": 167.00164398130906,
+        "wall_clock_seconds": 4940.147955237
+      },
+      "run_dir": "20260921_213705_b30f77"
+    }
+  }
+}

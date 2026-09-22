@@ -85,14 +85,16 @@ def mix_destination(
 
 
 def ramp_factor(position: int, ramp_tokens: int) -> float:
-    """Linear alpha ramp over early positions (provisional schedule).
+    """Paper-exact alpha ramp (App. B.3): α_t = min(t/N, 1)·α.
 
-    ``ramp_tokens <= 0`` disables ramping (factor 1.0). Otherwise the
-    factor grows 0 -> 1 over the first ``ramp_tokens`` positions.
+    ``position`` is the 0-based absolute real position, so position 0
+    yields factor 0 (warm-up: no mixing on the first step) and full
+    strength is reached at ``position == ramp_tokens``. ``ramp_tokens
+    <= 0`` disables ramping (factor 1.0 everywhere).
     """
     if ramp_tokens <= 0:
         return 1.0
-    return min(1.0, (position + 1) / ramp_tokens)
+    return min(position / ramp_tokens, 1.0)
 
 
 def ramp_batch(positions: torch.Tensor, ramp_tokens: int) -> torch.Tensor:
@@ -100,7 +102,7 @@ def ramp_batch(positions: torch.Tensor, ramp_tokens: int) -> torch.Tensor:
     if ramp_tokens <= 0:
         return torch.ones_like(positions, dtype=torch.float32)
     return torch.clamp(
-        (positions.to(torch.float32) + 1.0) / float(ramp_tokens), max=1.0)
+        positions.to(torch.float32) / float(ramp_tokens), max=1.0)
 
 
 def mix_destination_batched(
@@ -250,6 +252,14 @@ class RecirculationModelAdapter(HFCausalLMAdapter):
     # masked out via state["real"] so they neither mix nor pollute the
     # stored source. With no pads this reduces exactly to the
     # single-sequence path (verified by the batch-invariance tests).
+    #
+    # Two schedules share these hooks; only capture timing differs:
+    # - cross_step: every forward mixes with the previously stored
+    #   source (deep@t-1 into shallow@t); every forward stores anew.
+    # - two_pass: pass 1 records only; pass 2 mixes with the same-step
+    #   source captured moments earlier. Pass-2 lower layers recompute
+    #   bit-identical states (deterministic rerun on identical inputs),
+    #   so no boundary storage is needed.
     def _destination_pre_hook(self, module, args, kwargs):
         st = self._state
         if st is None or not st.get("active"):
@@ -260,19 +270,22 @@ class RecirculationModelAdapter(HFCausalLMAdapter):
         else:
             hidden = args[0]
             key = "args"
-        if (self._recirc.type == "recirculation"
-                and bool(st["has_source"].any())):
-            cfg = self._recirc
-            factors = ramp_batch(st["pos"], cfg.ramp_tokens)
-            mixed = mix_destination_batched(
-                hidden[:, -1, :],
-                st["prev_source"].to(hidden.dtype),
-                cfg.alpha * factors,
-                cfg.effective_beta, cfg.normalization)
-            gate = st["has_source"].to(hidden.dtype).reshape(-1, 1, 1)
-            new_hidden = gate * mixed.unsqueeze(1) + (1.0 - gate) * hidden
-            self._maybe_debug(st, hidden, new_hidden)
-            hidden = new_hidden
+        if self._recirc.type == "recirculation":
+            if (self._recirc.schedule == "two_pass"
+                    and st.get("pass", 1) == 1):
+                return args, kwargs  # capture pass: record only
+            if bool(st["has_source"].any()):
+                cfg = self._recirc
+                factors = ramp_batch(st["pos"], cfg.ramp_tokens)
+                mixed = mix_destination_batched(
+                    hidden[:, -1, :],
+                    st["prev_source"].to(hidden.dtype),
+                    cfg.alpha * factors,
+                    cfg.effective_beta, cfg.normalization)
+                gate = st["has_source"].to(hidden.dtype).reshape(-1, 1, 1)
+                new_hidden = gate * mixed.unsqueeze(1) + (1.0 - gate) * hidden
+                self._maybe_debug(st, hidden, new_hidden)
+                hidden = new_hidden
         if key == "kwargs":
             return args, {**kwargs, "hidden_states": hidden}
         return (hidden,) + tuple(args[1:]), kwargs
@@ -281,6 +294,9 @@ class RecirculationModelAdapter(HFCausalLMAdapter):
         st = self._state
         if st is None or not st.get("active"):
             return
+        if (self._recirc.schedule == "two_pass"
+                and st.get("pass", 1) == 2):
+            return  # source already stored by this step's pass 1
         hidden = output[0] if isinstance(output, tuple) else output
         try:
             real = st["real"]
@@ -326,16 +342,57 @@ class RecirculationModelAdapter(HFCausalLMAdapter):
     # -- metadata ---------------------------------------------------------
     def get_metadata(self) -> dict[str, Any]:
         base = super().get_metadata()
-        model_cfg = getattr(self.model, "config", None)
+        try:
+            hidden_size: int | None = self._hidden_size()
+        except Exception:
+            hidden_size = None
+        text_cfg = getattr(getattr(self.model, "config", None),
+                           "text_config", None)
+        context_length = getattr(text_cfg, "max_position_embeddings", None)
+        if context_length is None:
+            context_length = getattr(
+                getattr(self.model, "config", None),
+                "max_position_embeddings", None)
+        schedule = self._recirc.schedule
         base.update({
-            "hidden_size": getattr(model_cfg, "hidden_size", None),
+            "hidden_size": hidden_size,
             "num_layers": self._num_layers,
-            "context_length": getattr(
-                model_cfg, "max_position_embeddings", None),
+            "context_length": context_length,
             "layer_indexing_convention": "block_0based",
-            "recurrence_variant": "cross_step_tokenwise_serial",
+            "recurrence_variant": f"{schedule}_tokenwise_serial",
         })
         return base
+
+    @staticmethod
+    def _truncate_cache(cache: Any, length: int) -> Any:
+        """Drop cached positions >= length in place (two-pass step redo).
+
+        Prefers the cache's native ``crop()`` (transformers >= 4.45
+        layout with per-layer caches); falls back to slicing legacy
+        ``key_cache``/``value_cache`` lists. Anything else raises loudly
+        rather than silently corrupting generation state.
+        """
+        crop = getattr(cache, "crop", None)
+        if callable(crop):
+            try:
+                crop(length)
+                return cache
+            except Exception as exc:
+                raise RuntimeError(
+                    f"two-pass cache crop({length}) failed on "
+                    f"{type(cache).__name__}: {exc}") from exc
+        for attr in ("key_cache", "value_cache"):
+            stacks = getattr(cache, attr, None)
+            if (isinstance(stacks, list) and stacks
+                    and hasattr(stacks[0], "shape")):
+                for i, t in enumerate(stacks):
+                    stacks[i] = t[:, :, :length, :]
+            else:
+                raise TypeError(
+                    "two-pass recirculation needs a croppable KV cache "
+                    f"(cache lacks usable {attr!r}: "
+                    f"{type(cache).__name__})")
+        return cache
 
     # -- generation ---------------------------------------------------------
     @torch.no_grad()
@@ -398,7 +455,10 @@ class RecirculationModelAdapter(HFCausalLMAdapter):
             "real": torch.ones(B, dtype=torch.bool, device=device),
             "pos": torch.zeros(B, dtype=torch.long, device=device),
             "debug_count": 0,
+            "pass": 1,
         }
+        two_pass = (self._recirc.type == "recirculation"
+                    and self._recirc.schedule == "two_pass")
         finished = torch.zeros(B, dtype=torch.bool, device=device)
         new_ids: list[list[int]] = [[] for _ in range(B)]
         past = None
@@ -414,10 +474,9 @@ class RecirculationModelAdapter(HFCausalLMAdapter):
                 real = attn0[:, t].to(torch.bool).to(device)
                 cum_mask = torch.cat([cum_mask, attn0[:, t:t + 1]], dim=1)
                 self._state["real"] = real
-                logits = self._forward(
+                logits, past = self._step_with_passes(
                     input_ids[:, t:t + 1].to(device),
-                    cum_mask.to(device), t, past)
-                past = self._state["past"]
+                    cum_mask.to(device), t, past, two_pass)
                 self._state["pos"][real] += 1
             prefill_s = time.perf_counter() - t_pre
             # Decode until every row hits EOS or the cap.
@@ -441,9 +500,9 @@ class RecirculationModelAdapter(HFCausalLMAdapter):
                 cum_mask = torch.cat(
                     [cum_mask, torch.ones(B, 1)], dim=1)
                 self._state["real"] = real
-                logits = self._forward(
-                    cur.to(device), cum_mask.to(device), L + i, past)
-                past = self._state["past"]
+                logits, past = self._step_with_passes(
+                    cur.to(device), cum_mask.to(device), L + i, past,
+                    two_pass)
                 self._state["pos"][real] += 1
             decode_s = time.perf_counter() - t_dec
         finally:
@@ -469,6 +528,30 @@ class RecirculationModelAdapter(HFCausalLMAdapter):
                 return int(obj.weight.shape[1])
         raise RuntimeError(
             f"cannot determine hidden size for {self._model_id}")
+
+    def _step_with_passes(self, tokens: torch.Tensor, mask: torch.Tensor,
+                            position: int, past: Any,
+                            two_pass: bool) -> tuple[torch.Tensor, Any]:
+        """One input step: capture pass, then optional mix rerun.
+
+        Pass 1 always runs the full stack (records source, warms cache).
+        In two-pass mode at positions > 0, the cache is truncated back to
+        `position` and the same token is rerun with the same-step source
+        mixed at the boundary; the rerun overwrites the upper-layer KV
+        and supplies the logits. Position 0 is a warm-up (pass 1 only).
+        """
+        assert self._state is not None
+        st = self._state
+        st["pass"] = 1
+        logits = self._forward(tokens, mask, position, past)
+        past = st["past"]
+        if two_pass and position > 0:
+            self._truncate_cache(past, position)
+            st["pass"] = 2
+            logits = self._forward(tokens, mask, position, past)
+            past = st["past"]
+            st["pass"] = 1
+        return logits, past
 
     def _forward(self, tokens: torch.Tensor, mask: torch.Tensor,
                  position: int, past: Any) -> torch.Tensor:

@@ -45,6 +45,13 @@ class InterventionConfig:
     mixture: str = "convex"  # convex | nonconvex
     normalization: str = "destination_l2"  # destination_l2 | identity
     ramp_tokens: int = 0
+    # Recurrence schedule (recirculation only):
+    # - cross_step: one pass per input step; destination at t+1 mixes the
+    #   stored deep source from input step t (plan §26 reading).
+    # - two_pass: per input step, a normal full pass captures the source,
+    #   then the upper stack reruns from the mixed boundary (same-step
+    #   source, KV overwritten) and supplies the logits. ~2x compute.
+    schedule: str = "cross_step"  # cross_step | two_pass
 
     @property
     def effective_beta(self) -> float:
@@ -75,6 +82,7 @@ class InterventionConfig:
                 "enabled": self.ramp_tokens > 0,
                 "tokens": self.ramp_tokens,
             },
+            "schedule": self.schedule,
         }
 
     @classmethod
@@ -158,6 +166,12 @@ class InterventionConfig:
                 "model.intervention ramp tokens must be >= 0 "
                 f"(got {ramp_tokens})")
 
+        schedule = str(raw.get("schedule", "cross_step"))
+        if schedule not in ("cross_step", "two_pass"):
+            raise ValueError(
+                "model.intervention.schedule must be 'cross_step' or "
+                f"'two_pass' (got {schedule!r})")
+
         return cls(
             type="recirculation",
             source_layer=src,
@@ -167,6 +181,7 @@ class InterventionConfig:
             mixture=mixture,
             normalization=norm,
             ramp_tokens=ramp_tokens,
+            schedule=schedule,
         )
 
 
