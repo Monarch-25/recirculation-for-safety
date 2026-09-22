@@ -15,6 +15,11 @@ the *only* moving part between conditions is the inference adapter.
 If you are new here, read [`docs/README.md`](docs/README.md) for the
 research narrative, then come back for the machinery below.
 
+## Live presentation
+
+- 🎬 **Slides (GitHub Pages):** https://monarch-25.github.io/recirculation-for-safety/slides/recirculation.html — 26-slide methodology deck (rebuild: `conda run -n torch colloquium build slides/recirculation.md`)
+- 📄 **Paper draft:** [`reports/paper_draft_recirculation.md`](reports/paper_draft_recirculation.md) · **Lead handover:** [`reports/research_handover_recirculation.md`](reports/research_handover_recirculation.md)
+
 ## Contents
 
 - [Key results](#key-results)
