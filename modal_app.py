@@ -75,6 +75,45 @@ def run_eval(config: str, limit: int | None, batch_size: int | None) -> str:
     return tail[-1] if tail else "artifacts in /root/recirc/results (see logs)"
 
 
+@app.function(
+    image=image,
+    gpu=GPU_TYPE,
+    timeout=60 * 60 * 2,  # subsets only; full runs go through run_eval
+    volumes={"/root/recirc/results": modal.Volume.from_name(
+        RESULTS_VOLUME, create_if_missing=True)},
+    secrets=[modal.Secret.from_name(HF_SECRET),
+             modal.Secret.from_name(WANDB_SECRET)],
+)
+def run_trace(model: str, source: int, dest: int, alpha: float, beta: float,
+              mixture_mode: str, max_new_tokens: int, start_index: int,
+              num_examples: int, out: str) -> str:
+    """Instrumented cross-step traces (debug norms) for a dataset subset.
+
+    Example:
+        modal run modal_app.py::run_trace --model google/gemma-3-4b-pt \\
+            --source 18 --dest 7 --alpha 0.1 --beta 1.0 \\
+            --mixture-mode nonconvex --max-new-tokens 256 \\
+            --start-index 0 --num-examples 20 --out traces_a010_s18_d7.jsonl
+    """
+    cmd = [sys.executable, "scripts/trace_walkthrough.py",
+           "--examples", "dataset", "--model", model, "--dtype", "bfloat16",
+           "--attn", "null", "--source", str(source), "--dest", str(dest),
+           "--alpha", str(alpha), "--beta", str(beta),
+           "--mixture-mode", mixture_mode,
+           "--max-new-tokens", str(max_new_tokens),
+           "--start-index", str(start_index),
+           "--num-examples", str(num_examples),
+           "--debug-steps", "1024",
+           "--out", f"/root/recirc/results/{out}"]
+    proc = subprocess.run(cmd, capture_output=True, text=True,
+                          cwd="/root/recirc")
+    print(proc.stdout)
+    print(proc.stderr, file=sys.stderr)
+    if proc.returncode != 0:
+        raise RuntimeError(f"trace_walkthrough.py failed (rc={proc.returncode})")
+    return f"/root/recirc/results/{out}"
+
+
 @app.local_entrypoint()
 def main(config: str, limit: int | None = None,
          batch_size: int | None = None) -> None:
