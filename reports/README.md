@@ -9,7 +9,9 @@ Everything here regenerates from `data/`; nothing is hand-copied.
 |---|---|
 | `phase2_gsm8k_report.md` | formal report (plan §56, 12 sections) |
 | `research_handover_recirculation.md` | **lead handover**: exec summary, methods deep-dive, verdict, Phase-3 proposal + budget |
+| `appendix_crossstep_walkthrough.md` | worked end-to-end cross-step trace (one GSM8K question, measured numbers, 4 figures; mechanics only) |
 | `phase2_analysis.ipynb` | executable notebook (validated: every cell runs) |
+| `data/xstep_trace.json` | frozen instrumented trace for the walkthrough (SmolLM2-360M, 45 tokens, 68 mixed positions) |
 | `data/pair_{1b,4b}_paired.csv` | frozen per-example derivatives (1319 rows each) |
 | `data/twopass_4b_100.csv` | two-pass panel (4 cells vs baseline + vs cross-step) |
 | `data/sweep_4b_100.csv` | frozen diagnostic sweep (18 cells: acc, delta, rescued/regressed, McNemar p) |
@@ -23,6 +25,7 @@ Everything here regenerates from `data/`; nothing is hand-copied.
 | `figures/figE_sweep_deltas.png` | per-cell paired deltas vs same-100 baseline |
 | `figures/figF_sweep_transitions.png` | rescued-vs-regressed scatter per cell |
 | `figures/figG_layer_heatmap.png` | accuracy + delta heatmaps (α=0.10, 3×2) |
+| `figures/xstep_1_pipeline.png` … `xstep_4_measured.png` | walkthrough figures (build via `figures/make_crossstep_trace.py` from `data/xstep_trace.json`) |
 | `figures/schematic_recirculation_schedules.png` | cross-step vs two-pass mechanics (generated; build via `figures/make_schematics.py`) |
 | `figures/paper_looping_vs_recirc.png` | paper Fig 8, recirc-vs-looping (CC BY-NC-SA 4.0, attributed) |
 | `figures/paper_hyperparm_sweep.png` | paper Fig 5, 1B sweep landscape (CC BY-NC-SA 4.0, attributed) |
@@ -37,6 +40,15 @@ python analysis/gsm8k_phase2.py --data reports/data --figures reports/figures
 
 # same via the notebook (kernel cwd = reports/):
 jupyter nbconvert --to notebook --execute reports/phase2_analysis.ipynb
+```
+
+Walkthrough trace + figures (CPU-only; needs cached SmolLM2 weights for
+the trace, figures need only the frozen JSON):
+
+```bash
+conda run -n torch python scripts/trace_walkthrough.py \
+  --out reports/data/xstep_trace.json
+conda run -n torch python reports/figures/make_crossstep_trace.py
 ```
 
 ## Provenance
