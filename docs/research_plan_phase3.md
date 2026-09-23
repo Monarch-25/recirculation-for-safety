@@ -61,6 +61,43 @@ This phase is about establishing the first credible behavioral safety result.
 
 ---
 
+# 0. STATUS — capability-gate outcome binds this protocol (2026-09-23)
+
+Read this section first; it updates the spec below.
+
+- **Capability gate passed (within noise).** Paper-exact (`mozer`) replication
+  on GSM8K-Platinum, n=1209: ours 531/1209 vs repo dense 540 (McNemar p=0.58)
+  and repo recirc 554 (p=0.12). The repo's own +14 is not significant (p=0.20).
+  Evidence: `reports/paper_gsm8k_mt_replication.md`,
+  `docs/findings_mozer_comparison.md`.
+- **`mozer` is the intervention, not `cross_step`.** Mozer et al.'s method is
+  same-token replay + **first-pass readout**. Our prior `cross_step` schedule is
+  the reference repo's *withdrawn* delayed-cross-token class — it may appear in
+  Phase 3 only as an explicit, labeled control, never as "the Recirculation
+  condition". Every "Fixed Recirculation" below means schedule `mozer`.
+- **Statistical discipline is calibrated, not aspirational (§42, §43, §67).**
+  Full-scale paired GSM8K deltas sit within ±2.5 pts at 80% power; a borderline
+  p≈0.05 (+28 rows, ours) and p=0.20 (repo +14) both fail a
+  multiple-comparison view. Phase 3 must report per-benchmark paired McNemar
+  with exact CIs and hold the pre-registered comparison list constant before
+  inspecting results.
+- **Pipeline/controls already exist.** `schedule: mozer` is implemented and
+  on-device validated (α=0 ≡ baseline bitwise); alpha-zero, random-pair and
+  shuffle controls are wired; manifests pin model/dataset revision, template
+  hash, parser version, stop strings and seed. The replication audit
+  (multiturn prompting, model EOS set, per-row positions, extraction priority)
+  is documented in `reports/paper_gsm8k_mt_replication.md §2.2`, so the safety
+  phase inherits a gap-audited machine rather than a black box.
+- **Published artifact.** Replication vitals (531/559, Wilson CIs, +28
+  p=0.054, quirks list) are live on the site (gh-pages); the site is the
+  public-facing record of the capability gate.
+
+No section below is deleted. §21's paper-derived 4B pair (18→9, α=0.15,
+β=1, Appendix B.3) remains the initial fixed configuration, now
+unambiguously under the `mozer` schedule on the IT model.
+
+---
+
 # 1. Research hypothesis
 
 The working hypothesis is:

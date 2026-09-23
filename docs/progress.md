@@ -2,6 +2,7 @@
 
 > Purpose: single source of truth for "where are we, what's proven, what's next".
 > Plan source: `docs/research_plan.md` (§1–§53). Last checked: 2026-09-21 (steps 1–3 re-verified this date).
+> Latest progress entry: §11 (paper-exact replication round, 2026-09-23).
 > Working dir: `/Users/mozart/Documents/ml/research/recirculation`.
 
 ## 1. TL;DR
@@ -444,3 +445,72 @@ Frozen to `reports/data/sweep_4b_100.csv`; Fig D generated;
 notebook + §9 of the formal report filled; report verdict stands
 (full-scale null) with the sweep sharpening the open question.
 Suite: 102 unit green.
+
+## 11. Paper-exact mozer replication round on GSM8K-Platinum (2026-09-23)
+
+Capability gate for Phase 3: reproduce the **paper's method**, not a variant.
+Grounding: `docs/findings_mozer_comparison.md`,
+`docs/research_plan_mozer_replication.md`, `reports/paper_gsm8k_mt_replication.md`.
+
+### Machine changes (commits c281ced → 7495572, incl. `eceb34b` resume support)
+- `schedule: mozer` = paper-exact: same-token replay + **first-pass readout**,
+  convex-coupled `β = 1 − α` under ramp
+  (`src/eval_harness/models/recirculation.py`, `recurrence_variant:
+  mozer_tokenwise_serial`). Supersedes the wrong-readout `two_pass` as the
+  paper-faithful path.
+- `gsm8k_cot_llama_multiturn_v1` 8-shot template (Evalution `cot_llama`, chat
+  template ON, 17-message multiturn) + GSM8K-Platinum wiring
+  (`madrylab/gsm8k-platinum main/test`, n=1209, rev `e7624924`).
+- Parser v1.1 (answer-line priority before last-number, versioned).
+- Incremental stage-1 checkpoints + resume-from-dir (`eceb34b`) — preemption
+  insurance that let the multi-20-min full runs actually finish.
+- `cross_step` kept but **reclassified**: it is the reference repo's withdrawn
+  *"delayed cross-token intervention"* class — not recirculation, no novelty claim.
+
+### The four parity gaps (found only by running full strips)
+1. **Multiturn vs single-turn prompting**: their `fewshot_as_multiturn`
+   default builds a 17-message conversation; our single user message scored ~35%.
+2. **Model EOS set**: tokenizer EOS id 1 (`</s>`) vs model set `[1, 106]`
+   (`<end_of_turn>`); stopping on id 1 left 99% of generations at the 256 cap.
+3. **Per-row RoPE positions**: shared scalar `cache_position` misplaces RoPE
+   under left padding → explicit per-row `position_ids` (+1.3 pts).
+4. **Extraction priority**: last-number vs their answer-line priority → parser v1.1.
+Gemma hybrid-cache replay additionally needs arm → pass1 → `crop(-1)` → pass2 →
+`crop(0)` or SDPA overflows the 512 window (513-vs-512).
+
+### Full runs (A100-40GB · FP16 · greedy · batch 128 · model rev `dcc83ea841ab`)
+
+| Arm | Correct / 1209 | Acc | Δ vs repo dense | McNemar p vs repo dense |
+|---|---|---|---|---|
+| Repo dense (taken) | 540 | 44.67% | — | — |
+| Repo recirc (taken) | 554 | 45.82% | +14 | 0.20 |
+| **Ours mozer** | **531** | **43.92%** | −9 | 0.58 |
+| Ours cross-step | 559 | 46.24% | +19 | 0.25 |
+
+Paired ours-cross vs ours-mozer: 112 cross-only / 84 mozer-only → net **+28,
+exact p=0.054** (borderline, n.s.). Per-row mozer/dense agreement 82.4%. Parse
+rate 100% both arms; 12.5% of outputs hit the token cap (repo-like regime).
+Compute: mozer 1296 s (21.6 min), cross 669 s (11.2 min); VRAM peak ≈20.2/40 GB (51%).
+
+### Verdict
+Replication **within noise** (p=0.58 / 0.12 vs the repo's dense/recirc arms);
+the repo's own +14 is n.s. (p=0.20). Cross-step is an n.s. null-with-a-hint
+(+28, p=0.054) and the wrong method to credit — withdrawn class, no novelty.
+No dense arm was run in-harness by plan (repo dense taken): documented limitation
+in §5 of the report.
+
+### Site (replication vitals published; gh-pages)
+- `site/index.html` + figures: hero numbers 531/559 flanking repo 540/554, full
+  Fig A forest plot + Fig B alluvial redrawn, "quirks" section, prior-protocol
+  table into `<details>` (`764ced6`).
+- Figure composition overhaul: all six SVGs redrawn — gutter labels, no text over
+  strokes, dark-mode-safe fills, emoji removed, uniform 680-wide viewBoxes
+  (`e3ed68d`).
+- Deployed: `git subtree push --prefix site origin gh-pages`.
+
+### Lane state after this round
+- `mozer` validated on-device (α=0 ≡ baseline bitwise; invariants/determinism
+  green). Matched matrix partial: mozer + cross-step full under one prompt;
+  dense taken from repo; `two_pass` not re-run on Platinum.
+- Phase 3 (safety) inherits the paper-exact schedule + a gap-audited pipeline:
+  the EOS/multiturn/RoPE/extraction gotchas are documented, not relived.
