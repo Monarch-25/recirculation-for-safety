@@ -116,170 +116,163 @@
      Figure A — Overlap is the Finding (Wilson 95% Error Whiskers)
      ═══════════════════════════════════════════════════════════════ -->
 <div class="figure-block figure" id="fig-A">
-  <div class="fig-head"><span class="no">Fig A</span> Accuracy with Wilson 95% intervals — overlap is the finding</div>
-  <svg viewBox="0 0 680 320" width="100%" style="max-width:660px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Horizontal bar chart showing baseline versus recirculation accuracy with completely overlapping 95 percent confidence intervals at 1B and 4B scale">
+  <div class="fig-head"><span class="no">Fig A</span> Replication accuracy, GSM8K-Platinum 1B IT — all four arms overlap</div>
+  <svg viewBox="0 0 680 300" width="100%" style="max-width:660px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Horizontal bar chart: repo dense, repo recirculation, our mozer and our cross-step accuracy on GSM8K-Platinum with overlapping 95 percent confidence intervals">
     <!-- Background Grid -->
     <g stroke="var(--line-soft)" stroke-width="1">
-      <line x1="160" y1="40" x2="160" y2="260"/>
-      <line x1="285" y1="40" x2="285" y2="260"/>
-      <line x1="410" y1="40" x2="410" y2="260"/>
-      <line x1="535" y1="40" x2="535" y2="260"/>
-      <line x1="660" y1="40" x2="660" y2="260"/>
+      <line x1="160" y1="40" x2="160" y2="230"/>
+      <line x1="260" y1="40" x2="260" y2="230"/>
+      <line x1="360" y1="40" x2="360" y2="230"/>
+      <line x1="460" y1="40" x2="460" y2="230"/>
+      <line x1="560" y1="40" x2="560" y2="230"/>
+      <line x1="660" y1="40" x2="660" y2="230"/>
     </g>
 
-    <!-- X Axis Ticks and Labels (0.0 to 0.40) -->
-    <!-- Scale: x = 160 + (acc / 0.40) * 500 -->
+    <!-- X Axis Ticks and Labels (0.40 to 0.50) -->
+    <!-- Scale: x = 160 + (acc - 0.40) / 0.10 * 500 -->
     <g font-family="var(--mono)" font-size="10.5" fill="var(--ink-faint)" text-anchor="middle">
-      <text x="160" y="278">0.00</text>
-      <text x="285" y="278">0.10</text>
-      <text x="410" y="278">0.20</text>
-      <text x="535" y="278">0.30</text>
-      <text x="660" y="278">0.40</text>
+      <text x="160" y="248">0.40</text>
+      <text x="260" y="248">0.42</text>
+      <text x="360" y="248">0.44</text>
+      <text x="460" y="248">0.46</text>
+      <text x="560" y="248">0.48</text>
+      <text x="660" y="248">0.50</text>
     </g>
-    <line x1="160" y1="260" x2="660" y2="260" stroke="var(--line)" stroke-width="1.5"/>
+    <line x1="160" y1="230" x2="660" y2="230" stroke="var(--line)" stroke-width="1.5"/>
 
-    <!-- Section: 1B Scale (Zoom Window Callout) -->
-    <!-- 1B Base: 0.0167 -> x = 160 + 0.0167*1250 = 180.9, CI [0.0110, 0.0251] -> [173.8, 191.4] -->
-    <!-- 1B Recirc: 0.0144 -> x = 160 + 0.0144*1250 = 178.0, CI [0.0092, 0.0224] -> [171.5, 188.0] -->
-    <text x="30" y="85" font-family="var(--sans)" font-weight="700" font-size="13" fill="var(--ink)">Gemma 3 · 1B</text>
-    <text x="30" y="102" font-family="var(--sans)" font-size="11" fill="var(--ink-soft)">n = 1319 paired</text>
+    <!-- Section: GSM8K-Platinum 1B IT, n = 1209 paired -->
+    <text x="30" y="60" font-family="var(--sans)" font-weight="700" font-size="13" fill="var(--ink)">Platinum · 1B IT</text>
+    <text x="30" y="77" font-family="var(--sans)" font-size="11" fill="var(--ink-soft)">n = 1209 paired</text>
 
-    <!-- 1B Bars -->
-    <rect x="160" y="65" width="20.9" height="18" rx="3" fill="var(--line)" stroke="var(--ink-soft)" stroke-width="1"/>
-    <rect x="160" y="90" width="18.0" height="18" rx="3" fill="var(--accent-soft)" stroke="var(--shallow)" stroke-width="1"/>
+    <!-- Repo dense: 0.4467 -> w = 233.5, CI [0.419, 0.475] -> [255, 535] -->
+    <rect x="160" y="58" width="233.5" height="18" rx="3" fill="var(--line)" stroke="var(--ink-soft)" stroke-width="1">
+      <title>Repo dense: 0.4467 (540/1209)</title>
+    </rect>
+    <line x1="255" y1="67" x2="535" y2="67" stroke="var(--ink)" stroke-width="1.5"/>
+    <line x1="255" y1="62" x2="255" y2="72" stroke="var(--ink)" stroke-width="1.5"/>
+    <line x1="535" y1="62" x2="535" y2="72" stroke="var(--ink)" stroke-width="1.5"/>
 
-    <!-- 1B Whisker Guides -->
-    <!-- Base CI: 173.8 to 191.4 -->
-    <line x1="173.8" y1="74" x2="191.4" y2="74" stroke="var(--ink)" stroke-width="1.5"/>
-    <line x1="173.8" y1="69" x2="173.8" y2="79" stroke="var(--ink)" stroke-width="1.5"/>
-    <line x1="191.4" y1="69" x2="191.4" y2="79" stroke="var(--ink)" stroke-width="1.5"/>
+    <!-- Repo recirc: 0.4582 -> w = 291, CI [0.430, 0.486] -> [310, 590] -->
+    <rect x="160" y="84" width="291" height="18" rx="3" fill="var(--line)" stroke="var(--ink-soft)" stroke-width="1" stroke-dasharray="4 2" opacity="0.75">
+      <title>Repo recirc: 0.4582 (554/1209)</title>
+    </rect>
+    <line x1="310" y1="93" x2="590" y2="93" stroke="var(--ink-soft)" stroke-width="1.5"/>
+    <line x1="310" y1="88" x2="310" y2="98" stroke="var(--ink-soft)" stroke-width="1.5"/>
+    <line x1="590" y1="88" x2="590" y2="98" stroke="var(--ink-soft)" stroke-width="1.5"/>
 
-    <!-- Recirc CI: 171.5 to 188.0 -->
-    <line x1="171.5" y1="99" x2="188.0" y2="99" stroke="var(--shallow)" stroke-width="1.5"/>
-    <line x1="171.5" y1="94" x2="171.5" y2="104" stroke="var(--shallow)" stroke-width="1.5"/>
-    <line x1="188.0" y1="94" x2="188.0" y2="104" stroke="var(--shallow)" stroke-width="1.5"/>
+    <!-- Ours mozer: 0.4392 -> w = 196, CI [0.411, 0.467] -> [215, 495] -->
+    <rect x="160" y="110" width="196" height="18" rx="3" fill="var(--accent-soft)" stroke="var(--shallow)" stroke-width="1.2">
+      <title>Ours mozer: 0.4392 (531/1209)</title>
+    </rect>
+    <line x1="215" y1="119" x2="495" y2="119" stroke="var(--shallow)" stroke-width="1.8"/>
+    <line x1="215" y1="114" x2="215" y2="124" stroke="var(--shallow)" stroke-width="1.8"/>
+    <line x1="495" y1="114" x2="495" y2="124" stroke="var(--shallow)" stroke-width="1.8"/>
 
-    <!-- 1B Inset Zoom Box -->
-    <g transform="translate(230, 52)">
-      <rect width="320" height="66" rx="8" fill="var(--card)" stroke="var(--line)" stroke-width="1" filter="drop-shadow(0 2px 6px rgba(0,0,0,0.05))"/>
-      <text x="14" y="24" font-family="var(--sans)" font-size="11" font-weight="700" fill="var(--ink)">1B Zoom: Whiskers fully overlap</text>
-      <text x="14" y="42" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">Base: 0.0167 [0.0110, 0.0251] (22 / 1319)</text>
-      <text x="14" y="56" font-family="var(--mono)" font-size="10.5" fill="var(--shallow)">Recirc: 0.0144 [0.0092, 0.0224] (19 / 1319)</text>
-      <text x="306" y="38" font-family="var(--sans)" font-size="11" font-weight="700" fill="var(--ink-soft)" text-anchor="end">Δ −0.0023</text>
-      <text x="306" y="52" font-family="var(--mono)" font-size="10" fill="var(--ink-faint)" text-anchor="end">McNemar p = 0.742</text>
+    <!-- Ours cross-step: 0.4624 -> w = 312, CI [0.434, 0.491] -> [330, 615] -->
+    <rect x="160" y="136" width="312" height="18" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5">
+      <title>Ours cross-step: 0.4624 (559/1209)</title>
+    </rect>
+    <line x1="330" y1="145" x2="615" y2="145" stroke="var(--accent)" stroke-width="1.8"/>
+    <line x1="330" y1="140" x2="330" y2="150" stroke="var(--accent)" stroke-width="1.8"/>
+    <line x1="615" y1="140" x2="615" y2="150" stroke="var(--accent)" stroke-width="1.8"/>
+
+    <!-- Row labels -->
+    <g font-family="var(--sans)" font-size="10.5" fill="var(--ink-soft)">
+      <text x="30" y="72">repo dense</text>
+      <text x="30" y="98">repo recirc</text>
+      <text x="30" y="124">ours mozer</text>
+      <text x="30" y="150">ours cross</text>
     </g>
 
-    <!-- Section: 4B Scale -->
-    <!-- 4B Base: 0.2942 -> x = 160 + 0.2942*1250 = 527.8, CI [0.2702, 0.3193] -> [497.8, 559.1] -->
-    <!-- 4B Recirc: 0.2775 -> x = 160 + 0.2775*1250 = 506.9, CI [0.2540, 0.3023] -> [477.5, 537.9] -->
-    <text x="30" y="185" font-family="var(--sans)" font-weight="700" font-size="13" fill="var(--ink)">Gemma 3 · 4B</text>
-    <text x="30" y="202" font-family="var(--sans)" font-size="11" fill="var(--ink-soft)">n = 1319 paired</text>
+    <!-- Annotations -->
+    <text x="402" y="179" font-family="var(--mono)" font-size="11" font-weight="700" fill="var(--ink)">mozer vs dense Δ −0.0074 · p = 0.58</text>
+    <text x="420" y="197" font-family="var(--mono)" font-size="11" font-weight="700" fill="var(--ink)">cross vs mozer +28 rows · p = 0.054</text>
+    <text x="300" y="72" font-family="var(--mono)" font-size="10" fill="var(--ink-faint)" text-anchor="start"></text>
 
-    <!-- Overlap Shading Region [497.8 to 537.9] -->
-    <rect x="497.8" y="155" width="40.1" height="60" fill="var(--accent-soft)" opacity="0.5"/>
-    <text x="517.8" y="148" font-family="var(--sans)" font-size="10" fill="var(--accent)" text-anchor="middle" font-weight="600">overlap zone</text>
-
-    <!-- 4B Bars -->
-    <rect x="160" y="165" width="367.8" height="20" rx="4" fill="var(--line)" stroke="var(--ink-soft)" stroke-width="1">
-      <title>4B Base: 0.2942 (388/1319)</title>
-    </rect>
-    <rect x="160" y="193" width="346.9" height="20" rx="4" fill="var(--accent-soft)" stroke="var(--shallow)" stroke-width="1.2">
-      <title>4B Recirc: 0.2775 (366/1319)</title>
-    </rect>
-
-    <!-- 4B Base Whisker: 497.8 to 559.1 -->
-    <line x1="497.8" y1="175" x2="559.1" y2="175" stroke="var(--ink)" stroke-width="1.8"/>
-    <line x1="497.8" y1="168" x2="497.8" y2="182" stroke="var(--ink)" stroke-width="1.8"/>
-    <line x1="559.1" y1="168" x2="559.1" y2="182" stroke="var(--ink)" stroke-width="1.8"/>
-
-    <!-- 4B Recirc Whisker: 477.5 to 537.9 -->
-    <line x1="477.5" y1="203" x2="537.9" y2="203" stroke="var(--shallow)" stroke-width="1.8"/>
-    <line x1="477.5" y1="196" x2="477.5" y2="210" stroke="var(--shallow)" stroke-width="1.8"/>
-    <line x1="537.9" y1="196" x2="537.9" y2="210" stroke="var(--shallow)" stroke-width="1.8"/>
-
-    <!-- Annotations & p-values for 4B -->
-    <text x="568" y="179" font-family="var(--mono)" font-size="11" font-weight="700" fill="var(--ink)">0.2942 (388/1319)</text>
-    <text x="548" y="207" font-family="var(--mono)" font-size="11" font-weight="700" fill="var(--shallow)">0.2775 (366/1319)</text>
-    <text x="490" y="240" font-family="var(--sans)" font-size="11" font-weight="700" fill="var(--ink-soft)">Δ −0.0167 · McNemar p = 0.260</text>
+    <!-- Value labels -->
+    <g font-family="var(--mono)" font-size="10.5" font-weight="700">
+      <text x="400" y="72" fill="var(--ink)">0.4467 (540)</text>
+      <text x="458" y="98" fill="var(--ink-soft)">0.4582 (554)</text>
+      <text x="363" y="124" fill="var(--shallow)">0.4392 (531)</text>
+      <text x="479" y="150" fill="var(--accent)">0.4624 (559)</text>
+    </g>
 
     <!-- Legend -->
-    <g transform="translate(30, 298)">
+    <g transform="translate(30, 278)">
       <rect x="0" y="-8" width="12" height="12" rx="2" fill="var(--line)" stroke="var(--ink-soft)"/>
-      <text x="18" y="2" font-family="var(--sans)" font-size="11" fill="var(--ink)">Baseline (frozen weights)</text>
-      <rect x="180" y="-8" width="12" height="12" rx="2" fill="var(--accent-soft)" stroke="var(--shallow)"/>
-      <text x="198" y="2" font-family="var(--sans)" font-size="11" fill="var(--shallow)">Fixed Recirculation (published config)</text>
+      <text x="18" y="2" font-family="var(--sans)" font-size="11" fill="var(--ink)">Reference arms (taken)</text>
+      <rect x="210" y="-8" width="12" height="12" rx="2" fill="var(--accent-soft)" stroke="var(--shallow)"/>
+      <text x="228" y="2" font-family="var(--sans)" font-size="11" fill="var(--ink)">Our arms (parity harness)</text>
     </g>
   </svg>
   <figcaption>
-    <strong>A statistical null with narrow, overlapping error bars.</strong> At both 1B and 4B, the Wilson 95% confidence intervals overlap almost completely (1B: 0.0167 → 0.0144, p&nbsp;=&nbsp;0.742; 4B: 0.2942 → 0.2775, p&nbsp;=&nbsp;0.260). The published configuration produces no detectable lift in reasoning accuracy on GSM8K under this protocol.
-    <span class="src">Data: reports/data/pair_1b_paired.csv · pair_4b_paired.csv (n=1319 each).</span>
+    <strong>Replication within noise, control slightly above — nobody significant.</strong> Our mozer arm (531/1209) lands inside the reference band (dense 540, recirc 554; McNemar p&nbsp;=&nbsp;0.58/0.12). Our cross-step control (559/1209) measures +28 paired rows over mozer (exact p&nbsp;=&nbsp;0.054, borderline, not significant) — and the reference's own +14 sits at p&nbsp;=&nbsp;0.20. Wilson 95% CIs overlap across all four arms.
+    <span class="src">Data: results_jl/r_18a429d2 + r_e19fafad predictions.jsonl (n=1209 each) · reference gemma3_1b_gsm8k_{dense,recirc}_fp16.json.</span>
   </figcaption>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════
-     Figure B — Symmetric Churn: The Cancellation Must Be Seen
+     Figure B — Paired transitions, cross-step vs mozer (replication)
      ═══════════════════════════════════════════════════════════════ -->
 <div class="figure-block figure" id="fig-B">
-  <div class="fig-head"><span class="no">Fig B</span> Paired transition flows — vigorous motion cancelling out</div>
-  <svg viewBox="0 0 680 380" width="100%" style="max-width:660px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sankey flow diagram showing massive transition churn between baseline and recirculation where rescued and regressed answers balance symmetrically">
-    <!-- Left Column: Baseline State -->
+  <div class="fig-head"><span class="no">Fig B</span> Paired transitions, cross-step vs mozer — +28 rows, p = 0.054</div>
+  <svg viewBox="0 0 680 380" width="100%" style="max-width:660px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sankey flow diagram: cross-step rescues 112 and regresses 84 against mozer, net plus 28, not significant">
+    <!-- Left Column: Mozer State -->
     <rect x="50" y="50" width="120" height="110" rx="8" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/>
-    <text x="110" y="80" font-family="var(--sans)" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">Baseline Correct</text>
-    <text x="110" y="105" font-family="var(--mono)" font-size="16" font-weight="700" fill="var(--ink)" text-anchor="middle">388</text>
-    <text x="110" y="125" font-family="var(--sans)" font-size="11" fill="var(--ink-soft)" text-anchor="middle">29.4% of total</text>
+    <text x="110" y="80" font-family="var(--sans)" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">Mozer Correct</text>
+    <text x="110" y="105" font-family="var(--mono)" font-size="16" font-weight="700" fill="var(--ink)" text-anchor="middle">531</text>
+    <text x="110" y="125" font-family="var(--sans)" font-size="11" fill="var(--ink-soft)" text-anchor="middle">43.9% of total</text>
 
     <rect x="50" y="190" width="120" height="150" rx="8" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/>
-    <text x="110" y="235" font-family="var(--sans)" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">Baseline Wrong</text>
-    <text x="110" y="260" font-family="var(--mono)" font-size="16" font-weight="700" fill="var(--ink)" text-anchor="middle">931</text>
-    <text x="110" y="280" font-family="var(--sans)" font-size="11" fill="var(--ink-soft)" text-anchor="middle">70.6% of total</text>
+    <text x="110" y="235" font-family="var(--sans)" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">Mozer Wrong</text>
+    <text x="110" y="260" font-family="var(--mono)" font-size="16" font-weight="700" fill="var(--ink)" text-anchor="middle">678</text>
+    <text x="110" y="280" font-family="var(--sans)" font-size="11" fill="var(--ink-soft)" text-anchor="middle">56.1% of total</text>
 
-    <!-- Right Column: Recirculation State -->
-    <rect x="510" y="50" width="120" height="110" rx="8" fill="var(--card)" stroke="var(--shallow)" stroke-width="1.5"/>
-    <text x="570" y="80" font-family="var(--sans)" font-size="13" font-weight="700" fill="var(--shallow)" text-anchor="middle">Recirc Correct</text>
-    <text x="570" y="105" font-family="var(--mono)" font-size="16" font-weight="700" fill="var(--shallow)" text-anchor="middle">366</text>
-    <text x="570" y="125" font-family="var(--sans)" font-size="11" fill="var(--ink-soft)" text-anchor="middle">27.8% of total</text>
+    <!-- Right Column: Cross-step State -->
+    <rect x="510" y="50" width="120" height="110" rx="8" fill="var(--card)" stroke="var(--accent)" stroke-width="1.5"/>
+    <text x="570" y="80" font-family="var(--sans)" font-size="13" font-weight="700" fill="var(--accent)" text-anchor="middle">Cross Correct</text>
+    <text x="570" y="105" font-family="var(--mono)" font-size="16" font-weight="700" fill="var(--accent)" text-anchor="middle">559</text>
+    <text x="570" y="125" font-family="var(--sans)" font-size="11" fill="var(--ink-soft)" text-anchor="middle">46.2% of total</text>
 
     <rect x="510" y="190" width="120" height="150" rx="8" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/>
-    <text x="570" y="235" font-family="var(--sans)" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">Recirc Wrong</text>
-    <text x="570" y="260" font-family="var(--mono)" font-size="16" font-weight="700" fill="var(--ink)" text-anchor="middle">953</text>
-    <text x="570" y="280" font-family="var(--sans)" font-size="11" fill="var(--ink-soft)" text-anchor="middle">72.2% of total</text>
+    <text x="570" y="235" font-family="var(--sans)" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">Cross Wrong</text>
+    <text x="570" y="260" font-family="var(--mono)" font-size="16" font-weight="700" fill="var(--ink)" text-anchor="middle">650</text>
+    <text x="570" y="280" font-family="var(--sans)" font-size="11" fill="var(--ink-soft)" text-anchor="middle">53.8% of total</text>
 
-    <!-- Flow Paths (Proportional Widths) -->
-    <!-- 1. Stable Correct: 203 paths (horizontal upper) -->
-    <path d="M 170,75 C 340,75 340,75 510,75" fill="none" stroke="var(--line)" stroke-width="26" opacity="0.6"/>
-    <text x="340" y="70" font-family="var(--sans)" font-size="11" fill="var(--ink-faint)" text-anchor="middle">stable correct · 203</text>
+    <!-- Flow Paths (Proportional Widths, max 566 -> 41px) -->
+    <!-- 1. Stable Correct: 447 paths (horizontal upper) -->
+    <path d="M 170,75 C 340,75 340,75 510,75" fill="none" stroke="var(--line)" stroke-width="32" opacity="0.6"/>
+    <text x="340" y="70" font-family="var(--sans)" font-size="11" fill="var(--ink-faint)" text-anchor="middle">stable correct · 447</text>
 
-    <!-- 2. Regressed (Correct -> Wrong): 185 paths in CLAY -->
-    <path d="M 170,125 C 320,125 360,230 510,230" fill="none" stroke="var(--bad)" stroke-width="22" opacity="0.8"/>
-    <rect x="230" y="145" width="150" height="26" rx="6" fill="var(--card)" stroke="var(--bad)" stroke-width="1"/>
-    <text x="305" y="162" font-family="var(--sans)" font-size="11" font-weight="700" fill="var(--bad)" text-anchor="middle">regressed: 185 (14.0%)</text>
+    <!-- 2. Mozer-only (Correct -> Wrong): 84 paths in CLAY -->
+    <path d="M 170,125 C 320,125 360,230 510,230" fill="none" stroke="var(--bad)" stroke-width="9" opacity="0.8"/>
+    <rect x="230" y="145" width="160" height="26" rx="6" fill="var(--card)" stroke="var(--bad)" stroke-width="1"/>
+    <text x="310" y="162" font-family="var(--sans)" font-size="11" font-weight="700" fill="var(--bad)" text-anchor="middle">mozer-only: 84 (6.9%)</text>
 
-    <!-- 3. Rescued (Wrong -> Correct): 163 paths in GREEN -->
-    <path d="M 170,225 C 320,225 360,115 510,115" fill="none" stroke="var(--good)" stroke-width="20" opacity="0.8"/>
-    <rect x="230" y="105" width="150" height="26" rx="6" fill="var(--card)" stroke="var(--good)" stroke-width="1"/>
-    <text x="305" y="122" font-family="var(--sans)" font-size="11" font-weight="700" fill="var(--good)" text-anchor="middle">rescued: 163 (12.4%)</text>
+    <!-- 3. Cross-only (Wrong -> Correct): 112 paths in GREEN -->
+    <path d="M 170,225 C 320,225 360,115 510,115" fill="none" stroke="var(--good)" stroke-width="11" opacity="0.8"/>
+    <rect x="230" y="105" width="160" height="26" rx="6" fill="var(--card)" stroke="var(--good)" stroke-width="1"/>
+    <text x="310" y="122" font-family="var(--sans)" font-size="11" font-weight="700" fill="var(--good)" text-anchor="middle">cross-only: 112 (9.3%)</text>
 
-    <!-- 4. Stable Wrong: 768 paths (horizontal lower) -->
-    <path d="M 170,295 C 340,295 340,295 510,295" fill="none" stroke="var(--line-soft)" stroke-width="56" opacity="0.5"/>
-    <text x="340" y="300" font-family="var(--sans)" font-size="11" fill="var(--ink-faint)" text-anchor="middle">stable wrong · 768</text>
+    <!-- 4. Stable Wrong: 566 paths (horizontal lower) -->
+    <path d="M 170,295 C 340,295 340,295 510,295" fill="none" stroke="var(--line-soft)" stroke-width="41" opacity="0.5"/>
+    <text x="340" y="300" font-family="var(--sans)" font-size="11" fill="var(--ink-faint)" text-anchor="middle">stable wrong · 566</text>
 
     <!-- Central Cancellation Badge -->
     <g transform="translate(200, 345)">
       <rect width="280" height="32" rx="8" fill="var(--accent-soft)" stroke="var(--line)" stroke-width="1"/>
-      <text x="140" y="20" font-family="var(--sans)" font-size="11.5" font-weight="700" fill="var(--ink)" text-anchor="middle">Net Δ: 163 − 185 = −22 (−1.67%) · p = 0.260</text>
+      <text x="140" y="20" font-family="var(--sans)" font-size="11.5" font-weight="700" fill="var(--ink)" text-anchor="middle">Net Δ: 112 − 84 = +28 (+2.32%) · p = 0.054</text>
     </g>
 
-    <!-- Secondary Callout: Textual Churn -->
+    <!-- Secondary Callout: Flip rate -->
     <g transform="translate(20, 10)">
-      <text x="0" y="14" font-family="var(--sans)" font-size="12" font-weight="700" fill="var(--accent)">Total Churn at 4B:</text>
-      <text x="126" y="14" font-family="var(--mono)" font-size="12" fill="var(--ink)">69.3% (914 / 1319 outputs rewritten)</text>
-      <text x="440" y="14" font-family="var(--sans)" font-size="12" font-weight="700" fill="var(--accent)">At 1B:</text>
-      <text x="480" y="14" font-family="var(--mono)" font-size="12" fill="var(--ink)">90.4% (1192 / 1319)</text>
+      <text x="0" y="14" font-family="var(--sans)" font-size="12" font-weight="700" fill="var(--accent)">Paired flips (same harness, n=1209):</text>
+      <text x="290" y="14" font-family="var(--mono)" font-size="12" fill="var(--ink)">196 discordant rows (16.2%)</text>
     </g>
   </svg>
   <figcaption>
-    <strong>Symmetric churn: the intervention is active, but cancels out.</strong> On Gemma 3 4B, 163 questions were rescued from wrong to right (green), while 185 previously correct questions broke (clay). Across the full test set, 69.3% of answers were textually rewritten. At 1B, 90.4% of outputs changed. The scoreboard is flat not because the model was unaffected, but because it churned in both directions with near-perfect symmetry.
-    <span class="src">Exact joins on example_id: 1319/1319 zero orphans. reports/data/pair_4b_paired.csv.</span>
+    <strong>Suggestive movement, not significance.</strong> On the identical parity protocol, cross-step rescues 112 questions mozer misses while regressing on 84 mozer gets right — net +28 rows (+2.32 pts, exact McNemar p&nbsp;=&nbsp;0.054, borderline, not significant at α=0.05). Cross-step is delayed feedback, not the paper's recirculation, and no novelty is claimed.
+    <span class="src">Exact joins on example_id: 1209/1209 zero orphans. results_jl/r_18a429d2 + r_e19fafad predictions.jsonl.</span>
   </figcaption>
 </div>
 
@@ -358,11 +351,12 @@
 <div class="figure-block figure" id="fig-D-G">
   <div class="fig-head"><span class="no">Fig D · G</span> The neighborhood around the tested point — sweep response surface</div>
   <svg viewBox="0 0 680 430" width="100%" style="max-width:660px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Dual panel showing alpha response curves and layer heatmap across 18 sweep configurations with explicit Bonferroni caution banner">
-    <!-- Top Warning Banner: Bonferroni Caution -->
+    <!-- Top Warning Banner: Bonferroni Caution + full-scale confirmation -->
     <g transform="translate(40, 15)">
-      <rect width="600" height="34" rx="6" fill="var(--card)" stroke="var(--bad)" stroke-width="1.5"/>
+      <rect width="600" height="52" rx="6" fill="var(--card)" stroke="var(--bad)" stroke-width="1.5"/>
       <text x="18" y="22" font-family="var(--sans)" font-size="11.5" font-weight="700" fill="var(--bad)">⚠️ Bonferroni Caution:</text>
-      <text x="160" y="22" font-family="var(--sans)" font-size="11" fill="var(--ink-soft)">18 comparisons on n=100. Top nominal p = 0.012 is NOT significant under family-wise correction (α = 0.0028).</text>
+      <text x="160" y="22" font-family="var(--sans)" font-size="11" fill="var(--ink-soft)">18 comparisons on n=100. Top nominal p = 0.012 is NOT significant (α = 0.0028).</text>
+      <text x="18" y="40" font-family="var(--sans)" font-size="11" fill="var(--ink-soft)">Update: cell a010_s18_d7 held up at full n=1319 — 461 vs 388 (+73, unpaired p ≈ 0.002).</text>
     </g>
 
     <!-- Left Panel: Alpha Response Curves -->

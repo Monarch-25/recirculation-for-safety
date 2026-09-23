@@ -260,9 +260,18 @@ where  f(s) = ( s / (||s||₂ + ε) ) · ||d||₂</pre>
       borderline, not significant at α=0.05. Per-row agreement between our mozer arm and repo dense is 82.4%.
       Parse rate 100% in both arms. None of the GSM8K deltas in this study — ours or the reference's own +14 — reach significance.</p>
 
+      <!-- Mount Point for Fig A (replication bars) -->
+      <div class="fig-mount" data-src="figures.html" data-fig="fig-A"></div>
+
       <h3>Stage 1b: The prior-protocol scoreboard (context, not verdict)</h3>
       <p>The v0.1 line below used a non-parity harness (single-turn prompting, tokenizer EOS, scalar positions) and, for 4B,
       a different cell (18→9, α=0.15). It stands as context for the churn finding, not as the verdict:</p>
+      <details>
+        <summary>Prior-protocol full-scale pairs (v0.1, non-parity harness — click to expand)</summary>
+        <div class="body">
+      <div class="twrap">
+        <table>
+          <caption>Prior-protocol pairs · cross-step, paper point per scale · n = 1319 · superseded as verdict</caption>
           <tr><th>Condition</th><th>Accuracy</th><th>Correct</th><th>Wilson 95% CI</th><th>Δ vs base</th><th>McNemar p</th></tr>
           <tr><td>1B base</td><td class="mono">0.0167</td><td class="mono">22 / 1319</td><td>[0.0110, 0.0251]</td><td>—</td><td>—</td></tr>
           <tr><td>1B + recirc</td><td class="mono">0.0144</td><td class="mono">19 / 1319</td><td>[0.0092, 0.0224]</td><td class="neg">−0.0023</td><td class="mono">0.742</td></tr>
@@ -270,17 +279,23 @@ where  f(s) = ( s / (||s||₂ + ε) ) · ||d||₂</pre>
           <tr><td>4B + recirc</td><td class="mono">0.2775</td><td class="mono">366 / 1319</td><td>[0.2540, 0.3023]</td><td class="neg">−0.0167</td><td class="mono">0.260</td></tr>
         </table>
       </div>
+        </div>
+      </details>
 
-      <h3>Stage 2: Beneath the scoreboard, massive symmetric churn</h3>
-      <p>Now forget the aggregate scoreboard and examine what happened to individual questions. In Figure B, the 1319 paired problems are separated into their transition paths. If recirculation were simply doing nothing, 100% of the answers would flow horizontally along the gray channels.</p>
-      <p>Instead, we observe violent internal churn: <strong>163 answers were rescued</strong> from wrong to right (green channel), while <strong>185 previously correct answers broke</strong> (clay channel). The net delta is <span class="mono">163 − 185 = −22</span> questions (<span class="mono">Δ −0.0167, p = 0.260</span>). Across the entire 4B test set, <strong>69.3% of outputs (914 / 1319)</strong> were textually rewritten. At 1B, <strong>90.4% of outputs (1192 / 1319)</strong> changed.</p>
+      <h3>Stage 2: Churn then and now — symmetric cancellation, then a whisper</h3>
+      <p>On the prior protocol (Figure B's original form), the 4B pair churned violently and symmetrically:
+      <strong>163 answers rescued</strong> against <strong>185 broken</strong> (net −22, p&nbsp;=&nbsp;0.260), with
+      <strong>69.3% of 4B outputs (914 / 1319)</strong> rewritten — and <strong>90.4% (1192 / 1319)</strong> at 1B.
+      On the current parity protocol, Figure B now shows the cross-vs-mozer flows instead: 112 cross-only vs 84
+      mozer-only flips (196 discordant rows, 16.2%), net +28 at p&nbsp;=&nbsp;0.054. Same moral in both eras:
+      the intervention moves verdicts in both directions; the question is only whether the imbalance clears noise.</p>
 
       <!-- Mount Point for Fig B -->
       <div class="fig-mount" data-src="figures.html" data-fig="fig-B"></div>
 
-      <h3>Stage 3: Ruling out truncation artifacts</h3>
-      <p>A skeptic might reasonably wonder: did recirculation simply cause the model to ramble until it hit the 256-token generation cap, cutting off the final answer? Figure C tests that hypothesis directly.</p>
-      <p>The reasoning length distributions for baseline and recirculation are virtually indistinguishable. The average output length is 239 tokens on baseline versus 234 tokens under recirculation. A post-hoc analysis of the flip anatomy reveals that rescued outputs actually become <em>shorter</em> (mean 251 → 212 tokens) while broken outputs lengthen (mean 225 → 246 tokens). The verdict flips arise from genuine shifts in reasoning content, not from truncation artifacts.</p>
+      <h3>Stage 3: Ruling out truncation artifacts (prior protocol; replication terminates cleanly)</h3>
+      <p>A skeptic might reasonably wonder: did recirculation simply cause the model to ramble until it hit the generation cap? On the prior protocol, Figure C tests that hypothesis directly: reasoning length distributions are virtually indistinguishable (239 vs 234 tokens mean), and flips co-occur with content shifts, not cuts. On the current parity protocol the question answers itself — generations terminate on the model EOS set at ~147 tokens mean (12.5% reach the 256 cap), so truncation cannot drive the verdicts.</p>
+      <p>Flip anatomy on the prior protocol: rescued outputs shorten (mean 251 → 212 tokens) while broken outputs lengthen (225 → 246) — content shifts, not cuts.</p>
 
       <!-- Mount Point for Fig C -->
       <div class="fig-mount" data-src="figures.html" data-fig="fig-C"></div>
