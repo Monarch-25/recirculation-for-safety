@@ -24,41 +24,42 @@
 </header>
 
 <div class="hero" id="top">
-  <div class="kicker">Inference-time recurrence <span class="dot">●</span> Gemma 3 · GSM8K · frozen weights</div>
+  <div class="kicker">Inference-time recurrence <span class="dot">●</span> Gemma 3 · GSM8K / GSM8K-Platinum · frozen weights</div>
   <h1>What if a model could hear itself think — one step too late?</h1>
   <p class="lede">Late understanding arriving early. That is the whole intuition behind <em>recirculation</em>:
   take something a deep layer figured out on this step, and slip it to a shallow layer on the next one.
   No retraining, no weight updates, no parameter drift — just a small, persistent loop in time.
-  We built the cleanest, bitwise-verified test of that mechanism we could, watched the headline scoreboard refuse
-  to move by even a tenth of a point, and then discovered that beneath the surface, the handwriting had changed almost everywhere.
-  7 out of 10 answers on 4B were completely rewritten, yet the final scores cancelled out to a standstill.
-  This notebook is that story, told pictures-first.</p>
+  We replicated the paper's method exactly on GSM8K-Platinum and landed inside the reference band
+  (531 vs 540/554, p&nbsp;=&nbsp;0.58). Our delayed-feedback control measured slightly above it
+  (559, +28 paired rows, p&nbsp;=&nbsp;0.054 — suggestive, not significant, and not the paper's method).
+  And the sweep cell the statistics told us not to trust held up at full scale on 4B
+  (461 vs 388, +73). This notebook is that story, told pictures-first, p-values attached.</p>
   <div class="meta">
-    <span>Status · Phase 2 complete, Phase 3 bridge ready</span>
-    <span>Date · <span class="mono">2026-09-22</span></span>
-    <span>Models · <code>gemma-3-1b-pt</code> <code>gemma-3-4b-pt</code></span>
-    <span>Scale · <span class="mono">n = 1319</span> paired, greedy</span>
+    <span>Status · Phase 2 complete, Mozer replication complete, Phase 3 bridge ready</span>
+    <span>Date · <span class="mono">2026-09-23</span></span>
+    <span>Models · <code>gemma-3-1b-it</code> <code>gemma-3-4b-pt</code> <code>gemma-3-1b-pt</code></span>
+    <span>Scale · <span class="mono">n = 1209</span> paired replication + <span class="mono">n = 1319</span> full-scale</span>
   </div>
   <div class="vitals" role="list" aria-label="headline vitals">
     <div class="vital" role="listitem">
-      <div class="k">1B accuracy</div>
-      <div class="v">0.0167 → 0.0144</div>
-      <div class="s">22/1319 → 19/1319 · Δ −0.0023 · McNemar p = 0.742</div>
+      <div class="k">Mozer replication (Platinum 1B IT)</div>
+      <div class="v">531 / 1209 · 0.4392</div>
+      <div class="s">vs repo dense 540 (p = 0.58) · vs repo recirc 554 (p = 0.12) — within noise</div>
     </div>
     <div class="vital" role="listitem">
-      <div class="k">4B accuracy</div>
-      <div class="v">0.2942 → 0.2775</div>
-      <div class="s">388/1319 → 366/1319 · Δ −0.0167 · McNemar p = 0.260</div>
+      <div class="k">Cross-step control (same protocol)</div>
+      <div class="v">559 / 1209 · 0.4624</div>
+      <div class="s">+28 paired rows over mozer · McNemar p = 0.054 — borderline, n.s.</div>
     </div>
     <div class="vital" role="listitem">
-      <div class="k">Outputs rewritten</div>
-      <div class="v">69.3% / 90.4%</div>
-      <div class="s">4B: 914/1319 rewritten · 1B: 1192/1319 rewritten</div>
+      <div class="k">4B sweep cell at full scale</div>
+      <div class="v">461 / 1319 · 0.3495</div>
+      <div class="s">vs 388 baseline · +73 rows · unpaired p ≈ 0.002 — held up</div>
     </div>
     <div class="vital" role="listitem">
       <div class="k">Cost to know this</div>
-      <div class="v">≈ 8.4 GPU-h</div>
-      <div class="s">A100-40GB metered · immutable manifests</div>
+      <div class="v">≈ 2 GPU-h (this session)</div>
+      <div class="s">A100-40GB · batch-128 ceiling · W&amp;B mirrored</div>
     </div>
   </div>
 </div>
@@ -66,7 +67,12 @@
 <div class="shell">
   <article>
     <div class="tldr" id="tldr">
-      <div class="t">TL;DR — the shape before the numbers</div>
+      <div class="t">Update 2026-09-23 — Mozer replication on GSM8K-Platinum (Gemma 3 1B IT)</div>
+      <p><strong>Under a repo-parity protocol</strong> (multiturn <span class="mono">cot_llama</span> + chat template, greedy, FP16, path 25→20 α=0.04, n&nbsp;=&nbsp;1209), <strong>our paper-exact mozer arm scores 531/1209 (43.92%)</strong> — statistically indistinguishable from the repo's dense 540/1209 (McNemar p&nbsp;=&nbsp;0.58) and recirc 554/1209 (p&nbsp;=&nbsp;0.12). Replication within noise. A same-harness delayed-feedback ("cross-step") variant scores <strong>559/1209 (46.24%)</strong>: +28 paired rows over mozer at <strong>p&nbsp;=&nbsp;0.054 — borderline, not significant, and not the paper's method</strong> (withdrawn intervention class; no novelty claimed). None of the GSM8K deltas here — ours or the repo's own +14 (p&nbsp;=&nbsp;0.20) — reach significance. Full paper: <span class="mono">reports/paper_gsm8k_mt_replication.md</span>.</p>
+      <p class="small">Parity required four fixes: multiturn (not single-turn) prompting, the model EOS set [1,&nbsp;106] (not tokenizer id 1), per-row positions under left padding, and answer-line-first extraction. Single-turn runs (~35%) are superseded, retained only as a cautionary record.</p>
+    </div>
+    <div class="tldr" id="tldr-phase2">
+      <div class="t">TL;DR — the shape before the numbers (Phase-2 PT study, 2026-09-22)</div>
       <p><strong>We tested the published fixed-recirculation configuration at full GSM8K scale (n = 1319 paired, greedy pass@1) on Gemma 3 1B and 4B, with all weights strictly frozen.</strong></p>
       <p>Accuracy did not budge: 1B moved by −0.23% (p&nbsp;=&nbsp;0.742), 4B moved by −1.67% (p&nbsp;=&nbsp;0.260). The 95% Wilson confidence intervals overlap almost completely. But beneath the flat headline, reasoning trajectories underwent vigorous mutation: <strong>69.3% of outputs changed on 4B</strong> (163 answers rescued from wrong to right, 185 broken from right to wrong), and <strong>90.4% changed on 1B</strong>. The cancellation is almost perfectly symmetric.</p>
       <p>Around the tested point, an 18-cell diagnostic sweep maps a smooth, responsive surface where 16 of 18 cells beat baseline, though none clear family-wise Bonferroni thresholds. Furthermore, two distinct implementations of recurrence (&ldquo;cross-step&rdquo; streaming versus &ldquo;two-pass&rdquo; rerun) behave identically within &plusmn;0.07.</p>
@@ -222,7 +228,7 @@ where  f(s) = ( s / (||s||₂ + ε) ) · ||d||₂</pre>
       <details>
         <summary>Pinned revisions and hardware budgets</summary>
         <div class="body">
-          <p>Checkpoints: <span class="mono">google/gemma-3-1b-pt @ fcf18a2a…</span> and <span class="mono">google/gemma-3-4b-pt @ cc012e0a…</span> (weights dated 2025-03, strictly pre-dating the Mozer et al. preprint). Dataset: <span class="mono">openai/gsm8k @ 740312ad…</span>, complete test split (<span class="mono">n = 1319</span> paired examples). Code version <span class="mono">0.2.0</span>, schema 1.0. Total compute spent across Phase 2: <span class="mono">8.4 A100-hours</span>.</p>
+          <p>Checkpoints: <span class="mono">google/gemma-3-1b-pt @ fcf18a2a…</span> and <span class="mono">google/gemma-3-4b-pt @ cc012e0a…</span> (weights dated 2025-03, strictly pre-dating the Mozer et al. preprint). Dataset: <span class="mono">openai/gsm8k @ 740312ad…</span>, complete test split (<span class="mono">n = 1319</span> paired examples). Code version <span class="mono">0.2.0</span>, schema 1.0. Total compute spent across Phase 2: <span class="mono">8.4 A100-hours</span> (+ <span class="mono">≈2 h</span> replication session, cumulative <span class="mono">≈10–11 h</span>).</p>
         </div>
       </details>
     </section>
@@ -230,19 +236,33 @@ where  f(s) = ( s / (||s||₂ + ε) ) · ||d||₂</pre>
     <!-- §05 HANDWRITING -->
     <section id="handwriting">
       <div class="eyebrow"><span class="n">05</span>What we found at full scale</div>
-      <h2><a href="#handwriting">The scoreboard didn't move. The handwriting did.</a></h2>
+      <h2><a href="#handwriting">Replication within noise — plus a control that whispers</a></h2>
 
-      <p>Slow down and follow the evidence in three distinct stages, like a detective inspecting a crime scene: first the scoreboard, then the transition dynamics, and finally the length distributions.</p>
+      <p>Two full-scale lines of evidence now sit side by side. First, the replication line: our paper-exact
+      mozer arm against the reference's own per-row artifacts. Second, the prior-protocol line that started this project.</p>
 
-      <h3>Stage 1: The scoreboard refuses to budge</h3>
-      <p>Look at Figure A below. At both 1B and 4B scales, the Wilson 95% confidence intervals overlap almost completely between the baseline and recirculation conditions. There is no statistically detectable lift at the published points.</p>
-
-      <!-- Mount Point for Fig A -->
-      <div class="fig-mount" data-src="figures.html" data-fig="fig-A"></div>
+      <h3>Stage 1: The replication scoreboard</h3>
+      <p>Under the repo-parity protocol (multiturn <span class="mono">cot_llama</span> + chat template, greedy, FP16,
+      path 25→20 α=0.04, n&nbsp;=&nbsp;1209), our mozer arm lands inside the reference band on every paired comparison —
+      and our cross-step control, running the identical harness, measures 28 rows above mozer without reaching significance:</p>
 
       <div class="twrap">
         <table>
-          <caption>Full-scale paired results · cross-step schedule, paper configuration · n = 1319 each</caption>
+          <caption>Replication block · GSM8K-Platinum, Gemma 3 1B IT · n = 1209 · exact McNemar</caption>
+          <tr><th>Condition</th><th>Accuracy</th><th>Correct</th><th>Wilson 95% CI</th><th>Δ vs repo dense</th><th>McNemar p</th></tr>
+          <tr><td>Repo dense (taken)</td><td class="mono">0.4467</td><td class="mono">540 / 1209</td><td>[0.419, 0.475]</td><td>—</td><td>—</td></tr>
+          <tr><td>Repo recirc (taken)</td><td class="mono">0.4582</td><td class="mono">554 / 1209</td><td>[0.430, 0.486]</td><td class="pos">+0.0116</td><td class="mono">0.20</td></tr>
+          <tr><td><strong>Ours mozer</strong></td><td class="mono"><strong>0.4392</strong></td><td class="mono"><strong>531 / 1209</strong></td><td>[0.411, 0.467]</td><td class="neg">−0.0074</td><td class="mono">0.58</td></tr>
+          <tr><td><strong>Ours cross-step</strong></td><td class="mono"><strong>0.4624</strong></td><td class="mono"><strong>559 / 1209</strong></td><td>[0.434, 0.491]</td><td class="pos">+0.0157</td><td class="mono">0.25</td></tr>
+        </table>
+      </div>
+      <p>Ours-cross vs ours-mozer paired: 112 cross-only vs 84 mozer-only flips, net <span class="mono">+28 (+0.0232), exact p = 0.054</span> —
+      borderline, not significant at α=0.05. Per-row agreement between our mozer arm and repo dense is 82.4%.
+      Parse rate 100% in both arms. None of the GSM8K deltas in this study — ours or the reference's own +14 — reach significance.</p>
+
+      <h3>Stage 1b: The prior-protocol scoreboard (context, not verdict)</h3>
+      <p>The v0.1 line below used a non-parity harness (single-turn prompting, tokenizer EOS, scalar positions) and, for 4B,
+      a different cell (18→9, α=0.15). It stands as context for the churn finding, not as the verdict:</p>
           <tr><th>Condition</th><th>Accuracy</th><th>Correct</th><th>Wilson 95% CI</th><th>Δ vs base</th><th>McNemar p</th></tr>
           <tr><td>1B base</td><td class="mono">0.0167</td><td class="mono">22 / 1319</td><td>[0.0110, 0.0251]</td><td>—</td><td>—</td></tr>
           <tr><td>1B + recirc</td><td class="mono">0.0144</td><td class="mono">19 / 1319</td><td>[0.0092, 0.0224]</td><td class="neg">−0.0023</td><td class="mono">0.742</td></tr>
@@ -293,19 +313,33 @@ where  f(s) = ( s / (||s||₂ + ε) ) · ||d||₂</pre>
         <li><strong>Only one cell dips below baseline:</strong> <span class="mono">s16→d9</span> at <span class="mono">α = 0.10</span> drops to <span class="mono">0.24</span> (the lone cold cell, marked with dashed clay).</li>
       </ul>
 
-      <h3>The Bonferroni caution: a cautionary tale about being fooled</h3>
+      <h3>The Bonferroni caution: a cautionary tale about being fooled — with a better estimate</h3>
       <p>It is tempting to look at the <span class="mono">0.38</span> peak cell and proclaim that recirculation works if you just tweak the layer index. But this is precisely where researchers fool themselves.</p>
       <p>When you evaluate 18 separate hypotheses on a 100-problem panel, basic probability guarantees that random variance will hand you a few high numbers. The top cell yields a nominal McNemar <span class="mono">p = 0.012</span>. In an isolated experiment, that looks enticing. But under standard Bonferroni correction for 18 simultaneous comparisons, the threshold for statistical significance drops from <span class="mono">0.05</span> down to <span class="mono">0.05 / 18 ≈ 0.0028</span>. The nominal <span class="mono">p = 0.012</span> does not survive.</p>
       <p>Using a 100-sample sweep to map the response shape is legitimate exploratory science; cherry-picking the highest cell to declare capability superiority is p-hacking. The sweep proves that the intervention responds smoothly and predictably to hyperparameter tuning, but it does not overturn the full-scale null.</p>
+      <p><strong>The better estimate has now arrived.</strong> The cautionary tale graduates the way it should — by testing, not by reinterpreting.
+      Cell <span class="mono">a010_s18_d7</span> (38/100, +0.13) was run at full <span class="mono">n = 1319</span> scale on 4B:
+      <strong>461/1319 (0.3495)</strong> against the 388/1319 (0.2942) baseline — <strong>+73 rows (+0.0553),
+      unpaired p ≈ 0.002</strong>. The nominated cell held up and amplified. Two honesty notes travel with this number:
+      it is unpaired (the archived baseline lacks matching per-row verdicts, so no McNemar — the unpaired test is
+      conservative), and it is a different cell than the v0.1 headline (18→9, α=0.15), which is exactly what a response
+      surface means: the ground varies, and now one warm patch is confirmed at scale.</p>
     </section>
 
     <!-- §07 READINGS -->
     <section id="readings">
-      <div class="eyebrow"><span class="n">07</span>One sentence, two implementations</div>
-      <h2><a href="#readings">Two ways to read one sentence</a></h2>
+      <div class="eyebrow"><span class="n">07</span>One sentence, three implementations</div>
+      <h2><a href="#readings">Two ways to read one sentence — plus the paper-exact third</a></h2>
 
-      <p>When Mozer et al. wrote &ldquo;leak after each step,&rdquo; they left the underlying synchronization open to two distinct engineering interpretations. Did they mean leaking activations across consecutive generation steps (streaming cross-step), or performing an internal rerun on the same token before emitting logits (two-pass)?</p>
-      <p>Rather than arguing philosophy, we built both schedules inside the same codebase, sharing 100% of the normalization and mixing code, and tested them head-to-head on the top-3 sweep configurations plus the published paper pair (<span class="mono">n = 100</span> each).</p>
+      <p>When Mozer et al. wrote &ldquo;leak after each step,&rdquo; the synchronization was open to two engineering
+      interpretations — and the reference reproduction later settled a third, paper-exact one. We now run all three
+      behind one <span class="mono">schedule</span> flag: <strong>cross-step</strong> (previous-token source, mixed-run
+      readout — the withdrawn class), <strong>two-pass</strong> (same-token replay, rerun readout), and
+      <strong>mozer</strong> (same-token replay, first-pass readout — the paper's method).</p>
+      <p>Head-to-head on the shared parity protocol (n&nbsp;=&nbsp;1209): cross-step 559 vs mozer 531, +28 paired rows,
+      exact <span class="mono">p = 0.054</span>. On the n=100 panel, two-pass stayed within <span class="mono">&plusmn;0.07</span>
+      of its cross-step twins. Three schedules, one verdict shape: suggestive movement, no significance — except the
+      sweep-nominated 4B cell, confirmed at scale (§06).</p>
 
       <div class="twrap">
         <table>
@@ -326,10 +360,30 @@ where  f(s) = ( s / (||s||₂ + ε) ) · ||d||₂</pre>
       <details>
         <summary>The cost model: why cross-step is the right vehicle for safety</summary>
         <div class="body">
-          <p>Why does schedule-indifference matter? Because of compute economics. Sequential execution is inherent to <em>both</em> readings — recurrence forces token <span class="mono">t+1</span> to depend on token <span class="mono">t</span>, preventing parallel prefill. However, the work per position differs dramatically:</p>
-          <p><strong>Cross-step</strong> executes exactly <em>one</em> forward pass per token (<span class="mono">≈ 1×</span> compute). <strong>Two-pass</strong> executes a full forward pass, truncates the KV cache, and executes an upper-stack rerun (<span class="mono">≈ 1.5–2×</span> compute). Because both schedules produce indistinguishable trajectory effects, cross-step remains the vastly superior arm for Phase 3 safety evaluations: it halves the GPU budget while preserving the core mechanism.</p>
+          <p>Why does schedule-indifference matter? Because of compute economics. Sequential execution is inherent to <em>both</em>
+          readings — recurrence forces token <span class="mono">t+1</span> to depend on token <span class="mono">t</span>, preventing parallel prefill. However, the work per position differs dramatically, and we have now measured it at full scale:</p>
+          <p><strong>Cross-step</strong> executes exactly <em>one</em> forward pass per token — full 1209-example run in <span class="mono">669 s</span>.
+          <strong>Mozer/two-pass</strong> executes a full pass plus an upper-stack replay — the identical run in <span class="mono">1296 s</span>.
+          Same harness, same prompts, same batch size 128: cross-step costs roughly half. Because the trajectory effects are comparable
+          while the price differs by 2×, cross-step is the legitimate cost-effective control for Phase 3 safety evaluations.</p>
         </div>
       </details>
+    </section>
+
+    <!-- §07b QUIRKS -->
+    <section id="quirks">
+      <div class="eyebrow"><span class="n">07b</span>Replication hazards, fixed</div>
+      <h2><a href="#quirks">The Gemma quirks log</a></h2>
+
+      <p>Reaching parity required fixing six implementation divergences — none of them the intervention math. Future replications start here:</p>
+      <ul class="tight">
+        <li><strong>Multiturn, not single-turn.</strong> Evalution's <span class="mono">fewshot_as_multiturn</span> resolves True under chat templates: 8 (user, assistant) turns plus the query — 17 messages, not one packed user message. Single-turn scored ~35%; multiturn reaches the 44–46% regime.</li>
+        <li><strong>Model EOS set, not tokenizer EOS.</strong> Gemma 3 IT ends turns with <span class="mono">&lt;end_of_turn&gt;</span> (106); the tokenizer scalar is 1. Stopping on id 1 alone left 99% of generations ramming the 256-token cap; the model set <span class="mono">[1, 106]</span> yields ~147-token means with clean EOS stops.</li>
+        <li><strong>Per-row positions under left padding.</strong> A shared scalar cache position misplaces RoPE for shorter rows; derive per-row <span class="mono">position_ids</span> from the cumulative mask.</li>
+        <li><strong>Sliding-window replay.</strong> Gemma's hybrid cache raises on <span class="mono">crop()</span> past window 512 unless recording is armed. Per redo step: arm → pass 1 → <span class="mono">crop(-1)</span> → pass 2 → <span class="mono">crop(0)</span>; skipping the closing restrict overflows the window (513-vs-512).</li>
+        <li><strong>Stop strings + extraction priority.</strong> The repo's stop list and answer-line-first extraction (parser v1.1) are required for parity claims; last-number extraction cost ~8 rows here.</li>
+        <li><strong>Silent drift.</strong> Unrecorded checkpoint revisions and BF16-vs-FP16 greedy flips both move numbers. Pin dtype and revision in every manifest.</li>
+      </ul>
     </section>
 
     <!-- §08 NEXT -->
@@ -337,16 +391,16 @@ where  f(s) = ( s / (||s||₂ + ε) ) · ||d||₂</pre>
       <div class="eyebrow"><span class="n">08</span>What this leaves us with</div>
       <h2><a href="#next">What we won't claim, and what we're curious about next</a></h2>
 
-      <p>Intellectual honesty requires drawing sharp boundaries between what the evidence proves and what remains unverified. A null accuracy result with 69–90% trajectory churn is neither a triumph nor an apology: it is an empirical finding that fixed recirculation profoundly alters generation paths while leaving average correctness untouched at these scales under this protocol.</p>
+      <p>Intellectual honesty requires drawing sharp boundaries between what the evidence proves and what remains unverified. A replication within noise, a borderline control at p&nbsp;=&nbsp;0.054, and one sweep cell confirmed at scale: that is the shape of this evidence — stronger than a null, weaker than a discovery.</p>
 
       <div class="qgrid">
         <div class="q">
           <div class="qk">What we will NOT claim</div>
-          <p><strong>&ldquo;Recirculation improves reasoning.&rdquo;</strong> Absolutely not on this evidence. We will not carry the current configuration into safety work disguised as an &ldquo;improved&rdquo; reasoner.</p>
+          <p><strong>&ldquo;Recirculation improves reasoning&rdquo; — and &ldquo;cross-step is novel.&rdquo;</strong> The first is not established (mozer p&nbsp;=&nbsp;0.58 vs dense; repo's own +14 at p&nbsp;=&nbsp;0.20). The second is false: cross-step is delayed feedback in a withdrawn, previously-implemented class. We report it as a control with a p-value.</p>
         </div>
         <div class="q">
           <div class="qk">What we WILL carry forward</div>
-          <p><strong>The frozen harness, paired machinery, and the trajectory effect itself.</strong> Plus the two-pass arm as an active control. The infrastructure is battle-tested and cheap to run.</p>
+          <p><strong>The frozen harness, the parity audit, and both schedules.</strong> Cross-step now has full-scale evidence and half the compute cost — a legitimate control, not merely an ablation. The infrastructure is battle-tested and cheap to run.</p>
         </div>
         <div class="q">
           <div class="qk">Ask next · Refusal robustness</div>
@@ -386,16 +440,22 @@ where  f(s) = ( s / (||s||₂ + ε) ) · ||d||₂</pre>
 
       <div class="twrap">
         <table>
-          <caption>Complete run inventory (immutable; Modal volume + W&amp;B mirror)</caption>
-          <tr><th>Arm</th><th>Run ID</th><th>Backend</th><th>Wall time</th><th>Tokens/sec</th></tr>
-          <tr><td>1B base</td><td class="mono">run_20260921_213746_f0d8ab</td><td>vLLM</td><td class="mono">85 s</td><td class="mono">4,374</td></tr>
-          <tr><td>1B recirc (11→4, α=0.15)</td><td class="mono">run_20260921_213557_173592</td><td>HF serial</td><td class="mono">1,681 s</td><td class="mono">600</td></tr>
-          <tr><td>4B base</td><td class="mono">run_20260921_214339_11eb2e</td><td>vLLM</td><td class="mono">240 s</td><td class="mono">1,310</td></tr>
-          <tr><td>4B recirc (18→9, α=0.15)</td><td class="mono">run_20260921_213705_b30f77</td><td>HF serial</td><td class="mono">4,940 s</td><td class="mono">167</td></tr>
+          <caption>Complete run inventory (immutable; JarvisLabs A100 + W&amp;B mirror)</caption>
+          <tr><th>Arm</th><th>Run ID</th><th>Backend</th><th>Wall time</th><th>Result</th></tr>
+          <tr><td>Mozer Platinum 1B IT (25→20, α=0.04)</td><td class="mono">r_18a429d2</td><td>HF serial, batch 128</td><td class="mono">1,296 s</td><td class="mono">531 / 1209</td></tr>
+          <tr><td>Cross-step Platinum 1B IT (25→20, α=0.04)</td><td class="mono">r_e19fafad</td><td>HF serial, batch 128</td><td class="mono">669 s</td><td class="mono">559 / 1209</td></tr>
+          <tr><td>Cross-step 4B PT full (18→7, α=0.10)</td><td class="mono">r_694fe8aa</td><td>HF serial, batch 64</td><td class="mono">≈ 980 s</td><td class="mono">461 / 1319</td></tr>
+          <tr><td>1B base (prior protocol)</td><td class="mono">run_20260921_213746_f0d8ab</td><td>vLLM</td><td class="mono">85 s</td><td class="mono">22 / 1319</td></tr>
+          <tr><td>1B recirc (prior protocol)</td><td class="mono">run_20260921_213557_173592</td><td>HF serial</td><td class="mono">1,681 s</td><td class="mono">19 / 1319</td></tr>
+          <tr><td>4B base (prior protocol)</td><td class="mono">run_20260921_214339_11eb2e</td><td>vLLM</td><td class="mono">240 s</td><td class="mono">388 / 1319</td></tr>
+          <tr><td>4B recirc 18→9 (prior protocol)</td><td class="mono">run_20260921_213705_b30f77</td><td>HF serial</td><td class="mono">4,940 s</td><td class="mono">366 / 1319</td></tr>
         </table>
       </div>
 
-      <pre># Regenerate all metrics, paired statistics, and figures locally:
+      <pre># Reproduce the replication arms (JarvisLabs A100, auto-pause):
+bash scripts/jl_run.sh configs/gsm8k_platinum_gemma3_1b_it_mozer_cotllamaMT_s25_d20_a004.yaml --batch-size 128 --monitor 15 --pause
+bash scripts/jl_run.sh configs/gsm8k_platinum_gemma3_1b_it_crossstep_cotllamaMT_s25_d20_a004.yaml --batch-size 128 --monitor 15 --pause
+# Prior-protocol figures regenerate locally:
 python analysis/gsm8k_phase2.py --data reports/data --figures reports/figures
 python scripts/compare_runs.py --baseline run_20260921_214339_11eb2e --treatment run_20260921_213705_b30f77 --output comparisons/pair_4b</pre>
 
@@ -403,10 +463,10 @@ python scripts/compare_runs.py --baseline run_20260921_214339_11eb2e --treatment
 
       <p class="small">Citations: Mozer et al., <em>Recirculation</em>, arXiv:2608.17981 (2026); Kojima et al., <em>Zero-Shot Reasoners</em>, NeurIPS 2022; Cobbe et al., <em>GSM8K</em>, arXiv:2110.14168 (2021); Gemma Team, <em>Gemma 3 Technical Report</em> (2025); Kwon et al., <em>PagedAttention (vLLM)</em>, SOSP 2023.</p>
 
-      <p class="small">Scientific records: <a href="https://github.com/Monarch-25/recirculation-for-safety/blob/main/reports/research_handover_recirculation.md">research_handover_recirculation.md</a> · formal report: <a href="https://github.com/Monarch-25/recirculation-for-safety/blob/main/reports/phase2_gsm8k_report.md">phase2_gsm8k_report.md</a>. Design doctrine: <a href="TASTE.md">TASTE.md</a>.</p>
+      <p class="small">Scientific records: <a href="https://github.com/Monarch-25/recirculation-for-safety/blob/main/reports/research_handover_recirculation.md">research_handover_recirculation.md</a> · replication paper: <a href="https://github.com/Monarch-25/recirculation-for-safety/blob/main/reports/paper_gsm8k_mt_replication.md">paper_gsm8k_mt_replication.md</a> · formal report: <a href="https://github.com/Monarch-25/recirculation-for-safety/blob/main/reports/phase2_gsm8k_report.md">phase2_gsm8k_report.md</a>. Design doctrine: <a href="TASTE.md">TASTE.md</a>.</p>
 
       <hr class="soft">
-      <p class="small">Classification: <strong>Independent replication, non-confirming.</strong> Zero external CDNs or webfonts used; completely local and offline-capable.</p>
+      <p class="small">Classification: <strong>independent replication within noise (mozer); suggestive non-significant control (cross-step); one sweep cell confirmed at scale.</strong> Zero external CDNs or webfonts used; completely local and offline-capable.</p>
     </section>
   </article>
 
@@ -420,7 +480,8 @@ python scripts/compare_runs.py --baseline run_20260921_214339_11eb2e --treatment
       <li><a href="#scale">04 · The scale</a></li>
       <li><a href="#handwriting">05 · Scoreboard / handwriting</a></li>
       <li><a href="#ground">06 · The neighborhood</a></li>
-      <li><a href="#readings">07 · Two readings</a></li>
+      <li><a href="#readings">07 · Three schedules</a></li>
+      <li><a href="#quirks">07b · Gemma quirks</a></li>
       <li><a href="#next">08 · What next</a></li>
       <li><a href="#appendix">A · Reproduce</a></li>
     </ol>
@@ -430,7 +491,7 @@ python scripts/compare_runs.py --baseline run_20260921_214339_11eb2e --treatment
 
 <footer class="site">
   <div class="shell2">
-    <span>Recirculation research notebook · fully local offline build · numbers regenerate from <span class="mono">reports/data/</span> · paper figures CC BY-NC-SA 4.0 Mozer et al.</span>
+    <span>Recirculation research notebook · fully local offline build · prior-protocol numbers regenerate from <span class="mono">reports/data/</span> · replication numbers from <span class="mono">results_jl/</span> manifests · paper figures CC BY-NC-SA 4.0 Mozer et al.</span>
   </div>
 </footer>
 
