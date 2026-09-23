@@ -2,12 +2,14 @@
 
 > **Research question:** does deep-to-shallow representation recirculation change LLM behavior — reasoning capability first, safety behavior next — without changing model weights?
 >
-> **Status (2026-09-22):** Phase 1 ✅ · Phase 2 core ✅ · Phase 3 next.
-> **Headline result:** no measured GSM8K accuracy effect on Gemma3 1B/4B
-> under a frozen, fully traceable protocol (1B: 0.0167→0.0144, p=0.74;
-> 4B: 0.2942→0.2775, p=0.26) — with decisive trajectory rewriting
-> (69–90% of outputs changed). Independent replication, non-confirming.
-> Details: [`reports/research_handover_recirculation.md`](reports/research_handover_recirculation.md).
+> **Status (2026-09-23):** Phase 1 ✅ · Phase 2 core ✅ · Mozer replication ✅ (see below) · Phase 3 next.
+> **Headline result:** paper-exact Mozer recirculation reproduces the
+> reference regime on GSM8K-Platinum/Gemma-3-1B-IT (ours 531/1209 = 43.92%
+> vs repo dense 540/1209 and repo recirc 554/1209; McNemar p=0.58/0.12 —
+> indistinguishable). A same-harness delayed-feedback ("cross-step")
+> variant scores 559/1209 = 46.24% (+28 paired over mozer, p=0.054 —
+> borderline, not significant, and not the paper's method).
+> Full paper: [`reports/paper_gsm8k_mt_replication.md`](reports/paper_gsm8k_mt_replication.md).
 
 An inference-time intervention (`d = α·f(s) + β·d`, deep source →
 shallow destination) evaluated through a model-agnostic harness where
@@ -37,8 +39,26 @@ research narrative, then come back for the machinery below.
 
 ## Key results
 
-Full GSM8K test (n=1319), greedy, two-stage Kojima prompting, pinned
-revisions — every number regenerates from `reports/data/`:
+Two study lines (different protocols — do not mix numbers across them):
+
+**A. Mozer replication (2026-09-23, current):** GSM8K-Platinum (n=1209),
+Gemma-3-1B-IT, repo-parity protocol (multiturn `cot_llama` + chat template,
+greedy, 256 tokens, FP16), path 25→20 α=0.04, batch 128, A100-40GB:
+
+| condition | accuracy | Δ vs repo dense | McNemar p |
+|---|---|---|---|
+| Repo dense (taken, 540) | 0.4467 | — | — |
+| Repo recirc (taken, 554) | 0.4582 | +0.0116 | 0.20 |
+| **Ours mozer (531)** | **0.4392** | −0.0074 | 0.58 |
+| **Ours cross-step (559)** | **0.4624** | +0.0157 | 0.25 |
+
+Ours cross-step vs ours mozer (paired, same harness): +28 rows (+0.0232),
+exact p=0.054 — borderline, not significant; cross-step is delayed
+feedback, not the paper's recirculation, no novelty claimed.
+Paper: [`reports/paper_gsm8k_mt_replication.md`](reports/paper_gsm8k_mt_replication.md).
+
+**B. Phase-2 PT study (2026-09-22, superseded protocol):** full GSM8K test
+(n=1319), greedy, two-stage Kojima prompting, pinned revisions:
 
 | condition | accuracy | Δ vs base | McNemar p |
 |---|---|---|---|
@@ -48,8 +68,14 @@ revisions — every number regenerates from `reports/data/`:
 | 4B + fixed recirc (18→9, α=0.15, β=1.0) | 0.2775 (366) | −0.0167 | 0.260 |
 
 Plus: 4B diagnostic sweep (18 cells, n=100) with response surface and
-heatmaps, and a two-pass schedule panel — see
+heatmaps, a two-pass schedule panel, and the sweep-nominated cell
+`a010_s18_d7` confirmed at full n=1319 — see below and
 [`reports/phase2_analysis.ipynb`](reports/phase2_analysis.ipynb).
+The replication study (repo-parity protocol, mozer vs cross-step,
+Gemma quirks audit) lives in
+[`reports/paper_gsm8k_mt_replication.md`](reports/paper_gsm8k_mt_replication.md)
+with the lead handover in
+[`reports/research_handover_recirculation.md`](reports/research_handover_recirculation.md).
 Changed-question digests (every flipped example with full traces):
 `comparisons/` (regenerable, not committed).
 
@@ -74,9 +100,33 @@ recirculation-for-safety/
 Design rule, enforced by construction: `Task` owns benchmark semantics,
 `ModelAdapter` owns generation, `Evaluator.evaluate(task, model, config)`
 orchestrates. Recirculation lives entirely in
-`src/eval_harness/models/recirculation.py` (cross-step *and* two-pass
-schedules behind one `schedule` flag) — evaluator, tasks, prompts,
-parsers, scorers never change between conditions.
+`src/eval_harness/models/recirculation.py` (`cross_step`, `two_pass`, and
+paper-exact `mozer` schedules behind one `schedule` flag) — evaluator,
+tasks, prompts, parsers, scorers never change between conditions.
+Multi-turn chat prompts flow as message lists through the same contract
+(`build_messages`), rendered by each backend's chat template.
+
+## Replication study (2026-09-23, Gemma-3-1B-IT / GSM8K-Platinum)
+
+Repo-parity protocol: multiturn `cot_llama` 8-shot + chat template,
+greedy, 256 tokens, FP16, repo stop strings, parser v1.1, path 25→20
+α=0.04, batch 128 on A100-40GB (VRAM peak ≈20 GB). Dense baseline taken
+from the reference artifacts (540/1209); no dense arm run here.
+
+```bash
+# Parity dry-run (no GPU): validates 17-message rendering, stops, parser
+python scripts/evaluate.py --config configs/gsm8k_platinum_gemma3_1b_it_mozer_cotllamaMT_s25_d20_a004.yaml --dry-run
+
+# Full arms on JarvisLabs A100 (auto-pause between runs)
+bash scripts/jl_run.sh configs/gsm8k_platinum_gemma3_1b_it_mozer_cotllamaMT_s25_d20_a004.yaml --batch-size 128 --monitor 15 --pause
+bash scripts/jl_run.sh configs/gsm8k_platinum_gemma3_1b_it_crossstep_cotllamaMT_s25_d20_a004.yaml --batch-size 128 --monitor 15 --pause
+```
+
+Parity audit (all fixed, all tested): multiturn-not-single-turn
+prompting · model EOS set `[1, 106]` (not tokenizer id 1) · per-row
+`position_ids` under left padding · repo-priority extraction (parser
+v1.1) · Gemma sliding-window replay (`arm → crop(-1) → replay →
+crop(0)`). Details: handover §7.
 
 ## Quickstart (Mac, no GPU)
 

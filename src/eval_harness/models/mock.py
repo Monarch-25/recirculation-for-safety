@@ -56,7 +56,7 @@ class MockModelAdapter(ModelAdapter):
 
     def generate(
         self,
-        prompts: Sequence[str],
+        prompts: Sequence[str | list[dict[str, str]]],
         config: GenerationConfig,
     ) -> list[str]:
         self.calls.append({"num_prompts": len(prompts),

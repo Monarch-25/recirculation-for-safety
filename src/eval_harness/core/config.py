@@ -47,11 +47,18 @@ class InterventionConfig:
     ramp_tokens: int = 0
     # Recurrence schedule (recirculation only):
     # - cross_step: one pass per input step; destination at t+1 mixes the
-    #   stored deep source from input step t (plan §26 reading).
+    #   stored deep source from input step t (plan §26 reading). NOTE: the
+    #   ModelCloud/Recirculation repo withdrew this delayed cross-token
+    #   variant as recirculation evidence.
     # - two_pass: per input step, a normal full pass captures the source,
     #   then the upper stack reruns from the mixed boundary (same-step
     #   source, KV overwritten) and supplies the logits. ~2x compute.
-    schedule: str = "cross_step"  # cross_step | two_pass
+    #   Readout comes from the SECOND (mixed) iteration.
+    # - mozer: paper-exact (Mozer et al. eq. 1-2): same-token replay that
+    #   overwrites upper KV, but READOUT comes from the FIRST iteration only
+    #   ("the read out occurs following the first iteration of a stack").
+    #   With a default convex mixture the paper couples beta_t = 1 - alpha_t.
+    schedule: str = "cross_step"  # cross_step | two_pass | mozer
 
     @property
     def effective_beta(self) -> float:
@@ -167,10 +174,10 @@ class InterventionConfig:
                 f"(got {ramp_tokens})")
 
         schedule = str(raw.get("schedule", "cross_step"))
-        if schedule not in ("cross_step", "two_pass"):
+        if schedule not in ("cross_step", "two_pass", "mozer"):
             raise ValueError(
-                "model.intervention.schedule must be 'cross_step' or "
-                f"'two_pass' (got {schedule!r})")
+                "model.intervention.schedule must be 'cross_step', "
+                f"'two_pass' or 'mozer' (got {schedule!r})")
 
         return cls(
             type="recirculation",
@@ -248,6 +255,15 @@ class PromptConfig:
     # None = single-stage evaluation.
     extraction_template_name: str | None = None
     extraction_template_version: str = "1.0"
+    # Answer-parser version ("1.0" frozen legacy; "1.1" =
+    # ModelCloud/Evalution extraction priority + Decimal canonicalization).
+    parser_version: str = "1.0"
+
+    def __post_init__(self) -> None:
+        if self.parser_version not in ("1.0", "1.1"):
+            raise ValueError(
+                f"prompt.parser_version must be '1.0' or '1.1', "
+                f"got {self.parser_version!r}")
 
 
 @dataclass(frozen=True)
@@ -423,7 +439,11 @@ def load_config_from_dict(
         extraction_template_name=p.get("extraction_template_name"),
         extraction_template_version=str(
             p.get("extraction_template_version", "1.0")),
+        parser_version=str(p.get("parser_version", "1.0")),
     )
+    stops = g.get("stop_strings", ())
+    if isinstance(stops, str):
+        stops = [stops]
     generation = GenerationConfig(
         max_new_tokens=int(g.get("max_new_tokens", 512)),
         temperature=float(g.get("temperature", 0.0)),
@@ -433,6 +453,7 @@ def load_config_from_dict(
         extraction_max_new_tokens=(
             None if g.get("extraction_max_new_tokens") is None
             else int(g.get("extraction_max_new_tokens"))),
+        stop_strings=tuple(str(s) for s in stops),
     )
     runtime = RuntimeConfig(
         batch_size=batch_size,

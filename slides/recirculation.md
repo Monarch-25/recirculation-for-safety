@@ -1,76 +1,80 @@
 ---
-title: "Recirculation for Reasoning: An Independent Replication"
+title: "Recirculation on GSM8K: Replication Within Noise, a Suggestive Control, and One Cell Confirmed at Scale"
 author: "Recirculation-for-Safety"
-date: "2026-09-22"
+date: "2026-09-23"
 bibliography: refs.bib
 citation_style: author-year
 figure_captions: true
 footer:
-  center: "Fixed training-free recirculation · GSM8K · Gemma3 1B/4B"
+  center: "Fixed training-free recirculation · GSM8K/Platinum · Gemma3"
   right: "auto"
 ---
 
-# Recirculation for Reasoning: An Independent Replication
+# Recirculation on GSM8K: Replication Within Noise, a Suggestive Control, and One Cell Confirmed at Scale
 
-Fixed, training-free deep→shallow feedback on GSM8K — implemented two ways, measured honestly
+Paper-exact Mozer replication, a withdrawn-class cross-step control, and a sweep cell tested at full n=1319 — all p-values exact
 
-<!-- notes: Conditional null talk. Lead with the verdict, then earn it through method. -->
+<!-- notes: Verdict-first talk. Three numbers: 531 vs 540/554 (replication, n.s.), 559 vs 531 (+28, p=0.054, n.s.), 461 vs 388 (confirmed, unpaired p~0.002). No novelty claimed for cross-step. -->
 
 ---
 
 ## Research question
 
 ```box
-title: Does deep-to-shallow representation recirculation improve LLM reasoning — and do the benefits carry over to LLM safety?
+title: Does deep-to-shallow representation recirculation change LLM reasoning — and do the effects carry over to LLM safety?
 tone: accent
 ```
 
-- **Phase 2 (this talk):** capability replication on GSM8K — headline is the sweep surface + rewritten trajectories, not the single-config null
-- **Phase 3 (next):** safety/security transfer — reframed around what Phase 2 actually proved
-- Scope today: fixed coefficients only · greedy pass@1 · GSM8K only · Gemma3 PT 1B/4B
+- **Phase 2 (this talk):** capability replication on GSM8K — headline is now the replication block + one confirmed cell, with the prior null as context
+- **Phase 3 (next):** safety/security transfer — reframed around proven trajectory effects, carrying both schedules
+- Scope today: fixed coefficients only · greedy pass@1 · GSM8K/Platinum · Gemma3 1B IT + 4B PT
 
 ---
 
 ## Background: what the paper claims [@mozer2026recirculation]
 
-- Inference-time recurrence for **frozen** transformers: leak deep-layer activation down to a shallow layer each step
+- Inference-time recurrence for **frozen** transformers: first-iteration readout, then same-token deep→shallow mixing, upper-stack replay replacing that token's upper KV — **no second readout**
 - Mixing rule: $d' = \alpha \cdot f(s) + \beta \cdot d$ with destination-L2 rescaling
 - **Recirculation ≠ looping** (same-step depth recurrence) — their sweeps show recirculation helping broadly where looping mostly harms
-- Reported: −23% perplexity, +21% GSM8K (adaptive, Gemma3); fixed variant improves greedy pass@1 and pass@128 on 4B PT with pairs {11→4} / {18→9}, α=0.15
+- Reported: −23% perplexity, +21% GSM8K (adaptive); fixed variant gains on 4B PT; reference Platinum/1B IT evidence: dense **540/1209**, recirc **554/1209** at 25→20, α=0.04
+- The reference repo **withdrew** its early delayed cross-token implementation as non-recirculation evidence — the class our cross-step control belongs to
 
 ---
 
 ## Harness: trust by construction
 
 - Strict separation: `Task` owns benchmark semantics · `ModelAdapter` owns generation · `Evaluator` orchestrates
-- Baseline is a **first-class condition** (`intervention: {type: none}`) — swapping in recirculation changes no evaluator, task, prompt, parser, or scorer code
+- Baseline is a **first-class condition** (`intervention: {type: none}`) — swapping schedules changes no evaluator, task, prompt, parser, or scorer code
 - Every run emits an immutable directory: manifest, config, metrics, per-example JSONL, environment, logs — plus W&B mirroring
-- **Acceptance gates, all green before any GPU claim:** α=0 ≡ baseline bitwise · src==dst rejected · batch-size invariance · identical reruns
+- **Three schedules** behind one flag: `mozer` (paper-exact) · `cross_step` (withdrawn class) · `two_pass` (panel)
+- **Acceptance gates:** α=0 ≡ baseline bitwise · batch-size invariance · identical reruns · 124 unit tests green
 
 ---
 
-## Frozen protocol (do-not-modify)
+## Parity protocol (what "same as the repo" means)
 
 <!-- columns: 2 -->
 
-- Models: Gemma3 PT, weights dated 2025-03 (**pre-paper**); 1B rev `fcf18a2a…`, 4B rev `cc012e0a…`
-- Dataset: `openai/gsm8k` test, **n=1319**, raw order, stable ids
+- Model: `gemma-3-1b-it`, Hub rev `dcc83ea841ab` (theirs unrecorded — stated, not hidden)
+- Prompt: `cot_llama` 8-shot, **multiturn** (17 messages) + chat template — single-turn scores ~35%, multiturn reaches the regime
+- Decoding: greedy, seed 42, 256 tokens, FP16, repo stop strings, **model EOS [1, 106]** (tokenizer scalar 1 alone never fires)
 
 |||
 
-- Prompting: two-stage Kojima [@kojima2022] — `Q: … A: Let's think step by step.` → extraction prompt; raw PT prompts, BOS-guarded
-- Decoding: greedy, seed 42, 256 + 32 tokens; v1.0 parser/scorer on stage-2 output, failures score 0
-- Stats: McNemar flips, Wilson 95% CIs, Bonferroni over sweep cells
+- Extraction: `####` → answer-line → boxed → last-line → last-number, Decimal compare (parser v1.1)
+- Positions: per-row `position_ids` under left padding (shared scalar misplaces RoPE)
+- Sliding-window replay: arm → pass 1 → `crop(-1)` → pass 2 → `crop(0)`
+- Stats: exact McNemar (binomial), Wilson CIs, Bonferroni over sweep cells
 
 ---
 
 <!-- columns: 55/45 -->
 ## Method, step by step (1/3): shared mixing math
 
-Both schedules share one implementation behind a `schedule` parameter:
+All schedules share one implementation behind a `schedule` parameter:
 
 - $d' = \alpha \cdot f(s) + \beta \cdot d$, destination-L2 rescaling (eps-safe), convex/nonconvex β resolved — never hardcoded
-- Tested: **1B** 11→4, α=0.15/β=0.85 convex + ramp · **4B** 18→9, α=0.15/β=1.0, ramp off
+- Replication: **1B IT** 25→20, α=0.04/β=0.96 convex · **4B PT** 18→7, α=0.10/β=1.0 nonconvex
 - Why rescaling is load-bearing is **measured, not asserted**: first mixed position — source norm **25,371** vs destination norm **124** (204×)
 
 |||
@@ -82,127 +86,120 @@ Both schedules share one implementation behind a `schedule` parameter:
 
 ---
 
-## Method, step by step (2/3): walkthrough A — cross-step
+## Method, step by step (2/3): mozer (paper-exact) vs cross-step (control)
 
-One forward per input position; destination at step *t+1* mixes the **stored** deep source from step *t* (Weng babysitting question, 45 tokens):
+- **Mozer:** pass 1 full stack captures source + destination and supplies the logits; pass 2 mixes the *same-step* source, replays blocks d+1..N, overwrites upper KV — **no readout from the replay** (~2× forwards/token; measured 1296 s full run)
+- **Cross-step:** one forward per step; shallow boundary at *t* mixes the *stored previous-token* source; KV stores post-mix states; readout from the mixed run (~1×; measured 669 s) — withdrawn class, non-novel, reported as a control
+- Position 0 warm-up in all schedules; padded/finished rows masked (bitwise batch-invariant)
 
-1. **Position 0 — warm-up, no mixing.** No previous deep state; block-11 output captured and stored
-2. **Positions ≥ 1 — mix.** Block 4's output ← $0.15 \cdot f(s) + 0.85 \cdot d$; blocks 5–31 run on it, so written KV entries already carry the influence; fresh block-11 output overwrites the store
-3. **Decode runs the identical loop** (positions 45–68); cosine stays in a 0.501–0.693 band throughout
-
-<div class="colloquium-footnote">Full trace: reports/appendix_crossstep_walkthrough.md · frozen data/xstep_trace.json · all full-scale results use this schedule.</div>
+<div class="colloquium-footnote">Full trace: reports/appendix_crossstep_walkthrough.md · frozen data/xstep_trace.json. Cost measured same-harness, batch 128: cross-step ≈ half the mozer arm.</div>
 
 ---
 
-## Method, step by step (3/3): walkthrough B — two-pass (the paper-figure reading)
+## Method, step by step (3/3): two-pass (panel reading)
 
-Per input position, **two** forwards:
+Per input position, **two** forwards with **rerun readout**:
 
 1. A normal full pass **captures** the source; the cache is **truncated**
-2. The same token is **rerun** with the same-step source mixed at the boundary; the rerun overwrites upper-layer KV and supplies the logits
-3. Cost ~2× compute; warm-up at position 0 only; at α=0 bitwise identical to baseline
+2. The same token is **rerun** with the same-step source mixed at the boundary; the rerun overwrites upper-layer KV **and** supplies the logits
+3. Cost ~2× compute; at α=0 bitwise identical to baseline — n=100 panel only in this study
 
 ```box
-title: Documented choice, not a theorem
+title: Three schedules, three readouts
 tone: surface
 content: |
-  Logits come from the rerun. A readout-from-normal ablation is cheap future work — held open, not assumed.
+  mozer: first-pass readout (paper) · two-pass: rerun readout (panel) · cross-step: mixed-run readout, previous-token source (control).
 ```
 
 ---
 
-## The two readings, compared
+## The three schedules, compared
 
-| | cross-step (A) | two-pass (B) |
-|---|---|---|
-| source capture | previous position | same position, first pass |
-| forwards / position | 1 | 2 (~2× compute) |
-| logits from | the single mixed pass | the mixed rerun |
-| full-scale evidence | n=1319 × 2 scales | — |
-| panel evidence | comparison baseline | n=100, 4 cells |
+| | mozer (paper) | two-pass (panel) | cross-step (control) |
+|---|---|---|---|
+| source capture | same position, pass 1 | same position, pass 1 | previous position |
+| forwards / position | 2 (~2×) | 2 (~2×) | 1 (~1×) |
+| logits from | first (normal) pass | the mixed rerun | the single mixed pass |
+| full-scale evidence | Platinum n=1209: **531** | — | Platinum n=1209: **559** · 4B n=1319: **461** |
+| status | replicates within noise | panel, ±0.07 of twins | suggestive, non-novel |
 
-The paper's prose and its Fig-3c formalization admit both readings — so we built both. Without the cross-step arm, the two-pass panel could not isolate schedule effects at all.
+Without the cross-step arm, neither the fair mozer comparison nor the 4B confirmation would exist.
 
 ---
 
 <!-- class: figure-captions -->
 <!-- img-fill: true -->
-## Schematic: the two schedules as implemented
+## Schematic: the schedules as implemented
 
 ![Panel A cross-step, panel B two-pass](../reports/figures/schematic_recirculation_schedules.png)
+
+<div class="colloquium-footnote">Mozer differs from panel B only in readout (first-pass logits kept, replay KV-only). Diagram mechanics unchanged.</div>
 
 ---
 
 ## Ours vs looping transformers
 
 - **Looping** = re-execute a block of layers on the *same* input (depth recurrence inside one forward pass)
-- **Ours: no layer is ever re-executed** — every block runs exactly once per position
-- Influence travels *across* positions instead: one stored vector + a KV cache written post-mix
-- Both schedules are pure recirculation — the paper's Figure-8 contrast applies to what we test; our null says nothing about looping
+- **Mozer/cross-step: no layer is ever re-executed for readout** — influence travels *across* positions through stored state + post-mix KV
+- The paper's Figure-8 contrast applies to what we test; our numbers say nothing about looping
 
 ---
 
-## Ours vs the paper's recirculation
+## Ours vs the paper's recirculation — deltas, all documented
 
 <div class="text-sm">
 
-1. **Schedule.** Prose reading → cross-step; figure reading → two-pass. Both built, alike within noise (§4.3) — but exact unrolling and the readout choice stay open.
-2. **Harness.** Paper unpublished (model SHAs, budgets, parsing) → ours frozen and printed, not guessed. Serial prefill + per-row masking; BOS guard per the v2 erratum.
-3. **Numerics.** JAX-vs-HF unaddressed by design; 1B ramp as published but provisional.
+1. **Schedule.** Mozer arm is paper-exact (same-token replay, first-pass readout). Cross-step is the withdrawn class — labeled control, never "recirculation," never novel.
+2. **Harness.** Reference revision unrecorded; attention eager/FA2 vs our SDPA serial loop; continuous batching vs chunked batches. Math matched, engines differ.
+3. **Numerics.** FP16 matched; JAX-vs-HF unaddressed by design.
 
 </div>
 
 ---
 
-## Evidence map: three blocks, two methods
+## Evidence map: four blocks, three schedules
 
-<!-- notes: Talk track: we started with the paper's suggested params and got a null — so we swept around them and found a live surface — then we checked the paper's own reading and it tells the same story. -->
+<!-- notes: Talk track: replicate the paper's number first (531 vs 540/554) — then the same-harness control (+28, p=0.054) — then the sweep cell graduates at full scale — prior null as context. -->
 
-- **A · Full-scale pairs** — <span style="color:#1f77b4">cross-step (ours)</span>, n=1319 × 2 scales, paper's single point per scale → **null**, 69–90% churn
-- **B · Diagnostic sweep** — <span style="color:#1f77b4">cross-step (ours)</span>, n=100, 18 cells → **16/18 beat baseline**, best +0.13
-- **C · Schedule panel** — <span style="color:#2e7d32">two-pass (paper reading)</span> vs cross-step twins, n=100, 4 cells → **beats base, ±0.07 vs twins**
-
----
-
-<!-- columns: 40/60 -->
-## A · Single-config check (cross-step, n=1319): null verdict, live trajectories
-
-- Tested exactly **one (α, β, layer) point per scale** — the paper's published settings, not a tuned selection
-- 1B Δ −0.0023 (p=0.742) · 4B Δ −0.0167 (p=0.260); CIs overlap fully — verdict: null **at that point**
-- …but 90.4% / 69.3% of outputs changed textually — next slide
-
-|||
-
-<!-- class: figure-captions -->
-<!-- img-align: center -->
-
-![Baseline vs recirculation with Wilson 95% CIs](../reports/figures/figA_accuracy.png)
+- **A · Replication** — <span style="color:#1f77b4">mozer</span>, Platinum n=1209, repo protocol → **531, within noise** (p=0.58/0.12)
+- **B · Cross-step IT** — <span style="color:#b26a00">cross-step</span>, same harness n=1209 → **559, +28 paired, p=0.054** (n.s.)
+- **C · Sweep confirmation** — <span style="color:#b26a00">cross-step a010_s18_d7</span>, 4B n=1319 → **461 vs 388, +73, unpaired p≈0.002**
+- **D · Prior context** — <span style="color:#666666">P2-PT pairs + sweep + two-pass panel</span> → nulls, surface, schedule-indifference
 
 ---
 
-<!-- class: figure-captions -->
-<!-- columns: 45/55 -->
-## A · What changed (cross-step, n=1319): trajectories rewritten
+## A · Replication (Platinum 1B IT, n=1209): within noise
 
-- Flips are **symmetric** — the intervention moves verdicts vigorously in both directions and they cancel
-- Output-length profiles near-identical: flips come from reasoning content, not truncation artifacts
-- A null mean with 69–90% churn is not "nothing happened" — trajectory-level action, the substrate safety cares about
+| Arm | Correct | Accuracy | 95% CI | Δ vs repo dense | exact p |
+|---|---|---|---|---|---|
+| Repo dense (taken) | 540 | 0.4467 | [0.419, 0.475] | — | — |
+| Repo recirc (taken) | 554 | 0.4582 | [0.430, 0.486] | +0.0116 | 0.20 |
+| **Ours mozer** | **531** | **0.4392** | [0.411, 0.467] | −0.0074 | 0.58 |
+| **Ours cross-step** | **559** | **0.4624** | [0.434, 0.491] | +0.0157 | 0.25 |
 
-|||
-
-<!-- img-align: center -->
-
-![Paired verdict transitions: symmetric flips both directions](../reports/figures/figB_transitions.png)
+- Ours-cross vs ours-mozer paired: 112 vs 84 discordants, **+28 (+0.0232), p=0.054** — borderline, not significant
+- Per-row agreement ours-mozer / repo-dense: **82.4%** · parse rate 100% both arms · CIs overlap fully
+- Nobody's GSM8K delta here clears significance — including the reference's own +14
 
 ---
 
-## Caveats — what the single-config null does and doesn't say
+## B · What the control means (and doesn't)
+
+- Cross-step measures **slightly above** mozer on the shared protocol (+28, p=0.054) at **half the compute** (669 s vs 1296 s full runs)
+- It is **not the paper's method** (previous-token source, mixed-run readout) and **not novel** (withdrawn class, prior feedback literature)
+- Promoted from "ablation" to "legitimate cost-effective control" — still not to "method" or "discovery"
+- Trajectory churn (69–90% PT outputs rewritten, symmetric flips) is the mechanism-level evidence Phase 3 inherits
+
+---
+
+## Caveats — what these numbers do and don't say
 
 <div class="text-lg">
 
-1. **One published config per scale — not a tuned selection.** The n=1319 runs test the paper's point settings; the surface around them is the next two slides.
-2. **Conditional on our frozen two-stage protocol.** The paper's exact prompting, budgets, and parsing are unpublished — this null covers our realization, not every prompting. (1B additionally sits near floor: 22/1319 baseline correct.)
-3. **Single runs; backend asymmetry** (vLLM baselines vs serial-HF treatments). No pass@128, no adaptive variant, no 12B.
+1. **No in-harness dense arm** (repo dense taken by plan); residual harness bias is shared by our arms, not by the repo numbers.
+2. **4B confirmation is unpaired** — archived baseline lacks matching per-row verdicts, so no McNemar; the unpaired test is conservative. Dev-split paired confirmation is commissioned next.
+3. **Single path/alpha per study line**; greedy only; no 12B/adaptive/pass@128; single runs each.
+4. **Prior-protocol nulls stand as context** (1B p=0.74; 4B 18→9 p=0.26) under a non-parity harness — a different 4B cell than the confirmed one.
 
 </div>
 
@@ -210,11 +207,18 @@ The paper's prose and its Fig-3c formalization admit both readings — so we bui
 
 <!-- layout: section-break -->
 
-## The comprehensive study: an 18-cell sweep
+## From caution to confirmation: the sweep cell graduates
 
-Not one point — the surface around it
+The Bonferroni caution was correct — and then the cell was tested
 
 ---
+
+## C · Sweep → full scale: a010_s18_d7 held up
+
+- n=100 diagnostic: `a010_s18_d7` at **0.38** (+0.13 over 25/100 baseline, nominal p=0.012, **Bonferroni-n.s.** ×18) — reported as surface, never selection
+- Full n=1319 at the same cell (4B PT, kojima, β=1.0): **461 (0.3495)** vs 388 (0.2942) baseline — **+73 rows (+0.0553), unpaired p≈0.002**
+- The cautionary tale graduates by testing: destination-7 beats destination-9 at every source; s18 row hottest
+- Different cell than the v0.1 headline (18→9, α=0.15: 366, n.s.) — the surface varies, exactly as mapped
 
 <!-- class: figure-captions -->
 <!-- columns: 40/60 -->
@@ -223,7 +227,7 @@ Not one point — the surface around it
 - Same-100 baseline **0.25**; best `a010_s18_d7` at **0.38** (+0.13, nominal p=0.012, Bonferroni-n.s.)
 - Paper pair peaks at α=0.07 here; destination-7 beats destination-9 at every source
 
-<div class="colloquium-footnote">First-100 subset (baseline 0.25 vs 0.2942 full-test): exploratory surface, never configuration selection.</div>
+<div class="colloquium-footnote">First-100 subset (baseline 0.25 vs 0.2942 full-test): exploratory surface — which then nominated the confirmed cell.</div>
 
 |||
 
@@ -241,27 +245,23 @@ Not one point — the surface around it
 
 ---
 
-## C · Two-pass panel (paper reading, n=100): same story
+## Gemma quirks log: six hazards, all fixed
 
-| config | two-pass acc | Δ vs base | Δ vs cross-step |
-|---|---|---|---|
-| a010_s18_d7 | 0.31 | +0.06 | −0.07 |
-| a004_s20_d9 | 0.35 | +0.10 | −0.01 |
-| a015_s20_d9 | 0.37 | +0.12 | +0.02 |
-| a015_s18_d9 (paper) | 0.33 | +0.08 | +0.04 |
-
-All cells beat the same-100 baseline; none dominates its cross-step twin. The schedule variant does not obviously explain the paper gap — readout choice and exact unrolling remain open.
+1. **Multiturn default** — `fewshot_as_multiturn` resolves True: 17 messages, not one packed prompt (~35% → regime)
+2. **Model EOS [1, 106]** — tokenizer scalar 1 alone never fires; 99% rammed the cap before the fix
+3. **Left-padding positions** — per-row `position_ids` from the cumulative mask, or RoPE drifts
+4. **Sliding-window replay** — arm → pass 1 → `crop(-1)` → pass 2 → `crop(0)`; skipping the restrict overflows the window
+5. **Stops + extraction priority** — repo stop list, answer-line-first parsing (parser v1.1)
+6. **Silent drift** — unrecorded revisions, BF16-vs-FP16 flips: pin everything in manifests
 
 ---
 
-## Cost model: serial prefill is the recurrence tax, paid by both
+## Cost model: measured, not modeled
 
-<!-- notes: Pre-empt "isn't cross-step pricier?" — no: serial prefill is inherent to both readings; they differ in work per step. Paper's no-latency claim is parallelism, not work. -->
-
-- **Serial prefill is inherent to both** — step *t+1* needs step *t*'s deep state, so the paper states recirculation "cannot be parallelized, even when an entire input sequence is provided"
-- **Work per position differs:** cross-step ≈ **1×** (one full forward) · two-pass ≈ **1.5–2×** (full pass + upper-stack rerun + cache rewrite)
-- Paper's "no added latency" = the two stacks **batch** on parallel hardware — wall-clock hides the work; FLOPs are still ~2× (vLLM RFC: wavefront "reduces dispatch overhead, not mathematical work")
-- Our slowness is **engine-vs-eager** (compiled vLLM baseline vs Python-loop HF), not method-vs-method — at equal engineering, cross-step costs ≤ two-pass, never more
+- Full runs, same harness batch 128: **cross-step 669 s · mozer 1296 s** — one vs two forwards per token, ~2× measured
+- Batch-128 ceiling validated by 32→64→128 probe (peaks ≈3.6→6.7→16.5 GB single-turn, ≈20 GB multiturn): ~2× headroom on 40 GB
+- Session total ≈ 2 GPU-h (JarvisLabs A100); project cumulative ≈ 10–11 GPU-h
+- Our slowness vs vLLM baselines is **engine-vs-eager**, not method-vs-method
 
 ---
 
@@ -269,35 +269,35 @@ All cells beat the same-100 baseline; none dominates its cross-step twin. The sc
 
 ## The bridge to Phase 3
 
-A null with 69–90% output churn is not "nothing happened"
+Replication within noise, one suggestive control, one confirmed cell
 
 ---
 
 ## Implication: safety lives in trajectories
 
 - Safety behavior — refusals, harmlessness under pressure, reasoning integrity — lives at the level of **generation trajectories**, not aggregate accuracy
-- Phase 2 proves recirculation **decisively rewrites trajectories**. That is precisely the substrate safety work needs
-- Schedule-agnostic premise: cross-step 69–90% churn at scale · two-pass 18–30 verdict flips per 100 — Phase 3 can probe both without betting on one
-- Phase 3, reframed: *"Do recirculation's trajectory effects transfer to safety behavior?"* — refusal robustness, harm refusal under pressure, reasoning-integrity probes, each paired baseline-vs-recirc, plus a GSM8K utility holdout against regressions
-- Settle the schedule question first; no blind 12B scale-up. Ask: **25 GPU-h** (Phase 2 cost ≈8–9 total)
+- Both schedules rewrite trajectories at scale; cross-step now has full-scale evidence at half the compute — carry **both** into Phase 3
+- Phase 3, reframed: *"Do trajectory effects transfer to safety behavior?"* — refusal robustness, harm refusal under pressure, reasoning-integrity probes, each paired baseline-vs-recirc, plus a GSM8K utility holdout against regressions
+- First commission: dev-split 4B-cell confirmation with paired artifacts + in-harness dense arm. No blind 12B scale-up. Ask: **25 GPU-h**
 
 ---
 
 ## Why fund the cross-step track?
 
-<!-- notes: Anticipate "why not just run Mozer's variant on safety?" — evidence, cost, ablation, deployability, in that order. Concede the capability point; Phase 3 isn't about capability. -->
+<!-- notes: It is no longer "the stale reading" — it has full-scale evidence and half the cost. Still concede capability and novelty. -->
 
-- **Evidence:** only cross-step has a measured trajectory effect *at scale* (69–90% churn); two-stack has paper perplexity, no independent trajectory evidence
-- **Cost:** one forward per position vs two — halves the recirc arm at safety-benchmark volumes; runs in plain HF (two-stack serving needs engine support, RFC still open)
-- **Ablation:** both arms tell us whether safety transfer is schedule-specific or general — Mozer-only throws away the control
+- **Evidence (new):** full-scale 559 (IT, suggestive) + 461 (4B, confirmed cell) — no longer just churn; still honestly p-valued
+- **Cost:** one forward per position — halves the recirc arm at safety-benchmark volumes; runs in plain HF
+- **Ablation:** both arms tell us whether safety transfer is schedule-specific or general
 - **Deployability:** an inference-time safety intervention must be cheap enough to ship; single-pass is closer to that bar
 
-<div class="colloquium-footnote">Conceded: for maximum capability, two-stack has the paper's headlines — but Phase 3 is about trajectory effects, where cross-step is proven and two-stack is assumed.</div>
+<div class="colloquium-footnote">Conceded, in writing: cross-step is not the paper's method and not novel. Phase 3 bets on trajectory effects, where both schedules are now evidenced.</div>
 
 ---
 
 ## Conclusion
 
-- Single-config full-scale check (paper's settings, both scales): null verdict — it rules out a point, not the surface
-- The **18-cell sweep** maps that surface: 16 of 18 beat baseline, smooth tunable response, s18 hot / s16→d9 cold
-- Everything regenerates from committed artifacts: frozen protocol, paired CSVs, executable notebook, walkthrough trace + generators; run dirs on Modal + W&B `recirc-gsm8k`
+- **Replication:** paper-exact mozer lands within noise of the reference band (531 vs 540/554; p=0.58/0.12) — implementation confirmed
+- **Control:** cross-step measures +28 paired rows above mozer (p=0.054, n.s.) at half the compute — suggestive, non-novel, honestly labeled
+- **Confirmation:** sweep-nominated `a010_s18_d7` holds at full scale (461 vs 388, unpaired p≈0.002)
+- Everything regenerates from committed artifacts: parity configs, run dirs (`results_jl/`), reference JSONs, sweep tables, W&B `recirc-gsm8k`

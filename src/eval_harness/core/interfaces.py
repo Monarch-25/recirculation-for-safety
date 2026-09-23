@@ -38,6 +38,10 @@ class GenerationConfig:
     # tokens; capping them separately avoids generating hundreds of
     # wasted tokens per example (the dominant cost in serial adapters).
     extraction_max_new_tokens: int | None = None
+    # Stop strings (Evalution parity, e.g. cot_llama stops). Generation
+    # ends a row once its decoded text contains any entry; the text is
+    # truncated before the stop string. Empty = EOS/cap only.
+    stop_strings: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if self.max_new_tokens <= 0:
@@ -62,6 +66,7 @@ class GenerationConfig:
             "do_sample": self.do_sample,
             "seed": self.seed,
             "extraction_max_new_tokens": self.extraction_max_new_tokens,
+            "stop_strings": list(self.stop_strings),
         }
 
     def for_extraction(self) -> "GenerationConfig":
@@ -135,10 +140,15 @@ class ModelAdapter(ABC):
     @abstractmethod
     def generate(
         self,
-        prompts: Sequence[str],
+        prompts: Sequence[str | list[dict[str, str]]],
         config: GenerationConfig,
     ) -> list[str]:
-        """Generate one continuation per prompt, preserving order."""
+        """Generate one continuation per prompt, preserving order.
+
+        Entries may be raw strings (rendered via the prompt template)
+        or pre-built chat message lists (multi-turn templates), which
+        adapters format with ``tokenizer.apply_chat_template``.
+        """
         ...
 
     def get_metadata(self) -> dict[str, Any]:
@@ -244,6 +254,17 @@ class Task(ABC):
     def build_prompt(self, example: EvalExample) -> str:
         """Build a deterministic prompt string for one example."""
         ...
+
+    def build_messages(
+        self, example: EvalExample
+    ) -> list[dict[str, str]] | None:
+        """Multi-turn chat messages, or None for single-turn templates.
+
+        When not None, the evaluator passes message lists (instead of
+        strings) to the adapter, which renders them with the tokenizer
+        chat template. Mirrors Evalution ``fewshot_as_multiturn``.
+        """
+        return None
 
     @abstractmethod
     def parse_answer(self, output: str) -> ParsedAnswer:

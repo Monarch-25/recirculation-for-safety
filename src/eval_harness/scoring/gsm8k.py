@@ -8,7 +8,10 @@ score 0 and are INCLUDED in the accuracy denominator.
 from __future__ import annotations
 
 from eval_harness.core.interfaces import EvalExample, ParsedAnswer, Scorer
-from eval_harness.parsing.gsm8k import GSM8KAnswerParser, normalize_number
+from eval_harness.parsing.gsm8k import (
+    GSM8KAnswerParser,
+    normalize_number,
+)
 
 
 def _numeric_equal(a: str, b: str) -> bool:
@@ -22,8 +25,8 @@ class GSM8KScorer(Scorer):
     name = "gsm8k_exact_match"
     version = "1.0"
 
-    def __init__(self) -> None:
-        self._parser = GSM8KAnswerParser()
+    def __init__(self, parser: GSM8KAnswerParser | None = None) -> None:
+        self._parser = parser or GSM8KAnswerParser()
 
     def score(self, prediction: ParsedAnswer, example: EvalExample) -> float:
         if not prediction.success or prediction.value is None:

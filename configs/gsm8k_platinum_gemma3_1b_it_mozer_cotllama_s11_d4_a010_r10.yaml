@@ -1,0 +1,58 @@
+# Mozer replication plan — secondary: paper's own 1B pair {11,4}, alpha
+# 0.10, with the paper's ten-step zero-based ramp (ramp_tokens=10) and
+# convex beta coupling (beta_t = 1 - alpha_t). Documents ramp behavior
+# and the paper-corpus path under our scorer/template parity.
+model:
+  name: google/gemma-3-1b-it
+  revision: null
+  tokenizer_revision: null
+  dtype: bfloat16
+  device: auto
+  trust_remote_code: false
+  use_chat_template: true
+  attn_implementation: null
+  intervention:
+    type: recirculation
+    schedule: mozer
+    source_layer: 11
+    destination_layer: 4
+    alpha: 0.10
+    mixture:
+      mode: convex
+    normalization:
+      type: destination_l2
+    ramping:
+      enabled: true
+      tokens: 10
+
+task:
+  name: gsm8k
+  version: "1.0"
+  split: test
+  limit: null
+  dataset_id: madrylab/gsm8k-platinum
+  dataset_config: main
+  dataset_revision: e762492455a1cf7967de89f05b6bef72fc713b66
+
+prompt:
+  template_name: gsm8k_cot_llama_v1
+  template_version: "1.0"
+  extraction_template_name: null
+  extraction_template_version: "1.0"
+
+generation:
+  max_new_tokens: 256
+  temperature: 0.0
+  top_p: 1.0
+  do_sample: false
+  seed: 42
+
+runtime:
+  batch_size: 16
+  output_dir: results
+  seed: 42
+
+experiment:
+  name: gsm8k_platinum_gemma3_1b_it_mozer_cotllama_s11_d4_a010_r10
+  evaluation_code_version: "0.3.0"
+  wandb_project: recirc-gsm8k

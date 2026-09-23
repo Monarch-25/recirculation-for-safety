@@ -159,15 +159,34 @@ class HFCausalLMAdapter(ModelAdapter):
     def num_parameters(self) -> int:
         return self._num_params
 
+    def eos_token_ids(self) -> list[int]:
+        """Model EOS set for stopping (Evalution/transformers parity).
+
+        Gemma3-1B-IT ends turns with ``<end_of_turn>`` (106) while the
+        tokenizer's scalar ``eos_token_id`` is 1 (``</s>``); the model
+        config lists ``eos_token_id=[1, 106]``. Stopping on the
+        tokenizer id alone never fires, so generations ramble to the
+        token cap. Prefer the model config list, fall back to the
+        tokenizer scalar.
+        """
+        cfg_ids = getattr(getattr(self.model, "config", None),
+                          "eos_token_id", None)
+        if isinstance(cfg_ids, int):
+            return [cfg_ids]
+        if isinstance(cfg_ids, (list, tuple)) and cfg_ids:
+            return [int(i) for i in cfg_ids]
+        tok_id = getattr(self.tokenizer, "eos_token_id", None)
+        return [int(tok_id)] if tok_id is not None else []
+
     # -- generation ------------------------------------------------------
-    def _format_prompt(self, prompt: str) -> str:
+    def _format_prompt(self, prompt: str | list[dict[str, str]]) -> str:
         return format_for_chat(
             self.tokenizer, prompt, self._use_chat_template)
 
     @torch.no_grad()
     def generate(
         self,
-        prompts: Sequence[str],
+        prompts: Sequence[str | list[dict[str, str]]],
         config: GenerationConfig,
     ) -> list[str]:
         if not prompts:
@@ -195,11 +214,20 @@ class HFCausalLMAdapter(ModelAdapter):
             "max_new_tokens": config.max_new_tokens,
             "do_sample": config.do_sample,
             "pad_token_id": self.tokenizer.pad_token_id,
-            "eos_token_id": self.tokenizer.eos_token_id,
+            "eos_token_id": self.eos_token_ids(),
         }
         if config.do_sample:
             gen_kwargs["temperature"] = config.temperature
             gen_kwargs["top_p"] = config.top_p
+        if config.stop_strings:
+            # Evalution parity: GenerationRequest.stop per benchmark.
+            from transformers.generation import (
+                StoppingCriteriaList,
+                StopStringCriteria,
+            )
+            gen_kwargs["stopping_criteria"] = StoppingCriteriaList([
+                StopStringCriteria(
+                    self.tokenizer, list(config.stop_strings))])
         # Parallel prefill + decode are inseparable inside a single
         # generate() call, so only total time is reported (P2 §32:
         # report what you can measure, null the rest).

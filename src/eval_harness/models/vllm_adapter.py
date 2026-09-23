@@ -206,11 +206,12 @@ class VLLMModelAdapter(ModelAdapter):
             top_p=top_p,
             max_tokens=config.max_new_tokens,
             seed=config.seed,
+            stop=list(config.stop_strings or ()),
         )
 
     def generate(
         self,
-        prompts: Sequence[str],
+        prompts: Sequence[str | list[dict[str, str]]],
         config: GenerationConfig,
     ) -> list[str]:
         if not prompts:

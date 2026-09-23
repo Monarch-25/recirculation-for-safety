@@ -1,0 +1,67 @@
+# Mozer replication — Gemma3 1B IT, GSM8K-Platinum, MOZER schedule.
+# Repo-parity arm: Evalution `cot_llama` + `apply_chat_template=true` +
+# `fewshot_as_multiturn` (17-message conversation), FP16, greedy,
+# max 256, repo stop strings, parser v1.1 (repo extraction priority).
+# Path 25->20 alpha 0.04 (repo-selected). Target recirc ~554/1209.
+# Prior single-turn runs (~35%) used a different prompt and are superseded.
+model:
+  name: google/gemma-3-1b-it
+  revision: null
+  tokenizer_revision: null
+  dtype: float16
+  device: auto
+  trust_remote_code: false
+  use_chat_template: true
+  attn_implementation: null
+  intervention:
+    type: recirculation
+    schedule: mozer
+    source_layer: 25
+    destination_layer: 20
+    alpha: 0.04
+    mixture:
+      mode: convex
+    normalization:
+      type: destination_l2
+    ramping:
+      enabled: false
+
+task:
+  name: gsm8k
+  version: "1.0"
+  split: test
+  limit: null
+  dataset_id: madrylab/gsm8k-platinum
+  dataset_config: main
+  dataset_revision: e762492455a1cf7967de89f05b6bef72fc713b66
+
+prompt:
+  template_name: gsm8k_cot_llama_multiturn_v1
+  template_version: "1.0"
+  extraction_template_name: null
+  extraction_template_version: "1.0"
+  parser_version: "1.1"
+
+generation:
+  max_new_tokens: 256
+  temperature: 0.0
+  top_p: 1.0
+  do_sample: false
+  seed: 42
+  stop_strings:
+    - "<|eot_id|>"
+    - "<|start_header_id|>user<|end_header_id|>"
+    - "Q:"
+    - "</s>"
+    - "<|im_end|>"
+    - "</assistant>"
+
+runtime:
+  batch_size: 128
+  output_dir: results
+  seed: 42
+
+experiment:
+  name: gsm8k_platinum_gemma3_1b_it_mozer_cotllamaMT_s25_d20_a004
+  evaluation_code_version: "0.4.0"
+  wandb_project: recirc-gsm8k

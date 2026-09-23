@@ -14,7 +14,9 @@ class PredictionRecord:
 
     example_id: str
     index: int
-    prompt: str
+    # Rendered prompt string, or the raw message list for multi-turn
+    # templates (JSON-serializable; rendered form lives in manifest).
+    prompt: str | list
     raw_output: str
     parsed_answer: str | None
     reference_answer: str

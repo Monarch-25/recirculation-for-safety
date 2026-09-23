@@ -257,7 +257,12 @@ class Evaluator:
                 "name": config.prompt.template_name,
                 "version": config.prompt.template_version,
                 "hash": prompt_hash,
-                "canonical_template_preview": prompt_text[:2000],
+                "parser_version": getattr(
+                    task, "_parser_version",
+                    config.prompt.parser_version),
+                "canonical_template_preview": (
+                    prompt_text[:2000]
+                    if isinstance(prompt_text, str) else prompt_text),
                 "extraction": (
                     None if (config.prompt.extraction_template_name is None
                              or extraction_hash is None)
@@ -309,11 +314,13 @@ class Evaluator:
         Ordering guarantee: ``records[i]`` corresponds to the i-th
         loaded example regardless of ``batch_size``.
 
-        ``resume_from`` points at a previous run dir holding
-        ``reasoning_partial.jsonl``; stage-0 generation is skipped and the
-        stored reasoning reused (validated against example ids). Stage-0
-        timing stays unknown (never fabricated); token counts restore
-        from the stored lines.
+        ``resume_from`` points at a previous run dir holding streamed
+        stage partials (``reasoning_partial.jsonl``,
+        ``extraction_partial.jsonl``); stored lines must form an exact
+        0..K-1 prefix with matching ids, and only the missing tail is
+        generated. Checkpoints land per batch, so a crash loses at most
+        the in-flight batch. Restored timing stays unknown (never
+        fabricated); token counts restore from the stored lines.
         """
         if config.runtime.batch_size <= 0:
             raise ValueError("batch_size must be > 0")
@@ -363,11 +370,22 @@ class Evaluator:
             raise ValueError("Task returned zero examples")
 
         # -- prompts (deterministic, saved per example) -----------------
-        prompts = [task.build_prompt(ex) for ex in examples]
+        # Multi-turn templates (Evalution fewshot_as_multiturn parity)
+        # yield message lists rendered by the adapter's chat template;
+        # single-turn templates yield plain strings. The branch is
+        # uniform per task (probed once on the first example).
+        probe_messages = (
+            task.build_messages(examples[0]) if examples else None)
+        if probe_messages is not None:
+            prompts: list = [task.build_messages(ex) for ex in examples]
+            hash_source = repr(prompts[0]) if prompts else ""
+        else:
+            prompts = [task.build_prompt(ex) for ex in examples]
+            hash_source = prompts[0] if prompts else ""
         prompt_hash = hashing.sha256_hex(
             f"{config.prompt.template_name}\n"
             f"{config.prompt.template_version}\n"
-            f"{prompts[0] if prompts else ''}"
+            f"{hash_source}"
         )
 
         # -- generation in batches, order-preserving --------------------
@@ -382,14 +400,21 @@ class Evaluator:
         def _generate_batched(prompt_list: list[str], stage: int,
                               label: str, stream_path: Path | None = None,
                               example_ids: list[str] | None = None,
+                              index_offset: int = 0,
+                              outputs: list[str] | None = None,
                               ) -> list[str]:
             gen_cfg = (config.generation.for_extraction() if stage == 1
                        else config.generation)
-            outputs: list[str] = [""] * len(prompt_list)
+            if outputs is None:
+                outputs = [""] * len(prompt_list)
+                base = 0
+            else:
+                base = index_offset
             n_batches = (len(prompt_list) + batch_size - 1) // batch_size
             stream_fh = None
             if stream_path is not None:
-                if example_ids is None or len(example_ids) != len(prompt_list):
+                if (example_ids is None
+                        or len(example_ids) < base + len(prompt_list)):
                     raise ValueError("streaming requires per-prompt example_ids")
                 stream_fh = open(stream_path, "a")
             try:
@@ -405,11 +430,12 @@ class Evaluator:
                             f"{len(batch_prompts)} prompts ({label} {b})"
                         )
                     for j, out in enumerate(chunk):
-                        outputs[start + j] = out
-                    tracker.consume(model, batch_prompts, start, stage, b)
+                        outputs[base + start + j] = out
+                    tracker.consume(model, batch_prompts, base + start,
+                                    stage, b)
                     if stream_fh is not None:
                         for j, out in enumerate(chunk):
-                            i = start + j
+                            i = base + start + j
                             stream_fh.write(json.dumps({
                                 "index": i,
                                 "example_id": example_ids[i],
@@ -425,23 +451,58 @@ class Evaluator:
                     stream_fh.close()
             return outputs
 
+        def _restore_prefix(stream_path: Path, stage: int, label: str,
+                            ) -> tuple[list, int]:
+            """Copy a previous run's streamed lines into this run's stream.
+
+            Returns (restored_outputs, reuse_count). Fails closed unless
+            the stored lines form an exact 0..K-1 prefix with matching ids.
+            """
+            prev = _read_partial(stream_path)
+            ordered = [prev[k] for k in sorted(prev)]
+            for expect, row in enumerate(ordered):
+                if (row.get("index") != expect
+                        or row.get("stage") != stage
+                        or row.get("example_id") != example_ids[expect]):
+                    raise ValueError(
+                        f"resume partial misaligned at line {expect} ({label})")
+            n = len(examples)
+            outputs: list[str] = [""] * n
+            with open(run_dir / stream_path.name, "a") as fh:
+                for row in ordered:
+                    i = row["index"]
+                    outputs[i] = row.get("output", "")
+                    tracker.in_tokens[i] = row.get("in_tokens")
+                    tracker.out_tokens[i] = row.get("out_tokens")
+                    fh.write(json.dumps(row) + "\n")
+                fh.flush()
+                os.fsync(fh.fileno())
+            return outputs, len(ordered)
+
         # Stage 1: reasoning (or the full response for single-stage).
+        # Checkpoints land per batch (~1.2% at batch 16); a crash loses at
+        # most the in-flight batch, and resume continues from the prefix.
         example_ids = [ex.example_id for ex in examples]
+        resumed_counts: dict[str, int] = {}
+        reasoning: list[str] = [""] * len(examples)
+        reuse = 0
         if resume_from is not None:
-            reasoning, tok_in, tok_out = _load_resume_reasoning(
-                resume_from, example_ids)
-            tracker.in_tokens = tok_in
-            tracker.out_tokens = tok_out
-            # Stage-0 timing unknown on a resumed run (never fabricated).
+            reasoning, reuse = _restore_prefix(
+                Path(resume_from) / "reasoning_partial.jsonl", 0, "stage 0")
+            resumed_counts["reasoning_reused"] = reuse
+            # Restored timing unknown (never fabricated).
             tracker.prefill_known = False
             tracker.gen_known = False
-            log.info("resumed stage 0 from %s (%d examples)",
-                     resume_from, len(reasoning))
-        else:
-            reasoning = _generate_batched(
-                prompts, 0, "generation",
+            log.info("resumed stage 0 from %s (%d/%d examples)",
+                     resume_from, reuse, len(examples))
+        if reuse < len(examples):
+            # Prefix guarantee: completed part is exactly 0..reuse-1.
+            missing = list(range(reuse, len(examples)))
+            _generate_batched(
+                [prompts[i] for i in missing], 0, "generation",
                 stream_path=run_dir / "reasoning_partial.jsonl",
-                example_ids=example_ids)
+                example_ids=example_ids, index_offset=reuse,
+                outputs=reasoning)
 
         # Stage 2 (optional): answer extraction. Tasks without
         # build_extraction_prompt, or returning all-None, stay
@@ -463,8 +524,23 @@ class Evaluator:
             else:
                 extraction_prompts = maybe_prompts
                 reasoning_list = list(reasoning)
-                raw_outputs = _generate_batched(
-                    extraction_prompts, 1, "extraction")
+                raw_outputs = [""] * len(examples)
+                ext_reuse = 0
+                if resume_from is not None:
+                    raw_outputs, ext_reuse = _restore_prefix(
+                        Path(resume_from) / "extraction_partial.jsonl",
+                        1, "stage 1")
+                    resumed_counts["extraction_reused"] = ext_reuse
+                    log.info("resumed stage 1 from %s (%d/%d examples)",
+                             resume_from, ext_reuse, len(examples))
+                if ext_reuse < len(examples):
+                    ext_missing = list(range(ext_reuse, len(examples)))
+                    _generate_batched(
+                        [extraction_prompts[i] for i in ext_missing],
+                        1, "extraction",
+                        stream_path=run_dir / "extraction_partial.jsonl",
+                        example_ids=example_ids, index_offset=ext_reuse,
+                        outputs=raw_outputs)
                 extraction_hash = hashing.sha256_hex(
                     f"{config.prompt.extraction_template_name}\n"
                     f"{config.prompt.extraction_template_version}\n"
@@ -522,9 +598,11 @@ class Evaluator:
                  metrics.accuracy, metrics.parse_rate, metrics.num_examples)
 
         dataset_revision = _resolve_dataset_revision(task, config)
+        first_prompt = prompts[0] if prompts else ""
         manifest = self.build_manifest(
             config=config, run_id=run_id, model=model, task=task,
-            prompt_text=prompts[0] if prompts else "",
+            prompt_text=(first_prompt if isinstance(first_prompt, str)
+                         else repr(first_prompt)[:2000]),
             prompt_hash=prompt_hash, environment=environment, git=git,
             command=command, timestamp=timestamp,
             num_examples=len(examples), dataset_revision=dataset_revision,
@@ -533,6 +611,7 @@ class Evaluator:
         )
         if resume_from is not None:
             manifest["resumed_from"] = str(resume_from)
+            manifest["resumed_counts"] = resumed_counts
 
         # -- artifacts --------------------------------------------------
         io.write_json(run_dir / "manifest.json", manifest)
@@ -560,35 +639,19 @@ class Evaluator:
         )
 
 
-def _load_resume_reasoning(
-    resume_from: str | Path, example_ids: list[str],
-) -> tuple[list[str], list[int | None], list[int | None]]:
-    """Load stage-0 reasoning stored by an interrupted run.
-
-    Fails closed: wrong count, id mismatch, or non-stage-0 lines raise.
-    """
-    path = Path(resume_from) / "reasoning_partial.jsonl"
-    if not path.exists():
-        raise ValueError(f"no reasoning_partial.jsonl in {resume_from}")
-    rows = io.read_jsonl(path)
-    if len(rows) != len(example_ids):
-        raise ValueError(
-            f"resume partial has {len(rows)} lines for "
-            f"{len(example_ids)} examples")
-    outputs: list[str] = [""] * len(example_ids)
-    tok_in: list[int | None] = [None] * len(example_ids)
-    tok_out: list[int | None] = [None] * len(example_ids)
-    for row in rows:
-        if row.get("stage") != 0:
-            raise ValueError("resume partial holds non-stage-0 lines")
-        i = row.get("index")
-        if (not isinstance(i, int) or not 0 <= i < len(example_ids)
-                or row.get("example_id") != example_ids[i]):
-            raise ValueError("resume partial misaligned with examples")
-        outputs[i] = row.get("output", "")
-        tok_in[i] = row.get("in_tokens")
-        tok_out[i] = row.get("out_tokens")
-    return outputs, tok_in, tok_out
+def _read_partial(path: str | Path) -> dict[int, dict]:
+    """Read streamed stage lines keyed by index (empty if file missing)."""
+    p = Path(path)
+    if not p.exists():
+        return {}
+    rows: dict[int, dict] = {}
+    for line in p.read_text().splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        row = json.loads(line)
+        rows[row["index"]] = row
+    return rows
 
 
 def _chunked_with_start(seq: list[str], batch_size: int):

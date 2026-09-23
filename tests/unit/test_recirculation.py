@@ -105,6 +105,55 @@ def test_intervention_round_trip():
     assert cfg.to_dict()["effective_beta"] == 1.0
 
 
+def test_mozer_schedule_round_trip():
+    cfg = InterventionConfig.from_dict({
+        "type": "recirculation", "source_layer": 25,
+        "destination_layer": 20, "alpha": 0.04,
+        "schedule": "mozer",
+        "mixture": {"mode": "convex"},
+        "normalization": {"type": "destination_l2"},
+        "ramping": {"enabled": False},
+    })
+    assert cfg.schedule == "mozer"
+    assert cfg.effective_beta == pytest.approx(0.96)
+    assert InterventionConfig.from_dict(cfg.to_dict()) == cfg
+    assert cfg.to_dict()["schedule"] == "mozer"
+
+
+def test_mozer_schedule_invalid_raises():
+    from eval_harness.core.config import InterventionConfig
+    with pytest.raises(ValueError, match="schedule"):
+        InterventionConfig.from_dict({
+            "type": "recirculation", "source_layer": 25,
+            "destination_layer": 20, "schedule": "zap"})
+
+
+def test_batched_beta_tensor_coupling():
+    """Paper convex coupling beta_t = 1 - alpha_t realized per-row."""
+    torch.manual_seed(0)
+    dst = torch.randn(4, 8)
+    src = torch.randn(4, 8)
+    alpha = torch.tensor([0.0, 0.04, 0.1, 0.15])
+    beta = 1.0 - alpha  # convex-coupled beta vector
+    got = mix_destination_batched(dst, src, alpha, beta)
+    for r in range(4):
+        want = mix_destination(dst[r], src[r], float(alpha[r]),
+                               float(beta[r]))
+        assert torch.allclose(got[r], want), r
+
+
+def test_batched_beta_tensor_passthrough():
+    """Beta vector vs scalar must agree on identical values."""
+    torch.manual_seed(0)
+    dst = torch.randn(3, 8)
+    src = torch.randn(3, 8)
+    alpha = torch.tensor([0.04, 0.04, 0.04])
+    got_v = mix_destination_batched(dst, src, alpha,
+                                    torch.tensor([1.0, 1.0, 1.0]))
+    got_s = mix_destination_batched(dst, src, alpha, 1.0)
+    assert torch.allclose(got_v, got_s)
+
+
 def test_normalize_intervention_shapes():
     assert normalize_intervention(None) == {"type": "none"}
     assert normalize_intervention({"type": "none"}) == {"type": "none"}
@@ -146,7 +195,11 @@ def test_truncate_cache_prefers_native_crop():
 
     cache = NativeCache()
     RecirculationModelAdapter._truncate_cache(cache, 4)
-    assert cache.cropped_to == 4
+    # Redo removes exactly the last-added token (remove-last), not the
+    # absolute length: Gemma3 sliding layers cap stored length below
+    # `length` once the window is full, where absolute crop is a no-op
+    # or raises.
+    assert cache.cropped_to == -1
 
 
 def test_truncate_cache_rejects_foreign_caches():
@@ -182,3 +235,34 @@ def test_resolve_gpt2_like_layout():
 def test_resolve_unknown_layout_raises():
     with pytest.raises(RuntimeError, match="known decoder-block layout"):
         _resolve_decoder_layers(_NS(), "m")
+
+
+def test_apply_stop_strings_truncates_earliest():
+    from eval_harness.models.recirculation import apply_stop_strings
+    assert apply_stop_strings("answer 6\nQ: next", ["Q:", "</s>"]) == "answer 6\n"
+    assert apply_stop_strings("clean text", ["Q:"]) == "clean text"
+    assert apply_stop_strings("a</s>b", []) == "a</s>b"
+
+
+def test_eos_token_ids_prefers_model_config_list():
+    from eval_harness.models.hf_causal_lm import HFCausalLMAdapter
+
+    class Cfg:
+        eos_token_id = [1, 106]
+
+    class Model:
+        config = Cfg()
+
+    class Tok:
+        eos_token_id = 1
+
+    adapter = HFCausalLMAdapter.__new__(HFCausalLMAdapter)
+    adapter.model = Model()
+    adapter.tokenizer = Tok()
+    assert adapter.eos_token_ids() == [1, 106]
+
+    class Cfg2:
+        eos_token_id = None
+
+    adapter.model = type("M", (), {"config": Cfg2()})()
+    assert adapter.eos_token_ids() == [1]

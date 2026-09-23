@@ -1,0 +1,45 @@
+# Mozer replication — JL A100-40GB cell for the dense baseline.
+# Same protocol as ..._dense_cotllama but batch 64 + _jl marker.
+model:
+  name: google/gemma-3-1b-it
+  revision: null
+  tokenizer_revision: null
+  dtype: bfloat16
+  device: auto
+  trust_remote_code: false
+  use_chat_template: true
+  attn_implementation: null
+  intervention:
+    type: none
+
+task:
+  name: gsm8k
+  version: "1.0"
+  split: test
+  limit: null
+  dataset_id: madrylab/gsm8k-platinum
+  dataset_config: main
+  dataset_revision: e762492455a1cf7967de89f05b6bef72fc713b66
+
+prompt:
+  template_name: gsm8k_cot_llama_v1
+  template_version: "1.0"
+  extraction_template_name: null
+  extraction_template_version: "1.0"
+
+generation:
+  max_new_tokens: 256
+  temperature: 0.0
+  top_p: 1.0
+  do_sample: false
+  seed: 42
+
+runtime:
+  batch_size: 64
+  output_dir: results
+  seed: 42
+
+experiment:
+  name: gsm8k_platinum_gemma3_1b_it_dense_cotllama_jl
+  evaluation_code_version: "0.3.0"
+  wandb_project: recirc-gsm8k

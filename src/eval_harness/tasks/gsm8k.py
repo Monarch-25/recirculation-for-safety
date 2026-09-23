@@ -16,7 +16,7 @@ import logging
 from typing import Any
 
 from eval_harness.core.interfaces import EvalExample, ParsedAnswer, Task
-from eval_harness.parsing.gsm8k import GSM8KAnswerParser
+from eval_harness.parsing.gsm8k import GSM8KAnswerParser, GSM8KAnswerParserV11
 from eval_harness.prompting.chat import get_template
 from eval_harness.scoring.gsm8k import GSM8KScorer
 from eval_harness.utils.hashing import sha256_hex
@@ -27,9 +27,18 @@ FALLBACK_DATASET_ID = "gsm8k"
 DATASET_CONFIG = "main"
 
 
-def make_example_id(index: int, question: str, split: str = "test") -> str:
+def make_example_id(index: int, question: str, split: str = "test",
+                    prefix: str = "gsm8k") -> str:
     digest = sha256_hex(question)[:8]
-    return f"gsm8k-{split}-{index:05d}-{digest}"
+    return f"{prefix}-{split}-{index:05d}-{digest}"
+
+
+def dataset_id_prefix(dataset_id: str) -> str:
+    """Stable per-dataset id prefix so results stay disjoint across
+    datasets (e.g. ``openai/gsm8k`` -> ``gsm8k``,
+    ``madrylab/gsm8k-platinum`` -> ``gsm8k-platinum``)."""
+    base = dataset_id.rsplit("/", 1)[-1]
+    return base if base else "gsm8k"
 
 
 class GSM8KTask(Task):
@@ -45,10 +54,18 @@ class GSM8KTask(Task):
         dataset_revision: str | None = None,
         extraction_template_name: str | None = None,
         extraction_template_version: str = "1.0",
+        parser_version: str = "1.0",
     ) -> None:
         self._template = get_template(template_name, template_version)
-        self._parser = GSM8KAnswerParser()
-        self._scorer = GSM8KScorer()
+        if parser_version == "1.1":
+            self._parser = GSM8KAnswerParserV11()
+        elif parser_version == "1.0":
+            self._parser = GSM8KAnswerParser()
+        else:
+            raise ValueError(
+                f"Unknown GSM8K parser version {parser_version!r}")
+        self._parser_version = parser_version
+        self._scorer = GSM8KScorer(parser=self._parser)
         self._dataset_id = dataset_id
         self._dataset_config = dataset_config
         self._dataset_revision = dataset_revision
@@ -116,7 +133,9 @@ class GSM8KTask(Task):
             question = str(row["question"])
             answer = str(row["answer"])
             examples.append(EvalExample(
-                example_id=make_example_id(i, question, split),
+                example_id=make_example_id(
+                    i, question, split,
+                    prefix=dataset_id_prefix(self._resolved_dataset_id)),
                 index=i,
                 question=question,
                 reference_answer=answer,
@@ -127,6 +146,13 @@ class GSM8KTask(Task):
 
     def build_prompt(self, example: EvalExample) -> str:
         return self._template.render(question=example.question)
+
+    def build_messages(
+        self, example: EvalExample
+    ) -> list[dict[str, str]] | None:
+        if not self._template.multiturn:
+            return None
+        return self._template.render_messages(question=example.question)
 
     def build_extraction_prompt(
         self,
@@ -157,12 +183,14 @@ class GSM8KTask(Task):
         template_version: str = "1.0",
         extraction_template_name: str | None = None,
         extraction_template_version: str = "1.0",
+        parser_version: str = "1.0",
     ) -> tuple["GSM8KTask", list[EvalExample]]:
         """Build a task + example list from in-memory rows (tests only)."""
         task = cls(template_name=template_name,
-                   template_version=template_version,
-                   extraction_template_name=extraction_template_name,
-                   extraction_template_version=extraction_template_version)
+                    template_version=template_version,
+                    extraction_template_name=extraction_template_name,
+                    extraction_template_version=extraction_template_version,
+                    parser_version=parser_version)
         examples = [
             EvalExample(
                 example_id=make_example_id(i, r["question"]),

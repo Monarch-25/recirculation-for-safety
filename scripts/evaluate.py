@@ -31,6 +31,7 @@ def build_task(config):
         dataset_revision=config.task.dataset_revision,
         extraction_template_name=config.prompt.extraction_template_name,
         extraction_template_version=config.prompt.extraction_template_version,
+        parser_version=config.prompt.parser_version,
     )
 
 
@@ -138,11 +139,20 @@ def cmd_dry_run(config, args) -> int:
     demo = EvalExample(example_id="dry-run-00000", index=0,
                        question="What is 2 + 2?",
                        reference_answer="#### 4")
-    prompt = task.build_prompt(demo)
-    assert "2 + 2" in prompt
-    print("  [ok] prompt rendering works "
-          f"(template={config.prompt.template_name} "
-          f"v{config.prompt.template_version})")
+    messages = task.build_messages(demo)
+    if messages is not None:
+        assert messages[-1]["role"] == "user" and "2 + 2" in messages[-1][
+            "content"]
+        print(f"  [ok] multi-turn rendering works "
+              f"({len(messages)} messages, "
+              f"template={config.prompt.template_name} "
+              f"v{config.prompt.template_version})")
+    else:
+        prompt = task.build_prompt(demo)
+        assert "2 + 2" in prompt
+        print("  [ok] prompt rendering works "
+              f"(template={config.prompt.template_name} "
+              f"v{config.prompt.template_version})")
     # Validate output dir writable.
     out = Path(config.runtime.output_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -161,8 +171,10 @@ def main(argv=None) -> int:
     parser.add_argument("--device", type=str, default=None,
                         help="Override model.device (auto|cpu|mps|cuda)")
     parser.add_argument("--resume-from", type=str, default=None,
-                        help="Resume stage 0 from a previous run dir holding "
-                             "reasoning_partial.jsonl")
+                        help="Resume from a previous run dir holding one or "
+                             "both streaming partials (reasoning_partial.jsonl, "
+                             "extraction_partial.jsonl); only missing tails "
+                             "are regenerated")
     parser.add_argument("--dry-run", action="store_true",
                         help="Validate config/env without generation")
     args = parser.parse_args(argv)

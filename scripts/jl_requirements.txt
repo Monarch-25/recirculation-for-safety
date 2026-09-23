@@ -1,0 +1,10 @@
+# jarvislabs `jl run` dependency file for the eval harness.
+# NOTE: `torch` is intentionally ABSENT — the JarvisLabs `pytorch` template
+# provides a compiled CUDA torch, and uv would otherwise re-download it into
+# the project venv. Do not add torch/CUDA packages here.
+transformers>=4.50
+datasets>=2.18
+pyyaml>=6
+huggingface-hub>=0.20
+numpy
+wandb>=0.17

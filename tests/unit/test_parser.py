@@ -48,3 +48,22 @@ def test_normalize():
 def test_parser_versioned():
     assert P.name == "gsm8k_parser"
     assert P.version == "1.0"
+
+
+def test_parser_v11_answer_line_priority():
+    from eval_harness.parsing.gsm8k import GSM8KAnswerParserV11 as P11
+    p = P11()
+    assert p.version == "1.1"
+    # Trailing ramble with other numbers must not override the answer line.
+    r = p.parse("The final answer is 6\nTranslated: 6 in Hindi 6.")
+    assert (r.value, r.success) == ("6", True)
+    r = p.parse("Reasoning 21 - 15 = 6. The final answer is 6\nQ: next")
+    assert r.value == "6"
+
+
+def test_parser_v11_canonicalizes():
+    from eval_harness.parsing.gsm8k import GSM8KAnswerParserV11 as P11
+    p = P11()
+    assert p.parse("The final answer is 1,000.").value == "1000"
+    assert p.parse("The final answer is 42.0").value == "42"
+    assert p.parse("#### 18").value == "18"
